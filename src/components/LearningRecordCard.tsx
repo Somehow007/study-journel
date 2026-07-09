@@ -59,7 +59,8 @@ export default function LearningRecordCard({ item, mood, onEdit, onDelete }: Lea
         </button>
         <button
           onClick={onDelete}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-faint)] transition-colors hover:bg-red-50 hover:text-red-400"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-faint)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+          aria-label="删除"
         >
           <Trash2 size={14} />
         </button>

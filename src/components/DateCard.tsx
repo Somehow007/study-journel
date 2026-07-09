@@ -67,7 +67,7 @@ export default function DateCard({
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className={`group relative flex aspect-square w-full flex-col items-center justify-between overflow-hidden rounded-lg p-1.5 transition-all duration-200 ${
+        className={`group relative flex aspect-square w-full flex-col items-center justify-between overflow-hidden rounded-lg p-1.5 transition-all duration-200 hover:scale-105 ${
           isCurrentMonth ? '' : 'opacity-40'
         }`}
         style={{

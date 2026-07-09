@@ -45,7 +45,8 @@ export default function AnnualReview() {
         longestStreak: 0,
         monthlyData: [] as { month: number; label: string; days: number; hours: number; topMoodLabel: string; topMoodEmoji: string }[],
         subjectData: [] as { name: string; hours: number; color: string }[],
-        moodTrendData: [] as { month: number; label: string; moodEmoji: string; topMood: string | null }[],
+
+
       };
     }
 
@@ -100,14 +101,6 @@ export default function AnnualReview() {
       };
     });
 
-    // Mood trend (for line chart - just show most frequent mood per month)
-    const moodTrendData = monthlyData.map(m => ({
-      month: m.month,
-      label: m.label,
-      moodEmoji: m.topMoodEmoji,
-      topMood: m.topMoodLabel !== '-' ? m.topMoodLabel : null,
-    }));
-
     // Most consistent month (highest ratio of days with records)
     let mostConsistentMonth: { month: number; ratio: number } | null = null;
     for (const [m, data] of Object.entries(monthlyBuckets)) {
@@ -150,7 +143,7 @@ export default function AnnualReview() {
       .map(([name, { min, color }]) => ({ name, hours: Math.round(min / 6) / 10, color }))
       .sort((a, b) => b.hours - a.hours);
 
-    return { totalDays, totalMin, topMood, mostConsistentMonth, longestStreak, monthlyData, subjectData, moodTrendData };
+    return { totalDays, totalMin, topMood, mostConsistentMonth, longestStreak, monthlyData, subjectData };
   }, [records, viewYear, isCurrentYear]);
 
   const topMoodConfig = stats.topMood ? MOOD_CONFIGS[stats.topMood as keyof typeof MOOD_CONFIGS] : null;

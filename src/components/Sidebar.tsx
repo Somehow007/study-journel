@@ -2,8 +2,8 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, BarChart3, Sun, Moon, Settings, Download, Upload, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatDate } from '../lib/dateUtils';
-import { exportAllData, importData } from '../lib/db';
-import { useRef, useState } from 'react';
+import { useDataIO } from '../lib/useDataIO';
+import { APP_VERSION } from '../lib/version';
 
 const navItems = [
   { to: '/', label: '月历', icon: Calendar, end: true },
@@ -15,70 +15,10 @@ const navItems = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useApp();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const { fileInputRef, importStatus, handleExport, triggerImport, handleFileChange } = useDataIO();
 
   const goToday = () => {
     navigate(`/day/${formatDate(new Date())}`);
-  };
-
-  const handleExport = async () => {
-    const data = await exportAllData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `study-journal-${formatDate(new Date())}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-
-      // Accept v2 format (object with records) or v1 format (array)
-      const records = Array.isArray(data) ? data : data.records;
-      if (!records || !Array.isArray(records)) {
-        throw new Error('数据格式错误');
-      }
-
-      // Basic validation
-      for (const item of records) {
-        if (!item.date || typeof item.date !== 'string') {
-          throw new Error('数据格式错误：缺少 date 字段');
-        }
-      }
-
-      // Confirm before overwriting
-      const confirmed = window.confirm(
-        `即将导入 ${records.length} 条记录。现有数据将被覆盖，确认继续？`
-      );
-      if (!confirmed) return;
-
-      await importData(data);
-      setImportStatus('success');
-      setTimeout(() => setImportStatus('idle'), 3000);
-      window.location.reload(); // Refresh to reflect imported data
-    } catch (err) {
-      console.error('Import failed:', err);
-      setImportStatus('error');
-      setTimeout(() => setImportStatus('idle'), 3000);
-      alert(err instanceof Error ? err.message : '导入失败，请检查文件格式');
-    }
-
-    // Reset the input so the same file can be re-imported
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   return (
@@ -98,6 +38,7 @@ export default function Sidebar() {
       <button
         onClick={goToday}
         className="mx-2 mb-4 flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--color-text)] transition-all hover:bg-[var(--color-card)] hover:shadow-2"
+        aria-label="回到今天"
       >
         <Sun size={18} className="text-brand" />
         今日
@@ -134,6 +75,7 @@ export default function Sidebar() {
         <button
           onClick={toggleTheme}
           className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--color-text-soft)] transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-card)]"
+          aria-label={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           {theme === 'light' ? '深色模式' : '浅色模式'}
@@ -146,7 +88,7 @@ export default function Sidebar() {
           导出数据
         </button>
         <button
-          onClick={handleImport}
+          onClick={triggerImport}
           className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-card)] ${
             importStatus === 'success'
               ? 'text-green-500'
@@ -180,10 +122,11 @@ export default function Sidebar() {
         accept=".json"
         onChange={handleFileChange}
         className="hidden"
+        aria-hidden="true"
       />
 
       <div className="mt-3 px-3 text-center font-mono text-[10px] text-[var(--color-text-faint)]">
-        v0.2.0 · 本地存储
+        v{APP_VERSION} · 本地存储
       </div>
     </aside>
   );

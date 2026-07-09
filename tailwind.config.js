@@ -35,14 +35,14 @@ export default {
         '2xl': '28px',
       },
       colors: {
-        // Mood colors - Light mode
+        // Mood colors - Light mode (matches constants.ts / design doc v3.2)
         mood: {
-          happy: { main: '#FFB938', light: '#FFD66B', dark: '#FFA51F', soft: '#FFF7E0', glow: 'rgba(255,185,56,0.20)' },
-          calm: { main: '#4DB8E5', light: '#6ECBF5', dark: '#38A5D8', soft: '#E5F4FC', glow: 'rgba(77,184,229,0.20)' },
-          sad: { main: '#9B7AD9', light: '#B394E8', dark: '#8360CA', soft: '#F0E8FB', glow: 'rgba(155,122,217,0.20)' },
-          inspired: { main: '#E876C4', light: '#F59AD4', dark: '#D458B0', soft: '#FBE5F5', glow: 'rgba(232,118,196,0.20)' },
-          anxious: { main: '#FF7E5C', light: '#FF9C7E', dark: '#F56040', soft: '#FFE8E0', glow: 'rgba(255,126,92,0.20)' },
-          tired: { main: '#B69A7E', light: '#C9B098', dark: '#A08263', soft: '#F2EBE0', glow: 'rgba(182,154,126,0.18)' },
+          happy: { main: '#FFB938', light: '#FFD66B', dark: '#FFA51F', soft: '#FFEAB0', softDark: '#3A2F1A', glow: 'rgba(255,185,56,0.20)' },
+          calm: { main: '#4DB8E5', light: '#6ECBF5', dark: '#38A5D8', soft: '#C5E8F8', softDark: '#1A2C35', glow: 'rgba(77,184,229,0.20)' },
+          sad: { main: '#9B7AD9', light: '#B394E8', dark: '#8360CA', soft: '#D5C5F5', softDark: '#2A2238', glow: 'rgba(155,122,217,0.20)' },
+          inspired: { main: '#E876C4', light: '#F59AD4', dark: '#D458B0', soft: '#F2C8E8', softDark: '#321E2B', glow: 'rgba(232,118,196,0.20)' },
+          anxious: { main: '#FF7E5C', light: '#FF9C7E', dark: '#F56040', soft: '#FFCDBF', softDark: '#34211D', glow: 'rgba(255,126,92,0.20)' },
+          tired: { main: '#B69A7E', light: '#C9B098', dark: '#A08263', soft: '#E5D0BC', softDark: '#2B2319', glow: 'rgba(182,154,126,0.18)' },
         },
         // Neutral colors
         ink: {

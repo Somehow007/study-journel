@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Pencil, Trash2, Sun, Moon, Download, Upload } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, deleteCustomMood, exportAllData, importData } from '../lib/db';
+import { db, deleteCustomMood } from '../lib/db';
 import MoodEditModal from '../components/MoodEditModal';
-import { formatDate } from '../lib/dateUtils';
+import { useDataIO } from '../lib/useDataIO';
+import { APP_VERSION } from '../lib/version';
 import type { CustomMoodConfig } from '../types';
 
 export default function Settings() {
@@ -13,7 +14,7 @@ export default function Settings() {
   const { theme, toggleTheme } = useApp();
   const [showMoodEdit, setShowMoodEdit] = useState(false);
   const [editingMood, setEditingMood] = useState<CustomMoodConfig | null>(null);
-  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const { importStatus, handleExport, triggerImport, handleFileChange, fileInputRef } = useDataIO();
 
   const customMoods = useLiveQuery(
     () => db.customMoods.orderBy('createdAt').toArray(),
@@ -21,53 +22,6 @@ export default function Settings() {
   );
 
   const customMoodList = customMoods ?? [];
-
-  const handleExport = async () => {
-    const data = await exportAllData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `study-journal-${formatDate(new Date())}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        // Validate
-        const records = Array.isArray(data) ? data : data.records;
-        if (!records || !Array.isArray(records)) {
-          throw new Error('数据格式错误');
-        }
-
-        const confirmed = window.confirm(
-          `即将导入 ${records.length} 条记录。现有数据将被覆盖，确认继续？`
-        );
-        if (!confirmed) return;
-
-        await importData(data);
-        setImportStatus('success');
-        setTimeout(() => setImportStatus('idle'), 3000);
-        window.location.reload();
-      } catch (err) {
-        console.error('Import failed:', err);
-        setImportStatus('error');
-        setTimeout(() => setImportStatus('idle'), 3000);
-        alert(err instanceof Error ? err.message : '导入失败，请检查文件格式');
-      }
-    };
-    input.click();
-  };
 
   const handleEditMood = (mood: CustomMoodConfig) => {
     setEditingMood(mood);
@@ -89,6 +43,7 @@ export default function Settings() {
         <button
           onClick={() => navigate(-1)}
           className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-soft)] transition-all hover:bg-[var(--color-card)] hover:text-[var(--color-text)]"
+          aria-label="返回"
         >
           <ArrowLeft size={18} />
         </button>
@@ -99,25 +54,28 @@ export default function Settings() {
       <section className="mb-8">
         <h2 className="mb-3 text-sm font-medium text-[var(--color-text-soft)]">外观</h2>
         <div className="glass rounded-xl p-1 shadow-2 inline-flex items-center gap-1">
-          {(['light', 'dark'] as const).map((t) => {
-            const isActive = theme === t;
-            const Icon = t === 'light' ? Sun : Moon;
-            const label = t === 'light' ? '浅色' : '深色';
-            return (
-              <button
-                key={t}
-                onClick={toggleTheme}
-                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                  isActive
-                    ? 'glass text-[var(--color-text)] shadow-2'
-                    : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)]'
-                }`}
-              >
-                <Icon size={16} />
-                {label}
-              </button>
-            );
-          })}
+          <button
+            onClick={() => { if (theme !== 'light') toggleTheme(); }}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+              theme === 'light'
+                ? 'glass text-[var(--color-text)] shadow-2'
+                : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)]'
+            }`}
+          >
+            <Sun size={16} />
+            浅色
+          </button>
+          <button
+            onClick={() => { if (theme !== 'dark') toggleTheme(); }}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+              theme === 'dark'
+                ? 'glass text-[var(--color-text)] shadow-2'
+                : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)]'
+            }`}
+          >
+            <Moon size={16} />
+            深色
+          </button>
         </div>
       </section>
 
@@ -171,12 +129,14 @@ export default function Settings() {
                   <button
                     onClick={() => handleEditMood(mood)}
                     className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-faint)] transition-colors hover:bg-[var(--color-card)] hover:text-[var(--color-text)]"
+                    aria-label={`编辑 ${mood.label}`}
                   >
                     <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => handleDeleteMood(mood)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-faint)] transition-colors hover:bg-red-50 hover:text-red-400"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-faint)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    aria-label={`删除 ${mood.label}`}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -200,7 +160,7 @@ export default function Settings() {
             <span className="ml-auto font-mono text-xs text-[var(--color-text-faint)]">JSON</span>
           </button>
           <button
-            onClick={handleImport}
+            onClick={triggerImport}
             className={`flex w-full items-center gap-3 px-4 py-3 text-sm font-medium transition-colors hover:text-[var(--color-text)] ${
               importStatus === 'success'
                 ? 'text-green-500'
@@ -214,6 +174,15 @@ export default function Settings() {
             <span className="ml-auto font-mono text-xs text-[var(--color-text-faint)]">JSON</span>
           </button>
         </div>
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleFileChange}
+          className="hidden"
+          aria-hidden="true"
+        />
       </section>
 
       {/* About */}
@@ -222,7 +191,7 @@ export default function Settings() {
         <div className="glass rounded-xl p-4 shadow-2">
           <p className="text-sm text-[var(--color-text)]">学习手帐 Study Journal</p>
           <p className="mt-1 text-xs text-[var(--color-text-faint)]">
-            v0.2.0 · 所有数据存储于浏览器本地
+            v{APP_VERSION} · 所有数据存储于浏览器本地
           </p>
         </div>
       </section>

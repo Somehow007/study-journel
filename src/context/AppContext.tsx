@@ -4,9 +4,6 @@ interface AppContextValue {
   /** 当前查看的月份 */
   currentMonth: { year: number; month: number };
   setCurrentMonth: (year: number, month: number) => void;
-  /** 当前选中的日期 (YYYY-MM-DD) */
-  selectedDate: string;
-  setSelectedDate: (date: string) => void;
   /** 主题 */
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -20,7 +17,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     year: now.getFullYear(),
     month: now.getMonth(),
   });
-  const [selectedDate, setSelectedDate] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const stored = localStorage.getItem('study-journal-theme');
     if (stored === 'dark' || stored === 'light') return stored;
@@ -41,7 +37,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider
-      value={{ currentMonth, setCurrentMonth, selectedDate, setSelectedDate, theme, toggleTheme }}
+      value={{ currentMonth, setCurrentMonth, theme, toggleTheme }}
     >
       {children}
     </AppContext.Provider>

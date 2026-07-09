@@ -96,9 +96,8 @@ export default function LearningFormModal({ item, onConfirm, onClose }: Learning
               type="number"
               min="0"
               max="24"
-              value={hours || ''}
-              onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))}
-              placeholder="0"
+              value={hours}
+              onChange={(e) => setHours(Math.max(0, Math.min(24, parseInt(e.target.value) || 0)))}
               className="w-20 rounded-md px-3 py-2 text-center font-mono text-sm outline-none transition-all focus:shadow-2"
               style={{
                 background: 'var(--color-card)',
@@ -111,7 +110,7 @@ export default function LearningFormModal({ item, onConfirm, onClose }: Learning
               type="number"
               min="0"
               max="59"
-              value={minutes || ''}
+              value={minutes}
               onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
               placeholder="0"
               className="w-20 rounded-md px-3 py-2 text-center font-mono text-sm outline-none transition-all focus:shadow-2"
