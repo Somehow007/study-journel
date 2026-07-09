@@ -5,7 +5,8 @@ import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration } from '../lib/dateUtils';
 import { MOOD_CONFIGS } from '../lib/constants';
 import { useApp } from '../context/AppContext';
-import { ChevronLeft, ChevronRight, BookOpen, Clock, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BookOpen, Clock, Heart, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -21,6 +22,7 @@ import type { MoodType } from '../types';
 
 export default function Stats() {
   const { theme } = useApp();
+  const navigate = useNavigate();
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
@@ -102,9 +104,18 @@ export default function Stats() {
     <div className="animate-fade-up">
       {/* 页面标题 + 月份切换 */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-hand text-2xl font-semibold text-[var(--color-text)]">
-          统计
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="font-hand text-2xl font-semibold text-[var(--color-text)]">
+            统计
+          </h1>
+          <button
+            onClick={() => navigate(`/annual?year=${viewYear}`)}
+            className="pill-dashed flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--color-text-soft)] transition-all hover:text-[var(--color-text)] hover:shadow-2"
+          >
+            <TrendingUp size={14} />
+            年度回顾
+          </button>
+        </div>
         <div className="flex items-center gap-3">
           <button
             onClick={prevMonth}

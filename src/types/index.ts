@@ -36,3 +36,18 @@ export interface MoodConfig {
   glow: string;
   gradient: string;
 }
+
+/** 自定义心情存储（存入 IndexedDB） */
+export interface CustomMoodConfig {
+  id: string;           // nanoid，如 "mood_abc123"
+  label: string;
+  emoji: string;
+  main: string;
+  light: string;
+  dark: string;
+  soft: string;
+  softDark: string;
+  glow: string;
+  gradient: string;
+  createdAt: number;
+}

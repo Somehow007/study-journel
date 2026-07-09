@@ -7,6 +7,9 @@ import MonthView from './pages/MonthView';
 import TodayDetail from './pages/TodayDetail';
 import Memory from './pages/Memory';
 import Stats from './pages/Stats';
+import Search from './pages/Search';
+import Settings from './pages/Settings';
+import AnnualReview from './pages/AnnualReview';
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useApp();
@@ -42,6 +45,9 @@ function AppShell() {
         <Route path="/day/:date" element={<TodayDetail />} />
         <Route path="/memory" element={<Memory />} />
         <Route path="/stats" element={<Stats />} />
+        <Route path="/annual" element={<AnnualReview />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

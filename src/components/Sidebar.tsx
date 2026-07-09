@@ -1,15 +1,15 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, BarChart3, Sun, Moon, Settings, Download, Upload } from 'lucide-react';
+import { Calendar, Clock, BarChart3, Sun, Moon, Settings, Download, Upload, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatDate } from '../lib/dateUtils';
 import { exportAllData, importData } from '../lib/db';
 import { useRef, useState } from 'react';
-import type { DayRecord } from '../types';
 
 const navItems = [
   { to: '/', label: '月历', icon: Calendar, end: true },
   { to: '/memory', label: '回忆', icon: Clock, end: false },
   { to: '/stats', label: '统计', icon: BarChart3, end: false },
+  { to: '/search', label: '搜索', icon: Search, end: false },
 ];
 
 export default function Sidebar() {
@@ -45,12 +45,14 @@ export default function Sidebar() {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      if (!Array.isArray(data)) {
-        throw new Error('数据格式错误：需要 JSON 数组');
+      // Accept v2 format (object with records) or v1 format (array)
+      const records = Array.isArray(data) ? data : data.records;
+      if (!records || !Array.isArray(records)) {
+        throw new Error('数据格式错误');
       }
 
       // Basic validation
-      for (const item of data) {
+      for (const item of records) {
         if (!item.date || typeof item.date !== 'string') {
           throw new Error('数据格式错误：缺少 date 字段');
         }
@@ -58,11 +60,11 @@ export default function Sidebar() {
 
       // Confirm before overwriting
       const confirmed = window.confirm(
-        `即将导入 ${data.length} 条记录。现有数据将被覆盖，确认继续？`
+        `即将导入 ${records.length} 条记录。现有数据将被覆盖，确认继续？`
       );
       if (!confirmed) return;
 
-      await importData(data as DayRecord[]);
+      await importData(data);
       setImportStatus('success');
       setTimeout(() => setImportStatus('idle'), 3000);
       window.location.reload(); // Refresh to reflect imported data
@@ -156,10 +158,19 @@ export default function Sidebar() {
           <Upload size={18} />
           {importStatus === 'success' ? '导入成功 ✓' : importStatus === 'error' ? '导入失败 ✕' : '导入数据'}
         </button>
-        <button className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--color-text-soft)] transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-card)]">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+              isActive
+                ? 'glass text-[var(--color-text)] shadow-2'
+                : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)] hover:bg-[var(--color-card)]'
+            }`
+          }
+        >
           <Settings size={18} />
           设置
-        </button>
+        </NavLink>
       </div>
 
       {/* Hidden file input for import */}
@@ -172,7 +183,7 @@ export default function Sidebar() {
       />
 
       <div className="mt-3 px-3 text-center font-mono text-[10px] text-[var(--color-text-faint)]">
-        v0.1.0 · 本地存储
+        v0.2.0 · 本地存储
       </div>
     </aside>
   );
