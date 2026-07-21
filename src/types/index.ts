@@ -19,7 +19,7 @@ export interface LearningItem {
 export interface DayRecord {
   id?: number;
   date: string; // YYYY-MM-DD
-  mood: MoodType | null;
+  mood: string | null;  // 内置 MoodType 或自定义心情的 nanoid
   learnings: LearningItem[];
   diary: string;
   createdAt: number;
@@ -33,11 +33,12 @@ export interface MoodDarkColors {
   tint: string;
 }
 
-/** 心情配置（v4.0 矿物三档色：solid/ink/tint + 深色模式） */
+/** 心情配置（v4.0 矿物三档色：solid/ink/tint + 深色模式）
+ * 内置 6 种的 type 为 MoodType 字面量，自定义心情的 type 为 nanoid 字符串。 */
 export interface MoodConfig {
-  type: MoodType;
+  type: string;                   // 内置 MoodType | 自定义 nanoid
   label: string;
-  emoji: string;                  // 降级为辅助场景（tooltip、空状态文案）
+  emoji: string;                  // 降级为辅助场景（tooltip、空状态文案）；自定义心情为主要表达方式
   solid: string;                  // 饱和实色：印章态/图表/刻度条
   ink: string;                    // 深调：tint 底上的文字与图标
   tint: string;                   // 淡底：大面积铺垫

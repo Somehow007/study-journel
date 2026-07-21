@@ -88,8 +88,8 @@ export const PALETTES: PaletteMeta[] = [
   { id: 'violet', label: '蓝紫', hint: '冷灰纸 × 蓝紫', swatch: { paper: '#F7F7FA', brand: '#6C5CE7' } },
 ];
 
-/** 星期中文标签 */
-export const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+/** 星期中文标签（周一起始） */
+export const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
 /** 月份中文标签 */
 export const MONTH_LABELS = [

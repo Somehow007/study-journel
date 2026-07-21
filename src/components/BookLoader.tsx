@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { MOOD_CONFIGS } from '../lib/constants';
-import type { MoodType } from '../types';
 
 type LoaderPhase = 'idle' | 'flip' | 'flash' | 'done';
 
 interface BookLoaderProps {
   onComplete?: () => void;
-  lastMood?: MoodType | null;
+  lastMood?: string | null;
 }
 
 export default function BookLoader({ onComplete, lastMood }: BookLoaderProps) {
@@ -15,9 +14,10 @@ export default function BookLoader({ onComplete, lastMood }: BookLoaderProps) {
   const isDark = theme === 'dark';
   const [phase, setPhase] = useState<LoaderPhase>('idle');
 
-  // Flash color: mood tint (replaces v3.x glow)
-  const tintColor = lastMood
-    ? (isDark ? MOOD_CONFIGS[lastMood].dark.tint : MOOD_CONFIGS[lastMood].tint)
+  // Flash color: mood tint (replaces v3.x glow); custom moods fall back to brand tint
+  const moodCfg = lastMood ? MOOD_CONFIGS[lastMood as keyof typeof MOOD_CONFIGS] : undefined;
+  const tintColor = moodCfg
+    ? (isDark ? moodCfg.dark.tint : moodCfg.tint)
     : undefined;
 
   useEffect(() => {

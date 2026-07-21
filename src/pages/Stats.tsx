@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { getRecordsByMonth } from '../lib/db';
 import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration } from '../lib/dateUtils';
-import { MOOD_CONFIGS } from '../lib/constants';
+import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useApp } from '../context/AppContext';
 import MoodSeal from '../assets/moods';
 import { ChevronLeft, ChevronRight, BookOpen, Clock, Heart, TrendingUp } from 'lucide-react';
@@ -19,7 +19,6 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import type { MoodType } from '../types';
 
 export default function Stats() {
   const { theme } = useApp();
@@ -30,6 +29,13 @@ export default function Stats() {
   const [viewMonth, setViewMonth] = useState(now.getMonth());
 
   const records = useLiveQuery(() => getRecordsByMonth(viewYear, viewMonth), [viewYear, viewMonth]);
+  const allMoods = useAllMoodConfigs();
+  const allMoodKeys = useMemo(() => new Set(allMoods.map((m) => m.type)), [allMoods]);
+  const moodCfgMap = useMemo(() => {
+    const map = new Map<string, typeof allMoods[0]>();
+    for (const cfg of allMoods) map.set(cfg.type, cfg);
+    return map;
+  }, [allMoods]);
 
   const prevMonth = () => {
     const d = new Date(viewYear, viewMonth - 1, 1);
@@ -49,8 +55,8 @@ export default function Stats() {
       return {
         totalDays: 0,
         totalMin: 0,
-        topMood: null as MoodType | null,
-        dailyData: [] as { day: number; dateStr: string; hours: number; mood: MoodType | null }[],
+        topMood: null as string | null,
+        dailyData: [] as { day: number; dateStr: string; hours: number; mood: string | null }[],
         subjectData: [] as { name: string; hours: number; color: string }[],
       };
     }
@@ -58,19 +64,19 @@ export default function Stats() {
     const totalDays = records.length;
     const totalMin = records.reduce((sum, r) => sum + totalDuration(r.learnings), 0);
 
-    // Most frequent mood（跳过旧数据中的未知心情值，如已删除的自定义心情）
+    // Most frequent mood（跳过旧数据中的已删除心情）
     const moodCount: Record<string, number> = {};
     for (const r of records) {
-      if (r.mood && MOOD_CONFIGS[r.mood]) {
+      if (r.mood && allMoodKeys.has(r.mood)) {
         moodCount[r.mood] = (moodCount[r.mood] || 0) + 1;
       }
     }
-    let topMood: MoodType | null = null;
+    let topMood: string | null = null;
     let topMoodCount = 0;
     for (const [mood, count] of Object.entries(moodCount)) {
       if (count > topMoodCount) {
         topMoodCount = count;
-        topMood = mood as MoodType;
+        topMood = mood;
       }
     }
 
@@ -175,9 +181,12 @@ export default function Stats() {
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-full"
                 style={{
-                  background: stats.topMood
-                    ? `${isDark ? MOOD_CONFIGS[stats.topMood].dark.tint : MOOD_CONFIGS[stats.topMood].tint}`
-                    : 'color-mix(in srgb, var(--brand) 12%, transparent)',
+                  background: (() => {
+                    const cfg = stats.topMood ? moodCfgMap.get(stats.topMood) : undefined;
+                    return cfg
+                      ? (isDark ? cfg.dark.tint : cfg.tint)
+                      : 'color-mix(in srgb, var(--brand) 12%, transparent)';
+                  })(),
                 }}
               >
                 {stats.topMood ? (
@@ -188,10 +197,16 @@ export default function Stats() {
               </div>
               <div>
                 <div className="font-mono text-num-lg text-[var(--ink)]">
-                  {stats.topMood ? MOOD_CONFIGS[stats.topMood].emoji : '-'}
+                  {(() => {
+                    const cfg = stats.topMood ? moodCfgMap.get(stats.topMood) : undefined;
+                    return cfg?.emoji ?? '-';
+                  })()}
                 </div>
                 <div className="font-sans text-caption text-[var(--ink-soft)]">
-                  {stats.topMood ? `最常${MOOD_CONFIGS[stats.topMood].label}` : '无记录'}
+                  {(() => {
+                    const cfg = stats.topMood ? moodCfgMap.get(stats.topMood) : undefined;
+                    return cfg ? `最常${cfg.label}` : '无记录';
+                  })()}
                 </div>
               </div>
             </div>
@@ -230,9 +245,9 @@ export default function Stats() {
                     />
                     <Bar
                       dataKey="hours"
-                      shape={(props: { x?: number; y?: number; width?: number; height?: number; payload?: { mood: MoodType | null } }) => {
+                      shape={(props: { x?: number; y?: number; width?: number; height?: number; payload?: { mood: string | null } }) => {
                         const { x = 0, y = 0, width = 0, height = 0, payload } = props;
-                        const moodCfg = payload?.mood ? MOOD_CONFIGS[payload.mood] : null;
+                        const moodCfg = payload?.mood ? moodCfgMap.get(payload.mood) : undefined;
                         const barColor = moodCfg
                           ? (isDark ? moodCfg.dark.solid : moodCfg.solid)
                           : isDark ? 'rgba(240,231,213,0.70)' : 'rgba(43,35,24,0.70)';

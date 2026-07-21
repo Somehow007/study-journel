@@ -3,14 +3,14 @@ import { ArrowLeft } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getRecordByDate, upsertRecord } from '../lib/db';
 
-import { MOOD_CONFIGS } from '../lib/constants';
+import { useMoodConfig } from '../lib/moodUtils';
 import { useApp } from '../context/AppContext';
 import MoodSeal from '../assets/moods';
 import MoodSelector from '../components/MoodSelector';
 import LearningRecordCard from '../components/LearningRecordCard';
 import LearningFormModal from '../components/LearningFormModal';
 import DiaryEditor from '../components/DiaryEditor';
-import type { MoodType, LearningItem } from '../types';
+import type { LearningItem } from '../types';
 import { useState, useCallback, useMemo } from 'react';
 import { totalDuration, formatDuration } from '../lib/dateUtils';
 
@@ -26,7 +26,7 @@ export default function TodayDetail() {
   const learnings = record?.learnings ?? [];
   const diary = record?.diary ?? '';
 
-  const moodConfig = mood ? MOOD_CONFIGS[mood] : null;
+  const moodConfig = useMoodConfig(mood);
   const { theme } = useApp();
   const isDark = theme === 'dark';
 
@@ -54,7 +54,7 @@ export default function TodayDetail() {
   const totalMin = totalDuration(learnings);
 
   const handleMoodSelect = useCallback(
-    (moodType: MoodType) => {
+    (moodType: string) => {
       if (date) upsertRecord(date, { mood: moodType });
     },
     [date],

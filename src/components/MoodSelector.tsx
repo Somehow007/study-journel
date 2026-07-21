@@ -1,21 +1,21 @@
-import { MOOD_CONFIGS, MOOD_LIST } from '../lib/constants';
+import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useApp } from '../context/AppContext';
 import MoodSeal from '../assets/moods';
-import type { MoodType } from '../types';
 
 interface MoodSelectorProps {
-  selected: MoodType | null;
-  onSelect: (mood: MoodType) => void;
+  selected: string | null;  // 内置 MoodType 或自定义 nanoid
+  onSelect: (mood: string) => void;
 }
 
 export default function MoodSelector({ selected, onSelect }: MoodSelectorProps) {
   const { theme } = useApp();
   const isDark = theme === 'dark';
+  const allMoods = useAllMoodConfigs();
 
   return (
     <div className="flex flex-wrap items-center gap-3 md:gap-4">
-      {MOOD_LIST.map((moodType) => {
-        const config = MOOD_CONFIGS[moodType];
+      {allMoods.map((config) => {
+        const moodType = config.type;
         const isSelected = selected === moodType;
 
         // Colors for current theme

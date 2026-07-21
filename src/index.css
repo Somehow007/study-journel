@@ -242,6 +242,74 @@
     flex-shrink: 0;
   }
 
+  /* Markdown 预览排版（prose-like，搭配衬线信纸） */
+  .diary-content h1,
+  .diary-content h2,
+  .diary-content h3 {
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    font-weight: 600;
+    color: var(--ink);
+    margin-top: 1.2em;
+    margin-bottom: 0.4em;
+  }
+  .diary-content h1 { font-size: 22px; }
+  .diary-content h2 { font-size: 19px; }
+  .diary-content h3 { font-size: 17px; }
+  .diary-content p {
+    margin: 0;
+    line-height: 32px;
+  }
+  .diary-content p + p {
+    margin-top: 0.6em;
+  }
+  .diary-content ul,
+  .diary-content ol {
+    padding-left: 1.5em;
+    margin: 0.4em 0;
+  }
+  .diary-content li {
+    line-height: 32px;
+  }
+  .diary-content blockquote {
+    margin: 0.6em 0;
+    padding-left: 1em;
+    border-left: 3px solid var(--brand);
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  .diary-content code {
+    font-family: 'IBM Plex Mono', 'DM Mono', monospace;
+    font-size: 0.88em;
+    background: var(--paper);
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .diary-content pre {
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    margin: 0.6em 0;
+  }
+  .diary-content pre code {
+    background: none;
+    padding: 0;
+  }
+  .diary-content hr {
+    border: none;
+    border-top: 1px solid var(--hairline);
+    margin: 1em 0;
+  }
+  .diary-content a {
+    color: var(--brand);
+    text-decoration: underline;
+  }
+  .diary-content strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
   /* 日记信纸横线（32px 行距，匹配 diary 字号；深浅色均走 --hairline 变量） */
   .diary-paper {
     background-image: repeating-linear-gradient(
@@ -278,5 +346,12 @@
   }
   .scrollbar-hidden::-webkit-scrollbar {
     display: none;
+  }
+
+  /* 触摸设备始终显示操作按钮 */
+  @media (pointer: coarse) {
+    .touch-visible {
+      opacity: 0.55 !important;
+    }
   }
 }

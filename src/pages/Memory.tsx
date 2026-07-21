@@ -2,11 +2,12 @@ import { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getRecordsByMonth, db } from '../lib/db';
 import { formatDate, formatFullDate, totalDuration, parseDate } from '../lib/dateUtils';
-import { MOOD_CONFIGS, MONTH_LABELS } from '../lib/constants';
+import { MONTH_LABELS } from '../lib/constants';
+import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useApp } from '../context/AppContext';
 import MoodSeal from '../assets/moods';
 import { ChevronLeft, ChevronRight, LayoutGrid, Clock } from 'lucide-react';
-import type { DayRecord, MoodType } from '../types';
+import type { DayRecord } from '../types';
 
 type MemoryTab = 'gallery' | 'timeline';
 
@@ -87,6 +88,12 @@ export default function Memory() {
 
   const hasGalleryData = (galleryRecords?.length ?? 0) > 0;
   const hasTimelineData = (allRecords?.length ?? 0) > 0;
+  const allMoods = useAllMoodConfigs();
+  const moodCfgMap = useMemo(() => {
+    const map = new Map<string, typeof allMoods[0]>();
+    for (const cfg of allMoods) map.set(cfg.type, cfg);
+    return map;
+  }, [allMoods]);
 
   return (
     <div className="animate-fade-up" style={{ maxWidth: '880px', margin: '0 auto' }}>
@@ -165,7 +172,7 @@ export default function Memory() {
                   <div key={wi} className="flex gap-1.5">
                     {week.map((day) => {
                       const record = galleryMap.get(day.dateStr);
-                      const moodConfig = record?.mood ? (MOOD_CONFIGS[record.mood] ?? null) : null;
+                      const moodConfig = record?.mood ? (moodCfgMap.get(record.mood) ?? null) : null;
                       const isSelected = selectedDate === day.dateStr;
                       const tintColor = moodConfig
                         ? (isDark ? moodConfig.dark.tint : moodConfig.tint)
@@ -221,9 +228,9 @@ export default function Memory() {
                       <span className="font-serif text-title text-[var(--ink)]">
                         {formatFullDate(selectedDate)}
                       </span>
-                      {selectedRecord.mood && MOOD_CONFIGS[selectedRecord.mood] && (
+                      {selectedRecord.mood && moodCfgMap.get(selectedRecord.mood) && (
                         <span className="font-sans text-small text-[var(--ink-soft)]">
-                          · {MOOD_CONFIGS[selectedRecord.mood].label}
+                          · {moodCfgMap.get(selectedRecord.mood)!.label}
                         </span>
                       )}
                     </div>
@@ -261,9 +268,9 @@ export default function Memory() {
                   <span className="inline-block h-3 w-3 rounded-sm border border-dashed border-[var(--hairline)]" />
                   未记录
                 </span>
-                {Object.entries(MOOD_CONFIGS).map(([type, config]) => (
-                  <span key={type} className="flex items-center gap-1">
-                    <MoodSeal moodType={type as MoodType} size={14} tone="line" />
+                {allMoods.map((config) => (
+                  <span key={config.type} className="flex items-center gap-1">
+                    <MoodSeal moodType={config.type} size={14} tone="line" />
                     {config.emoji} {config.label}
                   </span>
                 ))}
@@ -273,9 +280,9 @@ export default function Memory() {
             /* 空状态 */
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="mb-4 flex flex-wrap justify-center gap-2">
-                {Object.keys(MOOD_CONFIGS).slice(0, 4).map((type) => (
+                {allMoods.slice(0, 4).map((config) => (
                   <span
-                    key={type}
+                    key={config.type}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-[var(--hairline)]"
                   />
                 ))}
@@ -304,7 +311,7 @@ export default function Memory() {
 
               <div className="flex flex-col gap-6">
                 {allRecords!.map((record) => {
-                  const moodConfig = record.mood ? (MOOD_CONFIGS[record.mood] ?? null) : null;
+                  const moodConfig = record.mood ? (moodCfgMap.get(record.mood) ?? null) : null;
                   const solidColor = moodConfig
                     ? (isDark ? moodConfig.dark.solid : moodConfig.solid)
                     : null;

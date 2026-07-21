@@ -1,5 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useMemo } from 'react';
 import { db } from './db';
+import { MOOD_CONFIGS } from './constants';
 import type { MoodConfig, CustomMoodConfig, MoodDarkColors } from '../types';
 
 /**
@@ -7,7 +9,7 @@ import type { MoodConfig, CustomMoodConfig, MoodDarkColors } from '../types';
  */
 export function customToMoodConfig(cm: CustomMoodConfig): MoodConfig {
   return {
-    type: cm.id as MoodConfig['type'],
+    type: cm.id,
     label: cm.label,
     emoji: cm.emoji,
     solid: cm.solid,
@@ -24,6 +26,48 @@ export function useCustomMoodConfigs(): MoodConfig[] {
   const customMoods = useLiveQuery(() => db.customMoods.orderBy('createdAt').toArray(), []);
   if (!customMoods || customMoods.length === 0) return [];
   return customMoods.map(customToMoodConfig);
+}
+
+/**
+ * React Hook：统一心情配置查找 — 先查内置 MOOD_CONFIGS，再查自定义
+ * 调用方无需关心心情是内置还是自定义。
+ */
+export function useMoodConfig(moodType: string | null): MoodConfig | null {
+  const customMoods = useCustomMoodConfigs();
+
+  return useMemo(() => {
+    if (!moodType) return null;
+    // 先查内置
+    const builtin = MOOD_CONFIGS[moodType as keyof typeof MOOD_CONFIGS];
+    if (builtin) return builtin;
+    // 再查自定义
+    return customMoods.find((cm) => cm.type === moodType) ?? null;
+  }, [moodType, customMoods]);
+}
+
+/**
+ * React Hook：获取所有可用心情配置（内置 + 自定义），用于选择器和图例渲染
+ */
+export function useAllMoodConfigs(): MoodConfig[] {
+  const customMoods = useCustomMoodConfigs();
+
+  return useMemo(() => {
+    const builtinList = Object.values(MOOD_CONFIGS);
+    return [...builtinList, ...customMoods];
+  }, [customMoods]);
+}
+
+/**
+ * 同步版心情配置查找（用于 useMemo / 非组件上下文）
+ * 只能查到内置心情；如需查自定义，请传入 customMoods 数组。
+ */
+export function getMoodConfigSync(moodType: string, customMoods?: MoodConfig[]): MoodConfig | null {
+  const builtin = MOOD_CONFIGS[moodType as keyof typeof MOOD_CONFIGS];
+  if (builtin) return builtin;
+  if (customMoods) {
+    return customMoods.find((cm) => cm.type === moodType) ?? null;
+  }
+  return null;
 }
 
 /**

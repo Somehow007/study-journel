@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, ArrowRight } from 'lucide-react';
 import { searchDiary } from '../lib/db';
 import { formatFullDate, formatDuration, totalDuration } from '../lib/dateUtils';
-import { MOOD_CONFIGS } from '../lib/constants';
+import { useAllMoodConfigs } from '../lib/moodUtils';
 import MoodSeal from '../assets/moods';
 import type { DayRecord } from '../types';
 
@@ -53,6 +53,12 @@ export default function Search() {
   const [hasSearched, setHasSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
+  const allMoods = useAllMoodConfigs();
+  const moodCfgMap = useMemo(() => {
+    const map = new Map<string, typeof allMoods[0]>();
+    for (const cfg of allMoods) map.set(cfg.type, cfg);
+    return map;
+  }, [allMoods]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -135,7 +141,7 @@ export default function Search() {
           </p>
           <div className="space-y-3">
             {results.map((record) => {
-              const moodConfig = record.mood ? MOOD_CONFIGS[record.mood] : null;
+              const moodConfig = record.mood ? (moodCfgMap.get(record.mood) ?? null) : null;
               return (
                 <button
                   key={record.date}

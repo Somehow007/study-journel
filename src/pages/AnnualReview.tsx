@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { getRecordsByYear } from '../lib/db';
 import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration, formatDate } from '../lib/dateUtils';
-import { MOOD_CONFIGS } from '../lib/constants';
+import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useApp } from '../context/AppContext';
 import MoodSeal from '../assets/moods';
 import { ChevronLeft, ChevronRight, BookOpen, Clock, Heart, Flame } from 'lucide-react';
@@ -19,7 +19,6 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import type { MoodType } from '../types';
 
 export default function AnnualReview() {
   const { theme } = useApp();
@@ -30,6 +29,13 @@ export default function AnnualReview() {
   const [viewYear, setViewYear] = useState(initialYear);
 
   const records = useLiveQuery(() => getRecordsByYear(viewYear), [viewYear]);
+  const allMoods = useAllMoodConfigs();
+  const allMoodKeys = useMemo(() => new Set(allMoods.map((m) => m.type)), [allMoods]);
+  const moodCfgMap = useMemo(() => {
+    const map = new Map<string, typeof allMoods[0]>();
+    for (const cfg of allMoods) map.set(cfg.type, cfg);
+    return map;
+  }, [allMoods]);
 
   const isCurrentYear = viewYear === now.getFullYear();
 
@@ -41,10 +47,10 @@ export default function AnnualReview() {
       return {
         totalDays: 0,
         totalMin: 0,
-        topMood: null as MoodType | null,
+        topMood: null as string | null,
         mostConsistentMonth: null as { month: number; ratio: number } | null,
         longestStreak: 0,
-        monthlyData: [] as { month: number; label: string; days: number; hours: number; topMoodLabel: string; topMoodEmoji: string; topMoodType: MoodType | null }[],
+        monthlyData: [] as { month: number; label: string; days: number; hours: number; topMoodLabel: string; topMoodEmoji: string; topMoodType: string | null }[],
         subjectData: [] as { name: string; hours: number; color: string }[],
       };
     }
@@ -54,14 +60,14 @@ export default function AnnualReview() {
 
     const moodCount: Record<string, number> = {};
     for (const r of records) {
-      if (r.mood && MOOD_CONFIGS[r.mood]) {
+      if (r.mood && allMoodKeys.has(r.mood)) {
         moodCount[r.mood] = (moodCount[r.mood] || 0) + 1;
       }
     }
-    let topMood: MoodType | null = null;
+    let topMood: string | null = null;
     let topMoodCount = 0;
     for (const [mood, count] of Object.entries(moodCount)) {
-      if (count > topMoodCount) { topMoodCount = count; topMood = mood as MoodType; }
+      if (count > topMoodCount) { topMoodCount = count; topMood = mood; }
     }
 
     const monthlyBuckets: Record<number, { days: number; min: number; moods: Record<string, number> }> = {};
@@ -79,16 +85,16 @@ export default function AnnualReview() {
     const monthlyData = Object.entries(monthlyBuckets).map(([m, data]) => {
       let topMoodLabel = '-';
       let topMoodEmoji = '';
-      let topMoodType: MoodType | null = null;
+      let topMoodType: string | null = null;
       let topCount = 0;
       for (const [mood, count] of Object.entries(data.moods)) {
         if (count > topCount) {
           topCount = count;
-          const cfg = MOOD_CONFIGS[mood as MoodType];
+          const cfg = moodCfgMap.get(mood);
           if (cfg) {
             topMoodLabel = cfg.label;
             topMoodEmoji = cfg.emoji;
-            topMoodType = mood as MoodType;
+            topMoodType = mood;
           }
         }
       }
@@ -141,9 +147,9 @@ export default function AnnualReview() {
       .sort((a, b) => b.hours - a.hours);
 
     return { totalDays, totalMin, topMood, mostConsistentMonth, longestStreak, monthlyData, subjectData };
-  }, [records, viewYear, isCurrentYear]);
+  }, [records, viewYear, isCurrentYear, allMoodKeys, moodCfgMap]);
 
-  const topMoodConfig = stats.topMood ? MOOD_CONFIGS[stats.topMood] : null;
+  const topMoodConfig = stats.topMood ? moodCfgMap.get(stats.topMood) ?? null : null;
   const hasData = stats.totalDays > 0;
   const chartGridColor = 'color-mix(in srgb, var(--hairline) 60%, transparent)';
   const chartTextColor = 'var(--ink-faint)';

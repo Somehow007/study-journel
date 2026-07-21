@@ -3,10 +3,10 @@ import { useApp } from '../context/AppContext';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getRecordsByMonth } from '../lib/db';
 import { getCalendarDays, isToday, formatDate, totalDuration } from '../lib/dateUtils';
-import { MOOD_CONFIGS, WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
+import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
+import { useAllMoodConfigs } from '../lib/moodUtils';
 import MoodSeal from '../assets/moods';
 import DateCard from '../components/DateCard';
-import type { MoodType } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 
@@ -18,7 +18,7 @@ export default function MonthView() {
   const records = useLiveQuery(() => getRecordsByMonth(year, month), [year, month]);
 
   const recordMap = useMemo(() => {
-    const map = new Map<string, { mood: MoodType | null; totalMin: number; diary: string }>();
+    const map = new Map<string, { mood: string | null; totalMin: number; diary: string }>();
     if (records) {
       for (const r of records) {
         map.set(r.date, {
@@ -53,6 +53,22 @@ export default function MonthView() {
 
   // English month name for Caveat subtitle
   const engMonth = new Date(year, month, 1).toLocaleString('en-US', { month: 'long' });
+
+  const allMoods = useAllMoodConfigs();
+
+  function Legend() {
+    return (
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 font-sans text-caption text-[var(--ink-faint)]">
+        {allMoods.map((config) => (
+          <span key={config.type} className="flex items-center gap-1.5">
+            <MoodSeal moodType={config.type} size={16} tone="line" />
+            {config.label}
+          </span>
+        ))}
+        <span className="ml-2">刻度满格 = 6h</span>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-up" style={{ maxWidth: '1040px', margin: '0 auto' }}>
@@ -135,15 +151,7 @@ export default function MonthView() {
       </div>
 
       {/* 图例 */}
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 font-sans text-caption text-[var(--ink-faint)]">
-        {Object.entries(MOOD_CONFIGS).map(([type, config]) => (
-          <span key={type} className="flex items-center gap-1.5">
-            <MoodSeal moodType={type as MoodType} size={16} tone="line" />
-            {config.label}
-          </span>
-        ))}
-        <span className="ml-2">刻度满格 = 6h</span>
-      </div>
+      <Legend />
 
       {/* 空状态引导 */}
       {!hasAnyRecord && (

@@ -25,14 +25,55 @@ export class StudyJournalDB extends Dexie {
 
 export const db = new StudyJournalDB();
 
-// 启动时显式打开一次：若浏览器残留更高版本的同名库（VersionError）或被其他标签页阻塞，
-// 会在控制台给出明确错误，而不是让所有读写静默失败（表现为"点击无反应"）
-db.on('blocked', () => {
-  console.warn('[StudyJournalDB] 数据库升级被其他打开的标签页阻塞，请关闭其他标签页后刷新');
-});
-db.open().catch((err) => {
-  console.error('[StudyJournalDB] 数据库打开失败（可能本地存在更高版本的同名库，需清除站点数据）：', err);
-});
+// ─── 数据库就绪管理 ────────────────────────────────────
+
+let _dbReady: Promise<void> | null = null;
+
+/** 返回一个在数据库打开后 resolve 的 Promise。调用方可在渲染前 await。 */
+export function waitForDB(): Promise<void> {
+  if (_dbReady) return _dbReady;
+  _dbReady = new Promise<void>((resolve, reject) => {
+    db.on('blocked', () => {
+      console.warn('[StudyJournalDB] 数据库升级被其他打开的标签页阻塞，请关闭其他标签页后刷新');
+    });
+
+    db.open()
+      .then(() => {
+        resolve();
+      })
+      .catch((err) => {
+        // VersionError：本地有更高版本的同名库（通常来自另一个开发分支）
+        // 这是纯本地应用，数据删除可接受 — 自动删除旧库后重试
+        if (err && typeof err === 'object' && 'name' in err && (err as Error).name === 'VersionError') {
+          console.warn('[StudyJournalDB] 版本冲突，自动清除旧数据库并重建…', err);
+          db.delete({ disableAutoOpen: true })
+            .then(() => {
+              const fresh = new StudyJournalDB();
+              // 将 fresh 实例的方法挂到 db 上（表结构相同，实例不同）
+              (db as any).records = fresh.records;
+              (db as any).customMoods = fresh.customMoods;
+              (db as any)._allTables = fresh._allTables;
+              (db as any).open = fresh.open.bind(fresh);
+              return fresh.open();
+            })
+            .then(() => {
+              resolve();
+            })
+            .catch((err2) => {
+              console.error('[StudyJournalDB] 重建数据库失败：', err2);
+              reject(err2);
+            });
+        } else {
+          console.error('[StudyJournalDB] 数据库打开失败：', err);
+          reject(err);
+        }
+      });
+  });
+  return _dbReady;
+}
+
+// 启动时立即尝试打开
+waitForDB();
 
 // ─── 记录操作 ────────────────────────────────────────
 

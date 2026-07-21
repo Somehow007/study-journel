@@ -1,8 +1,7 @@
-import { MOOD_CONFIGS } from '../lib/constants';
+import { useMoodConfig } from '../lib/moodUtils';
 import { durationProgress } from '../lib/dateUtils';
 import { useApp } from '../context/AppContext';
 import MoodSeal from '../assets/moods';
-import type { MoodType } from '../types';
 import { useState } from 'react';
 
 interface DateCardProps {
@@ -10,7 +9,7 @@ interface DateCardProps {
   dateStr: string;
   isCurrentMonth: boolean;
   isToday: boolean;
-  mood: MoodType | null;
+  mood: string | null;
   totalMin: number;
   diary: string;
   onClick: () => void;
@@ -27,7 +26,7 @@ export default function DateCard({
 }: DateCardProps) {
   const [hovered, setHovered] = useState(false);
   const { theme } = useApp();
-  const moodConfig = mood ? MOOD_CONFIGS[mood] : null;
+  const moodConfig = useMoodConfig(mood);
   const progress = durationProgress(totalMin);
 
   const isDark = theme === 'dark';

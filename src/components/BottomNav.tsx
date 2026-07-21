@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, BarChart3, Search, Sun } from 'lucide-react';
+import { Calendar, Clock, BarChart3, Search, Sun, Settings } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/memory', label: '回忆', icon: Clock, end: false },
   { to: '/stats', label: '统计', icon: BarChart3, end: false },
   { to: '/search', label: '搜索', icon: Search, end: false },
+  { to: '/settings', label: '设置', icon: Settings, end: false },
 ];
 
 export default function BottomNav() {

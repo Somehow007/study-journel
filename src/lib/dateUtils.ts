@@ -35,7 +35,9 @@ export function getCalendarDays(year: number, month: number): {
 }[] {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  const startWeekday = firstDay.getDay(); // 0=Sunday
+  // ISO Monday-first: convert JS day (0=Sun) to Monday=0..Sunday=6
+  const jsDay = firstDay.getDay();
+  const startWeekday = jsDay === 0 ? 6 : jsDay - 1;
   const daysInMonth = lastDay.getDate();
 
   const days: { date: Date; day: number; isCurrentMonth: boolean; dateStr: string }[] = [];
