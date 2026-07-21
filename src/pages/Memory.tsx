@@ -270,8 +270,8 @@ export default function Memory() {
                 </span>
                 {allMoods.map((config) => (
                   <span key={config.type} className="flex items-center gap-1">
-                    <MoodSeal moodType={config.type} size={14} tone="line" />
-                    {config.emoji} {config.label}
+                    <MoodSeal moodType={config.type} size={14} />
+                    {config.label}
                   </span>
                 ))}
               </div>
@@ -355,7 +355,7 @@ export default function Memory() {
                                 color: isDark ? moodConfig.dark.solid : moodConfig.solid,
                               }}
                             >
-                              {moodConfig.emoji} {moodConfig.label}
+                              {moodConfig.label}
                             </span>
                           )}
                         </div>
