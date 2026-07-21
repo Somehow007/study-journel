@@ -1,65 +1,55 @@
-import { MOOD_CONFIGS } from '../lib/constants';
 import { formatDuration } from '../lib/dateUtils';
-import type { LearningItem, MoodType } from '../types';
+import type { LearningItem } from '../types';
 import { Pencil, Trash2 } from 'lucide-react';
 
 interface LearningRecordCardProps {
   item: LearningItem;
-  mood: MoodType | null;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export default function LearningRecordCard({ item, mood, onEdit, onDelete }: LearningRecordCardProps) {
-  const moodConfig = mood ? MOOD_CONFIGS[mood] : null;
-  const gradient = moodConfig
-    ? moodConfig.gradient
-    : 'linear-gradient(160deg, #FFD66B, #FFA51F)';
-
+export default function LearningRecordCard({ item, onEdit, onDelete }: LearningRecordCardProps) {
   return (
     <div
-      className="group glass animate-card-pop relative flex flex-col gap-1 rounded-lg p-4 shadow-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-3"
-      style={{ paddingLeft: '20px' }}
+      className="group flex items-center gap-3 px-2 py-2.5 transition-colors duration-150"
+      style={{ borderBottom: '1px solid var(--hairline)' }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'var(--paper)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'transparent';
+      }}
     >
-      {/* 左侧心情渐变竖线 */}
-      <div
-        className="absolute left-0 top-0 h-full w-1 rounded-l-lg"
-        style={{ background: gradient }}
+      {/* 学科色圆点 */}
+      <span
+        className="h-[10px] w-[10px] shrink-0 rounded-full"
+        style={{ background: item.color }}
       />
 
-      {/* 学科标记点 + 名称 */}
-      <div className="flex items-center gap-2">
-        <span
-          className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{
-            background: item.color,
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)',
-          }}
-        />
-        <span className="text-lg font-semibold text-[var(--color-text)]">{item.subject}</span>
+      {/* 学科名 + 备注 */}
+      <div className="flex-1 min-w-0">
+        <span className="font-sans text-title text-[var(--ink)]">{item.subject}</span>
+        {item.note && (
+          <span className="ml-2 font-sans text-small text-[var(--ink-soft)]">{item.note}</span>
+        )}
       </div>
 
       {/* 时长 */}
-      <div className="font-mono text-sm text-[var(--color-text-soft)]">
+      <span className="font-mono text-num text-[var(--ink-soft)] shrink-0">
         {formatDuration(item.durationMin)}
-      </div>
+      </span>
 
-      {/* 备注 */}
-      {item.note && (
-        <p className="text-sm text-[var(--color-text-soft)]">{item.note}</p>
-      )}
-
-      {/* 操作按钮 */}
-      <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+      {/* 操作按钮 — hover 时显示 */}
+      <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <button
           onClick={onEdit}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-faint)] transition-colors hover:bg-[var(--color-card)] hover:text-[var(--color-text)]"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-faint)] transition-colors hover:bg-[var(--card)] hover:text-[var(--ink)]"
         >
           <Pencil size={14} />
         </button>
         <button
           onClick={onDelete}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-faint)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-faint)] transition-colors hover:bg-red-500/10 hover:text-red-400"
           aria-label="删除"
         >
           <Trash2 size={14} />

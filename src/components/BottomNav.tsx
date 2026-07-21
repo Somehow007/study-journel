@@ -18,17 +18,21 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="glass-nav fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--color-line)] md:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="fixed bottom-0 left-0 right-0 z-50 border-t md:hidden"
+      style={{
+        background: 'var(--card)',
+        borderColor: 'var(--keyline)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
     >
       <div className="flex items-center justify-around px-2 py-1.5">
-        {/* Today quick button */}
+        {/* Today quick button — vermillion icon */}
         <button
           onClick={goToday}
-          className="flex flex-col items-center gap-0.5 px-2 py-1 text-[var(--color-text-soft)]"
+          className="flex flex-col items-center gap-0.5 px-2 py-1"
         >
-          <Sun size={20} className="text-brand" />
-          <span className="text-[10px] font-medium">今日</span>
+          <Sun size={20} style={{ color: 'var(--brand)' }} />
+          <span className="font-sans text-caption text-[var(--brand)]">今日</span>
         </button>
 
         {navItems.map((item) => {
@@ -39,15 +43,15 @@ export default function BottomNav() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 px-2 py-1 transition-colors ${
+                `flex flex-col items-center gap-0.5 px-2 py-1 transition-colors font-sans text-caption ${
                   isActive
-                    ? 'text-[var(--color-text)]'
-                    : 'text-[var(--color-text-faint)]'
+                    ? 'text-[var(--ink)]'
+                    : 'text-[var(--ink-faint)]'
                 }`
               }
             >
               <Icon size={20} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span>{item.label}</span>
             </NavLink>
           );
         })}

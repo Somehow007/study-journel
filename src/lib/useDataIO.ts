@@ -47,9 +47,9 @@ export function useDataIO() {
       if (!confirmed) return;
 
       await importData(data);
+      // useLiveQuery 会自动响应数据变化，无需刷新页面
       setImportStatus('success');
       setTimeout(() => setImportStatus('idle'), 3000);
-      window.location.reload();
     } catch (err) {
       console.error('Import failed:', err);
       setImportStatus('error');

@@ -22,29 +22,36 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="glass-nav sticky top-0 flex h-screen w-[200px] shrink-0 flex-col border-r border-[var(--color-line)] px-3 py-5">
-      {/* Logo */}
+    <aside
+      className="sticky top-0 flex h-screen w-[208px] shrink-0 flex-col px-3 py-5"
+      style={{
+        background: 'var(--card)',
+        borderRight: '1px solid var(--keyline)',
+      }}
+    >
+      {/* Logo — 📔 + 衬线 "手帐" + Caveat Latin */}
       <div className="flex items-center gap-2 px-3 pb-5">
         <span className="text-2xl">📔</span>
         <div className="flex flex-col">
-          <span className="font-hand text-xl font-semibold leading-none text-[var(--color-text)]">手帐</span>
-          <span className="font-mono text-[10px] text-[var(--color-text-faint)]">Study Journal</span>
+          <span className="font-serif text-h2 leading-none text-[var(--ink)]">手帐</span>
+          <span className="font-hand text-caption text-[var(--ink-faint)]">Study Journal</span>
         </div>
       </div>
 
-      <div className="mx-3 mb-4 h-px bg-[var(--color-line)]" />
+      {/* 缝线分隔 */}
+      <div className="stitched mx-3 mb-4" />
 
       {/* 今日按钮 */}
       <button
         onClick={goToday}
-        className="mx-2 mb-4 flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--color-text)] transition-all hover:bg-[var(--color-card)] hover:shadow-2"
+        className="mx-2 mb-4 flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small text-[var(--ink)] transition-all hover:bg-[var(--paper)]"
         aria-label="回到今天"
       >
-        <Sun size={18} className="text-brand" />
+        <Sun size={18} style={{ color: 'var(--brand)' }} />
         今日
       </button>
 
-      {/* 主导航 */}
+      {/* 主导航 — 激活态：左侧 3px 朱红竖条 + paper 底 + ink 文字 */}
       <nav className="flex flex-1 flex-col gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -54,11 +61,16 @@ export default function Sidebar() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                `relative flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small transition-all ${
                   isActive
-                    ? 'glass text-[var(--color-text)] shadow-2'
-                    : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)] hover:bg-[var(--color-card)]'
+                    ? 'text-[var(--ink)] bg-[var(--paper)]'
+                    : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--paper)]'
                 }`
+              }
+              style={({ isActive }) =>
+                isActive
+                  ? { borderLeft: '3px solid var(--brand)', paddingLeft: '9px' }
+                  : { borderLeft: '3px solid transparent', paddingLeft: '9px' }
               }
             >
               <Icon size={18} />
@@ -68,13 +80,14 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mx-3 my-3 h-px bg-[var(--color-line)]" />
+      {/* 缝线分隔 */}
+      <div className="stitched mx-3 my-3" />
 
       {/* 底部操作 */}
       <div className="flex flex-col gap-1">
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--color-text-soft)] transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-card)]"
+          className="flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:text-[var(--ink)] hover:bg-[var(--paper)]"
           aria-label={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
@@ -82,19 +95,19 @@ export default function Sidebar() {
         </button>
         <button
           onClick={handleExport}
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--color-text-soft)] transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-card)]"
+          className="flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:text-[var(--ink)] hover:bg-[var(--paper)]"
         >
           <Download size={18} />
           导出数据
         </button>
         <button
           onClick={triggerImport}
-          className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-card)] ${
+          className={`flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small transition-all hover:bg-[var(--paper)] ${
             importStatus === 'success'
-              ? 'text-green-500'
+              ? 'text-[var(--pine)]'
               : importStatus === 'error'
                 ? 'text-red-400'
-                : 'text-[var(--color-text-soft)]'
+                : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
           }`}
         >
           <Upload size={18} />
@@ -103,11 +116,16 @@ export default function Sidebar() {
         <NavLink
           to="/settings"
           className={({ isActive }) =>
-            `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+            `flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small transition-all ${
               isActive
-                ? 'glass text-[var(--color-text)] shadow-2'
-                : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)] hover:bg-[var(--color-card)]'
+                ? 'text-[var(--ink)] bg-[var(--paper)]'
+                : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--paper)]'
             }`
+          }
+          style={({ isActive }) =>
+            isActive
+              ? { borderLeft: '3px solid var(--brand)', paddingLeft: '9px' }
+              : { borderLeft: '3px solid transparent', paddingLeft: '9px' }
           }
         >
           <Settings size={18} />
@@ -115,7 +133,7 @@ export default function Sidebar() {
         </NavLink>
       </div>
 
-      {/* Hidden file input for import */}
+      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -125,7 +143,7 @@ export default function Sidebar() {
         aria-hidden="true"
       />
 
-      <div className="mt-3 px-3 text-center font-mono text-[10px] text-[var(--color-text-faint)]">
+      <div className="mt-3 px-3 text-center font-mono text-caption text-[var(--ink-faint)]">
         v{APP_VERSION} · 本地存储
       </div>
     </aside>

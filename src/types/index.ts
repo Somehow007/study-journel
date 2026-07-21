@@ -1,7 +1,10 @@
-// 学习手帐 — 核心类型定义
+// 学习手帐 — 核心类型定义 (v4.0 纸上手帐·编辑风)
 
 /** 心情类型枚举 */
 export type MoodType = 'happy' | 'calm' | 'sad' | 'inspired' | 'anxious' | 'tired';
+
+/** 配色主题枚举（与 index.css 中 data-palette 对应） */
+export type PaletteType = 'coral' | 'teal' | 'violet';
 
 /** 单条学习记录 */
 export interface LearningItem {
@@ -23,31 +26,32 @@ export interface DayRecord {
   updatedAt: number;
 }
 
-/** 心情配置（静态常量） */
+/** 深色模式三档色 */
+export interface MoodDarkColors {
+  solid: string;
+  ink: string;
+  tint: string;
+}
+
+/** 心情配置（v4.0 矿物三档色：solid/ink/tint + 深色模式） */
 export interface MoodConfig {
   type: MoodType;
   label: string;
-  emoji: string;
-  main: string;
-  light: string;
-  dark: string;
-  soft: string;        // 浅色模式软底色
-  softDark: string;    // 深色模式软底色
-  glow: string;
-  gradient: string;
+  emoji: string;                  // 降级为辅助场景（tooltip、空状态文案）
+  solid: string;                  // 饱和实色：印章态/图表/刻度条
+  ink: string;                    // 深调：tint 底上的文字与图标
+  tint: string;                   // 淡底：大面积铺垫
+  dark: MoodDarkColors;           // 深色模式三档
 }
 
-/** 自定义心情存储（存入 IndexedDB） */
+/** 自定义心情存储（v4.0 对齐三档色结构） */
 export interface CustomMoodConfig {
-  id: string;           // nanoid，如 "mood_abc123"
+  id: string;                     // nanoid
   label: string;
   emoji: string;
-  main: string;
-  light: string;
-  dark: string;
-  soft: string;
-  softDark: string;
-  glow: string;
-  gradient: string;
+  solid: string;
+  ink: string;
+  tint: string;
+  dark: MoodDarkColors;
   createdAt: number;
 }

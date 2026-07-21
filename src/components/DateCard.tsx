@@ -1,6 +1,7 @@
 import { MOOD_CONFIGS } from '../lib/constants';
 import { durationProgress } from '../lib/dateUtils';
 import { useApp } from '../context/AppContext';
+import MoodSeal from '../assets/moods';
 import type { MoodType } from '../types';
 import { useState } from 'react';
 
@@ -29,36 +30,38 @@ export default function DateCard({
   const moodConfig = mood ? MOOD_CONFIGS[mood] : null;
   const progress = durationProgress(totalMin);
 
-  // 浅色模式用 soft，深色模式用 softDark
-  const softColor = moodConfig
-    ? (theme === 'dark' ? moodConfig.softDark : moodConfig.soft)
-    : null;
+  const isDark = theme === 'dark';
 
-  const cardStyle: React.CSSProperties = isToday
-    ? { animation: 'today-glow 3s ease-in-out infinite' }
-    : {};
+  // Get mood colors for current theme
+  const tintColor = moodConfig
+    ? (isDark ? moodConfig.dark.tint : moodConfig.tint)
+    : null;
+  const solidColor = moodConfig
+    ? (isDark ? moodConfig.dark.solid : moodConfig.solid)
+    : null;
+  const isDimmed = !isCurrentMonth;
 
   return (
     <div className="relative">
-      {/* Tooltip */}
-      {hovered && (mood || totalMin > 0) && (
+      {/* Tooltip — L2 overlay */}
+      {hovered && (mood || totalMin > 0 || diary) && (
         <div
-          className="glass animate-fade-in absolute bottom-full left-1/2 z-30 mb-2 w-44 -translate-x-1/2 rounded-xl px-3 py-2 shadow-3"
-          style={{ pointerEvents: 'none' }}
+          className="animate-fade-in overlay absolute bottom-full left-1/2 z-30 mb-2 w-44 -translate-x-1/2 rounded-md px-3 py-2"
+          style={{ pointerEvents: 'none', boxShadow: 'var(--shadow-3)' }}
         >
           {moodConfig && (
             <div className="mb-1 flex items-center gap-1.5">
-              <span className="text-base">{moodConfig.emoji}</span>
-              <span className="text-sm font-medium text-[var(--color-text)]">{moodConfig.label}</span>
+              {mood && <MoodSeal moodType={mood} size={16} tone="seal" />}
+              <span className="text-small text-[var(--ink)]">{moodConfig.label}</span>
             </div>
           )}
           {totalMin > 0 && (
-            <div className="font-mono text-xs text-[var(--color-text-soft)]">
+            <div className="font-mono text-caption text-[var(--ink-soft)]">
               学习 {Math.floor(totalMin / 60)}h {totalMin % 60}m
             </div>
           )}
           {diary && (
-            <div className="mt-1 line-clamp-2 text-xs text-[var(--color-text-soft)]">{diary}</div>
+            <div className="mt-1 line-clamp-2 text-caption text-[var(--ink-soft)]">{diary}</div>
           )}
         </div>
       )}
@@ -67,73 +70,81 @@ export default function DateCard({
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className={`group relative flex aspect-square w-full flex-col items-center justify-between overflow-hidden rounded-lg p-1.5 transition-all duration-200 hover:scale-105 ${
-          isCurrentMonth ? '' : 'opacity-40'
-        }`}
+        className="group relative flex w-full flex-col items-center justify-between overflow-hidden transition-colors duration-150"
         style={{
-          background: softColor
-            ? `linear-gradient(160deg, ${softColor}, ${softColor})`
-            : 'var(--color-card)',
-          border: '1px solid var(--color-line)',
-          backdropFilter: 'blur(12px) saturate(1.2)',
-          WebkitBackdropFilter: 'blur(12px) saturate(1.2)',
-          boxShadow: isToday
-            ? '0 0 24px rgba(255,185,56,0.20)'
-            : '0 2px 8px rgba(155,140,120,0.08), 0 1px 3px rgba(155,140,120,0.05)',
-          ...cardStyle,
+          minHeight: '104px',
+          padding: '8px 6px',
+          background: isDimmed
+            ? 'var(--paper)'
+            : hovered && tintColor
+              ? tintColor + '66'  // ~40% opacity for tint on hover
+              : hovered
+                ? 'color-mix(in srgb, var(--ink) 4%, transparent)'
+                : 'transparent',
+          opacity: isDimmed ? 0.5 : 1,
+          borderRight: '1px solid var(--hairline)',
+          borderBottom: '1px solid var(--hairline)',
         }}
       >
-        {/* 日期数字 */}
-        <span
-          className={`self-end font-mono text-[10px] leading-none md:text-xs ${
-            isToday
-              ? 'font-bold text-brand'
-              : isCurrentMonth
-                ? 'text-[var(--color-text-soft)]'
-                : 'text-[var(--color-text-faint)]'
-          }`}
-        >
-          {day}
+        {/* Date number — top-left */}
+        <span className="absolute left-1.5 top-1.5 font-mono text-caption" style={{ lineHeight: '16px' }}>
+          {isToday ? (
+            <span
+              className="relative inline-flex h-[22px] w-[22px] items-center justify-center"
+              style={{
+                /* Vermillion seal ring around today's date — non-perfect circle with slight rotation */
+                border: '1.5px solid var(--brand)',
+                borderRadius: '50%',
+                transform: 'rotate(-4deg)',
+                color: 'var(--brand)',
+                fontWeight: 600,
+              }}
+            >
+              {day}
+            </span>
+          ) : (
+            <span style={{ color: isDimmed ? 'var(--ink-faint)' : 'var(--ink-soft)' }}>
+              {day}
+            </span>
+          )}
         </span>
 
-        {/* 心情 emoji */}
+        {/* Mood seal — center */}
         <div className="flex flex-1 items-center justify-center">
           {moodConfig ? (
             <span
-              className="text-lg transition-transform duration-200 group-hover:scale-110 md:text-2xl"
-              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.06))' }}
+              className="inline-block transition-transform duration-150"
+              style={{ transform: hovered ? 'scale(1.15)' : 'scale(1)' }}
             >
-              {moodConfig.emoji}
+              {mood && (
+                <MoodSeal
+                  moodType={mood}
+                  size={24}
+                  tone="line"
+                />
+              )}
             </span>
-          ) : isToday ? (
-            <span className="text-lg opacity-20 md:text-2xl">·</span>
           ) : (
-            <span className="text-sm text-[var(--color-text-faint)] opacity-30 md:text-lg">·</span>
+            <span className="text-caption text-[var(--ink-faint)] opacity-20">·</span>
           )}
         </div>
 
-        {/* 学习时长进度条 */}
-        <div className="h-1 w-full overflow-hidden rounded-full" style={{ background: 'rgba(189,178,168,0.2)' }}>
-          {totalMin > 0 ? (
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${progress * 100}%`,
-                background: moodConfig
-                  ? moodConfig.gradient
-                  : 'linear-gradient(90deg, #FFD66B, #FFA51F)',
-                boxShadow: moodConfig ? `0 0 8px ${moodConfig.glow}` : 'none',
-              }}
-            />
-          ) : (
-            <div
-              className="h-full w-full rounded-full"
-              style={{
-                borderTop: '1px dashed rgba(189,178,168,0.3)',
-                background: 'transparent',
-              }}
-            />
-          )}
+        {/* Learning duration bar — bottom */}
+        <div className="w-full px-1">
+          <div
+            className="h-[2px] w-full rounded-full"
+            style={{ background: 'var(--hairline)' }}
+          >
+            {totalMin > 0 ? (
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(progress * 100, 100)}%`,
+                  background: solidColor || 'rgba(43,35,24,0.30)',
+                }}
+              />
+            ) : null}
+          </div>
         </div>
       </button>
     </div>

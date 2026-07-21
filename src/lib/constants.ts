@@ -1,94 +1,91 @@
-import type { MoodConfig, MoodType } from '../types';
+import type { MoodConfig, MoodType, PaletteType } from '../types';
 
-/** 心情配置表 — 浅色模式 */
+/** 心情配置表 — 明快六色 · 浅色模式 + 深色模式（三套配色主题共用） */
 export const MOOD_CONFIGS: Record<MoodType, MoodConfig> = {
   happy: {
     type: 'happy',
     label: '开心',
     emoji: '😊',
-    main: '#FFB938',
-    light: '#FFD66B',
-    dark: '#FFA51F',
-    soft: '#FFEAB0',
-    softDark: '#3A2F1A',
-    glow: 'rgba(255,185,56,0.20)',
-    gradient: 'linear-gradient(160deg, #FFD66B, #FFA51F)',
+    solid: '#F4A62A',
+    ink: '#8A5A0A',
+    tint: '#FDEFCE',
+    dark: { solid: '#F7BC57', ink: '#F5DCA8', tint: '#3A2E16' },
   },
   calm: {
     type: 'calm',
     label: '平静',
     emoji: '☁️',
-    main: '#4DB8E5',
-    light: '#6ECBF5',
-    dark: '#38A5D8',
-    soft: '#C5E8F8',
-    softDark: '#1A2C35',
-    glow: 'rgba(77,184,229,0.20)',
-    gradient: 'linear-gradient(160deg, #6ECBF5, #38A5D8)',
+    solid: '#3AA7D9',
+    ink: '#1A6488',
+    tint: '#DBEFF8',
+    dark: { solid: '#5FBEE6', ink: '#C9E9F7', tint: '#1B2F38' },
   },
   sad: {
     type: 'sad',
     label: '低落',
     emoji: '🌧️',
-    main: '#9B7AD9',
-    light: '#B394E8',
-    dark: '#8360CA',
-    soft: '#D5C5F5',
-    softDark: '#2A2238',
-    glow: 'rgba(155,122,217,0.20)',
-    gradient: 'linear-gradient(160deg, #B394E8, #8360CA)',
+    solid: '#9487D8',
+    ink: '#4E4483',
+    tint: '#E7E4F7',
+    dark: { solid: '#AB9FE4', ink: '#DED9F6', tint: '#262338' },
   },
   inspired: {
     type: 'inspired',
     label: '灵感',
     emoji: '💡',
-    main: '#E876C4',
-    light: '#F59AD4',
-    dark: '#D458B0',
-    soft: '#F2C8E8',
-    softDark: '#321E2B',
-    glow: 'rgba(232,118,196,0.20)',
-    gradient: 'linear-gradient(160deg, #F59AD4, #D458B0)',
+    solid: '#E56AA0',
+    ink: '#8E2F5C',
+    tint: '#FBDEEA',
+    dark: { solid: '#EF85B5', ink: '#F9D3E4', tint: '#37202B' },
   },
   anxious: {
     type: 'anxious',
     label: '焦虑',
     emoji: '⚡',
-    main: '#FF7E5C',
-    light: '#FF9C7E',
-    dark: '#F56040',
-    soft: '#FFCDBF',
-    softDark: '#34211D',
-    glow: 'rgba(255,126,92,0.20)',
-    gradient: 'linear-gradient(160deg, #FF9C7E, #F56040)',
+    solid: '#F0833E',
+    ink: '#8F4511',
+    tint: '#FDE5D4',
+    dark: { solid: '#F89A5F', ink: '#FADCC6', tint: '#3A2517' },
   },
   tired: {
     type: 'tired',
     label: '疲惫',
     emoji: '😴',
-    main: '#B69A7E',
-    light: '#C9B098',
-    dark: '#A08263',
-    soft: '#E5D0BC',
-    softDark: '#2B2319',
-    glow: 'rgba(182,154,126,0.18)',
-    gradient: 'linear-gradient(160deg, #C9B098, #A08263)',
+    solid: '#7E8FA8',
+    ink: '#45536B',
+    tint: '#E3E9F1',
+    dark: { solid: '#98A8BF', ink: '#D4DDE9', tint: '#232A36' },
   },
 };
 
 /** 心情顺序列表 */
 export const MOOD_LIST: MoodType[] = ['happy', 'calm', 'sad', 'inspired', 'anxious', 'tired'];
 
-/** 学科标记点预设颜色（8 种果冻色） */
+/** 学科标记点预设颜色（8 色：心情 solid 六色 + 松绿 + 黛蓝） */
 export const SUBJECT_COLORS: string[] = [
-  '#FFB938', // 蜂蜜金
-  '#4DB8E5', // 天空蓝
-  '#9B7AD9', // 薰衣草紫
-  '#E876C4', // 花瓣粉
-  '#FF7E5C', // 珊瑚橙
-  '#B69A7E', // 摩卡棕
-  '#5BC690', // 薄荷绿
-  '#E8A84B', // 杏黄
+  '#F4A62A', // 明黄
+  '#3AA7D9', // 天青
+  '#9487D8', // 藤紫
+  '#E56AA0', // 樱粉
+  '#F0833E', // 蜜柑橙
+  '#7E8FA8', // 灰蓝
+  '#3D9B6A', // 松绿
+  '#4A7BA6', // 黛蓝
+];
+
+/** 配色主题元信息（设置页选项 UI 用；实际色值见 index.css 的 data-palette 变量块） */
+export interface PaletteMeta {
+  id: PaletteType;
+  label: string;
+  hint: string;
+  /** 选项色板预览：纸底 / 品牌色 */
+  swatch: { paper: string; brand: string };
+}
+
+export const PALETTES: PaletteMeta[] = [
+  { id: 'coral', label: '珊瑚', hint: '暖白纸 × 珊瑚红', swatch: { paper: '#FBF9F6', brand: '#F4645B' } },
+  { id: 'teal', label: '青碧', hint: '冷白纸 × 青绿', swatch: { paper: '#F5F8F7', brand: '#0E9F8A' } },
+  { id: 'violet', label: '蓝紫', hint: '冷灰纸 × 蓝紫', swatch: { paper: '#F7F7FA', brand: '#6C5CE7' } },
 ];
 
 /** 星期中文标签 */

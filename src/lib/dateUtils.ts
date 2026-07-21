@@ -83,14 +83,14 @@ export function isToday(dateStr: string): boolean {
   return dateStr === formatDate(new Date());
 }
 
-/** 分钟转可读时长 */
+/** 分钟转可读时长 — v4.0: Xh Ym 格式 */
 export function formatDuration(min: number): string {
-  if (min === 0) return '0 分钟';
+  if (min === 0) return '0m';
   const h = Math.floor(min / 60);
   const m = min % 60;
-  if (h === 0) return `${m} 分钟`;
-  if (m === 0) return `${h} 小时`;
-  return `${h} 小时 ${m} 分钟`;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 }
 
 /** 计算学习记录总时长（分钟） */
@@ -98,8 +98,8 @@ export function totalDuration(learnings: { durationMin: number }[]): number {
   return learnings.reduce((sum, l) => sum + l.durationMin, 0);
 }
 
-/** 时长进度比例 (0-8h 映射到 0-1) */
+/** 时长进度比例 (0-6h 映射到 0-1，满格 6h) */
 export function durationProgress(min: number): number {
-  const maxMin = 8 * 60;
+  const maxMin = 6 * 60;
   return Math.min(min / maxMin, 1);
 }

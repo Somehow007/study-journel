@@ -4,6 +4,7 @@ import { Search as SearchIcon, ArrowRight } from 'lucide-react';
 import { searchDiary } from '../lib/db';
 import { formatFullDate, formatDuration, totalDuration } from '../lib/dateUtils';
 import { MOOD_CONFIGS } from '../lib/constants';
+import MoodSeal from '../assets/moods';
 import type { DayRecord } from '../types';
 
 /** Highlight keyword matches in text */
@@ -14,7 +15,6 @@ function highlightSnippet(text: string, keyword: string): React.ReactNode {
 
   if (idx === -1) return text;
 
-  // Get ~40 chars before and after the match
   const contextStart = Math.max(0, idx - 40);
   const contextEnd = Math.min(text.length, idx + kw.length + 40);
 
@@ -22,7 +22,6 @@ function highlightSnippet(text: string, keyword: string): React.ReactNode {
   if (contextStart > 0) snippet = '…' + snippet;
   if (contextEnd < text.length) snippet = snippet + '…';
 
-  // Split on keyword and intersperse <mark> elements
   const parts: React.ReactNode[] = [];
   let remaining = snippet;
   let key = 0;
@@ -37,7 +36,7 @@ function highlightSnippet(text: string, keyword: string): React.ReactNode {
       parts.push(<span key={key++}>{remaining.slice(0, matchIdx)}</span>);
     }
     parts.push(
-      <mark key={key++} className="rounded-sm bg-brand/30 px-0.5 text-[var(--color-text)]">
+      <mark key={key++} className="rounded-sm px-0.5 text-[var(--ink)]" style={{ background: 'color-mix(in srgb, var(--brand) 20%, transparent)' }}>
         {remaining.slice(matchIdx, matchIdx + kw.length)}
       </mark>
     );
@@ -54,7 +53,7 @@ export default function Search() {
   const [hasSearched, setHasSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
-  // Auto-focus search input
+
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -80,7 +79,6 @@ export default function Search() {
     [doSearch],
   );
 
-  // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -94,7 +92,7 @@ export default function Search() {
         <div className="relative">
           <SearchIcon
             size={18}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-faint)]"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--ink-faint)]"
           />
           <input
             ref={inputRef}
@@ -102,8 +100,8 @@ export default function Search() {
             value={keyword}
             onChange={handleInput}
             placeholder="搜索日记内容…"
-            className="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-card)] py-3 pl-11 pr-4 text-base text-[var(--color-text)] outline-none transition-all placeholder:text-[var(--color-text-faint)] focus:border-brand focus:shadow-2"
-            style={{ background: 'var(--color-card)' }}
+            className="card w-full rounded-lg py-3 pl-11 pr-4 font-sans text-body text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] transition-all focus:border-[var(--brand)]"
+            style={{ border: '1px solid var(--keyline)', boxShadow: 'none' }}
           />
         </div>
       </div>
@@ -111,31 +109,28 @@ export default function Search() {
       {/* Results */}
       {!hasSearched ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div
-            className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-            style={{ boxShadow: '0 0 24px rgba(255,185,56,0.15)', background: 'var(--color-card)' }}
-          >
-            <SearchIcon size={28} className="text-[var(--color-text-faint)]" />
+          <div className="card mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+            <SearchIcon size={28} className="text-[var(--ink-faint)]" />
           </div>
-          <h2 className="font-hand text-xl text-[var(--color-text-soft)]">
+          <h2 className="font-serif text-h2 text-[var(--ink-soft)]">
             输入关键词开始搜索
           </h2>
-          <p className="mt-2 max-w-xs text-sm text-[var(--color-text-faint)]">
+          <p className="mt-2 max-w-xs font-sans text-small text-[var(--ink-faint)]">
             搜索你写过的日记内容，支持任意关键词
           </p>
         </div>
       ) : results.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="font-hand text-lg text-[var(--color-text-soft)]">
+          <p className="font-serif text-h2 text-[var(--ink-soft)]">
             没有找到包含「{keyword}」的日记
           </p>
-          <p className="mt-2 text-sm text-[var(--color-text-faint)]">
+          <p className="mt-2 font-sans text-small text-[var(--ink-faint)]">
             试试其他关键词？
           </p>
         </div>
       ) : (
         <>
-          <p className="mb-3 text-xs text-[var(--color-text-faint)]">
+          <p className="mb-3 font-sans text-caption text-[var(--ink-faint)]">
             找到 {results.length} 条记录
           </p>
           <div className="space-y-3">
@@ -145,31 +140,37 @@ export default function Search() {
                 <button
                   key={record.date}
                   onClick={() => navigate(`/day/${record.date}`)}
-                  className="glass group w-full rounded-xl p-4 text-left shadow-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-3"
+                  className="card group w-full rounded-lg p-4 text-left transition-shadow"
+                  style={{ boxShadow: 'var(--shadow-1)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-2)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-1)'; }}
                 >
                   <div className="mb-2 flex items-center gap-2">
-                    {moodConfig && (
-                      <span className="text-lg">{moodConfig.emoji}</span>
+                    {moodConfig && record.mood && (
+                      <MoodSeal moodType={record.mood} size={18} tone="seal" />
                     )}
-                    <span className="font-hand text-base font-medium text-[var(--color-text)]">
+                    <span className="font-serif text-title text-[var(--ink)]">
                       {formatFullDate(record.date)}
                     </span>
                     {moodConfig && (
-                      <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{
-                        background: `rgba(${parseInt(moodConfig.main.slice(1,3),16)},${parseInt(moodConfig.main.slice(3,5),16)},${parseInt(moodConfig.main.slice(5,7),16)},0.12)`,
-                        color: moodConfig.main,
-                      }}>
+                      <span
+                        className="rounded-full px-2 py-0.5 font-sans text-caption"
+                        style={{
+                          background: `${moodConfig.solid}1A`,
+                          color: moodConfig.solid,
+                        }}
+                      >
                         {moodConfig.label}
                       </span>
                     )}
                     {record.learnings.length > 0 && (
-                      <span className="font-mono text-xs text-[var(--color-text-faint)]">
+                      <span className="font-mono text-caption text-[var(--ink-faint)]">
                         {formatDuration(totalDuration(record.learnings))}
                       </span>
                     )}
-                    <ArrowRight size={16} className="ml-auto text-[var(--color-text-faint)] opacity-0 transition-opacity group-hover:opacity-100" />
+                    <ArrowRight size={16} className="ml-auto text-[var(--ink-faint)] opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
-                  <p className="line-clamp-3 text-sm leading-relaxed text-[var(--color-text-soft)]">
+                  <p className="line-clamp-3 font-serif text-small leading-relaxed text-[var(--ink-soft)]">
                     {highlightSnippet(record.diary, keyword)}
                   </p>
                 </button>

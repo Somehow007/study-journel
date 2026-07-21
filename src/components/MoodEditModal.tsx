@@ -4,7 +4,6 @@ import { nanoid } from 'nanoid';
 import { addCustomMood, updateCustomMood, deleteCustomMood } from '../lib/db';
 import { useCustomMoodConfigs, isMoodLabelDuplicate, generateMoodPalette } from '../lib/moodUtils';
 import { MOOD_CONFIGS, SUBJECT_COLORS } from '../lib/constants';
-import { useApp } from '../context/AppContext';
 import type { CustomMoodConfig } from '../types';
 
 interface MoodEditModalProps {
@@ -15,18 +14,16 @@ interface MoodEditModalProps {
 const EMOJI_PRESETS = ['😊', '🥰', '😎', '🤩', '🥳', '😌', '🤔', '😤', '😢', '😡', '🥺', '😴', '🤗', '💪', '🎉', '🌈', '⭐', '🔥', '💜', '🍀'];
 
 export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps) {
-  const { theme } = useApp();
   const customMoodConfigs = useCustomMoodConfigs();
 
   const [emoji, setEmoji] = useState(editMood?.emoji ?? '😊');
   const [label, setLabel] = useState(editMood?.label ?? '');
-  const [color, setColor] = useState(editMood?.main ?? SUBJECT_COLORS[0]);
+  const [color, setColor] = useState(editMood?.solid ?? SUBJECT_COLORS[0]);
   const [error, setError] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const palette = generateMoodPalette(color);
   const builtinLabels = Object.values(MOOD_CONFIGS).map(m => m.label);
-
   const isEditing = !!editMood;
 
   const handleSave = useCallback(async () => {
@@ -45,7 +42,7 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
       id: editMood?.id ?? `mood_${nanoid(8)}`,
       label: trimmed,
       emoji,
-      main: color,
+      solid: color,
       ...palette,
     };
 
@@ -70,21 +67,23 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'color-mix(in srgb, var(--ink) 20%, transparent)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="glass mx-4 w-full max-w-sm rounded-2xl p-6 shadow-4 animate-fade-up"
+        className="overlay mx-4 w-full max-w-sm rounded-xl p-6 animate-fade-up"
+        style={{ border: '1px solid var(--keyline)', boxShadow: 'var(--shadow-4)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="font-hand text-xl font-semibold text-[var(--color-text)]">
+          <h3 className="font-serif text-h2 text-[var(--ink)]">
             {isEditing ? '编辑心情' : '添加心情'}
           </h3>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-faint)] transition-colors hover:bg-[var(--color-card)] hover:text-[var(--color-text)]"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-faint)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--ink)]"
           >
             <X size={18} />
           </button>
@@ -92,27 +91,27 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
 
         {/* Emoji picker */}
         <div className="mb-4">
-          <label className="mb-2 block text-sm font-medium text-[var(--color-text-soft)]">图标</label>
+          <label className="mb-2 block font-sans text-small text-[var(--ink-soft)]">图标</label>
           <div className="relative">
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl transition-all hover:shadow-2"
+              className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl transition-all"
               style={{
-                background: palette.gradient,
-                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.4), 0 0 12px ${palette.glow}`,
+                background: color,
+                color: 'white',
               }}
             >
               {emoji}
             </button>
             {showEmojiPicker && (
-              <div className="absolute left-0 top-14 z-10 rounded-xl border border-[var(--color-line)] bg-[var(--color-card)] p-3 shadow-4">
+              <div className="absolute left-0 top-14 z-10 rounded-lg border border-[var(--keyline)] bg-[var(--overlay)] p-3" style={{ boxShadow: 'var(--shadow-4)' }}>
                 <div className="grid grid-cols-5 gap-1">
                   {EMOJI_PRESETS.map((e) => (
                     <button
                       key={e}
                       onClick={() => { setEmoji(e); setShowEmojiPicker(false); }}
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg transition-all hover:bg-[var(--color-card)] hover:shadow-2 ${
-                        emoji === e ? 'ring-2 ring-brand' : ''
+                      className={`flex h-8 w-8 items-center justify-center rounded-md text-lg transition-all hover:bg-[var(--paper)] ${
+                        emoji === e ? 'ring-2 ring-[var(--brand)]' : ''
                       }`}
                     >
                       {e}
@@ -126,24 +125,25 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
 
         {/* Label input */}
         <div className="mb-4">
-          <label className="mb-2 block text-sm font-medium text-[var(--color-text-soft)]">名称</label>
+          <label className="mb-2 block font-sans text-small text-[var(--ink-soft)]">名称</label>
           <input
             type="text"
             value={label}
             onChange={(e) => { setLabel(e.target.value); setError(''); }}
             placeholder="如：兴奋、感恩、期待…"
             maxLength={6}
-            className="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-card)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none transition-all focus:border-brand focus:shadow-2"
+            className="card w-full rounded-md px-3 py-2.5 font-sans text-body text-[var(--ink)] outline-none"
+            style={{ border: '1px solid var(--keyline)', boxShadow: 'none' }}
             autoFocus
           />
           {error && (
-            <p className="mt-1 text-xs text-red-400">{error}</p>
+            <p className="mt-1 font-sans text-caption text-red-400">{error}</p>
           )}
         </div>
 
-        {/* Color picker */}
+        {/* Color picker — mineral 8-color */}
         <div className="mb-5">
-          <label className="mb-2 block text-sm font-medium text-[var(--color-text-soft)]">颜色</label>
+          <label className="mb-2 block font-sans text-small text-[var(--ink-soft)]">颜色</label>
           <div className="flex gap-2">
             {SUBJECT_COLORS.map((c) => (
               <button
@@ -152,9 +152,8 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
                 className="h-8 w-8 rounded-full transition-all duration-200"
                 style={{
                   background: c,
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)',
                   transform: color === c ? 'scale(1.2)' : 'scale(1)',
-                  outline: color === c ? `2px solid ${theme === 'dark' ? '#F5EDDA' : '#2D2620'}` : 'none',
+                  outline: color === c ? `2px solid var(--ink)` : 'none',
                   outlineOffset: '2px',
                 }}
               />
@@ -163,19 +162,16 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
         </div>
 
         {/* Preview */}
-        <div className="mb-5 rounded-xl p-3" style={{ background: theme === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)' }}>
-          <p className="mb-2 text-xs text-[var(--color-text-faint)]">预览</p>
+        <div className="mb-5 rounded-lg p-3" style={{ background: 'var(--paper)' }}>
+          <p className="mb-2 font-sans text-caption text-[var(--ink-faint)]">预览</p>
           <div className="flex items-center gap-3">
             <div
               className="flex h-10 w-10 items-center justify-center rounded-full"
-              style={{
-                background: palette.gradient,
-                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.4), 0 0 12px ${palette.glow}`,
-              }}
+              style={{ background: color }}
             >
-              <span className="text-lg" style={{ filter: 'brightness(0) invert(1)' }}>{emoji}</span>
+              <span className="text-lg" style={{ color: 'white' }}>{emoji}</span>
             </div>
-            <span className="text-sm font-medium text-[var(--color-text)]">{label || '心情名称'}</span>
+            <span className="font-sans text-small text-[var(--ink)]">{label || '心情名称'}</span>
           </div>
         </div>
 
@@ -184,7 +180,7 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
           {isEditing ? (
             <button
               onClick={handleDelete}
-              className="px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:text-red-500"
+              className="px-3 py-2 font-sans text-small text-red-400 transition-colors hover:text-red-500"
             >
               删除
             </button>
@@ -194,17 +190,14 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--color-text-soft)] transition-all hover:bg-[var(--color-card)]"
+              className="rounded-full px-4 py-2 font-sans text-small text-[var(--ink-soft)] transition-all hover:text-[var(--ink)]"
             >
               取消
             </button>
             <button
               onClick={handleSave}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-all hover:shadow-2"
-              style={{
-                background: palette.gradient,
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
-              }}
+              className="rounded-md px-4 py-2 font-sans text-small text-white transition-all"
+              style={{ background: 'var(--brand)' }}
             >
               {isEditing ? '保存' : '添加'}
             </button>

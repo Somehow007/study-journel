@@ -3,119 +3,259 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --color-bg-start: #fbf6ee;
-    --color-bg-mid: #fff0e0;
-    --color-bg-end: #fce8d8;
-    --color-text: #2d2620;
-    --color-text-soft: #6b6056;
-    --color-text-faint: #948a80;
-    --color-card: rgba(255, 253, 249, 0.88);
-    --color-nav: rgba(245, 242, 235, 0.85);
-    --color-line: #d5ccc0;
-    --color-brand: #ffb938;
+  /* ═══ 配色主题（Palette）× 深浅模式 ═══
+     通过 <html data-palette="coral|teal|violet"> 切换配色，
+     .dark 切换深色模式。中性色与品牌色全部走 CSS 变量。 */
+
+  /* 珊瑚（默认）：暖白纸 + 珊瑚红 */
+  :root,
+  :root[data-palette='coral'] {
+    --paper: #FBF9F6;
+    --card: #FFFFFF;
+    --overlay: #FFFFFF;
+    --ink: #2A2523;
+    --ink-soft: #6E6560;
+    --ink-faint: #A89F98;
+    --hairline: #EDE8E2;
+    --keyline: #E0D9D1;
+    --brand: #F4645B;
+    --brand-ink: #CE3F36;
+    --pine: #3D9B6A;
+
+    --bg-start: #FDFBF8;
+    --bg-mid: #FBF9F6;
+    --bg-end: #F7F4F0;
   }
 
+  /* 青碧：冷白纸 + 青绿 */
+  :root[data-palette='teal'] {
+    --paper: #F5F8F7;
+    --card: #FFFFFF;
+    --overlay: #FFFFFF;
+    --ink: #1F2A2E;
+    --ink-soft: #55666B;
+    --ink-faint: #93A3A6;
+    --hairline: #E4EAE8;
+    --keyline: #D7E0DD;
+    --brand: #0E9F8A;
+    --brand-ink: #0B7A6B;
+    --pine: #3D9B6A;
+
+    --bg-start: #F9FBFA;
+    --bg-mid: #F5F8F7;
+    --bg-end: #EFF4F2;
+  }
+
+  /* 蓝紫：冷灰纸 + 蓝紫 */
+  :root[data-palette='violet'] {
+    --paper: #F7F7FA;
+    --card: #FFFFFF;
+    --overlay: #FFFFFF;
+    --ink: #23252E;
+    --ink-soft: #5B5E6E;
+    --ink-faint: #9A9DAE;
+    --hairline: #E7E8EF;
+    --keyline: #D9DBE6;
+    --brand: #6C5CE7;
+    --brand-ink: #5543D6;
+    --pine: #3D9B6A;
+
+    --bg-start: #FAFAFC;
+    --bg-mid: #F7F7FA;
+    --bg-end: #F2F2F7;
+  }
+
+  /* 浅色阴影与噪点（三配色共用） */
+  :root {
+    --shadow-1: 0 1px 2px rgba(28,32,36,0.05), 0 2px 6px rgba(28,32,36,0.04);
+    --shadow-2: 0 1px 3px rgba(28,32,36,0.07), 0 6px 16px rgba(28,32,36,0.07);
+    --shadow-3: 0 2px 6px rgba(28,32,36,0.08), 0 12px 32px rgba(28,32,36,0.10);
+    --shadow-4: 0 4px 12px rgba(28,32,36,0.08), 0 24px 56px rgba(28,32,36,0.14);
+    --noise-opacity: 0.05;
+  }
+
+  /* ── 深色模式 ── */
+
+  /* 珊瑚 · 深色：暖炭纸 + 提亮珊瑚 */
+  .dark,
+  .dark[data-palette='coral'] {
+    --paper: #1B1816;
+    --card: #252120;
+    --overlay: #2E2927;
+    --ink: #F3EDE8;
+    --ink-soft: #B8AFA8;
+    --ink-faint: #7E756D;
+    --hairline: #38322E;
+    --keyline: #473F3A;
+    --brand: #FF7B6E;
+    --brand-ink: #FF9C92;
+    --pine: #6BC496;
+
+    --bg-start: #1E1A18;
+    --bg-mid: #1B1816;
+    --bg-end: #171413;
+  }
+
+  /* 青碧 · 深色 */
+  .dark[data-palette='teal'] {
+    --paper: #15191B;
+    --card: #1D2326;
+    --overlay: #242C2F;
+    --ink: #E9F0EE;
+    --ink-soft: #A3B3B0;
+    --ink-faint: #6E7D7A;
+    --hairline: #2C3538;
+    --keyline: #3A464B;
+    --brand: #2EC4A9;
+    --brand-ink: #5AD8C0;
+    --pine: #6BC496;
+
+    --bg-start: #181D1F;
+    --bg-mid: #15191B;
+    --bg-end: #121517;
+  }
+
+  /* 蓝紫 · 深色 */
+  .dark[data-palette='violet'] {
+    --paper: #16171C;
+    --card: #1F212A;
+    --overlay: #272A35;
+    --ink: #ECEDF5;
+    --ink-soft: #A6A8BC;
+    --ink-faint: #71748A;
+    --hairline: #2D2F3A;
+    --keyline: #3B3E4C;
+    --brand: #8F84F0;
+    --brand-ink: #AFA7F5;
+    --pine: #6BC496;
+
+    --bg-start: #191A20;
+    --bg-mid: #16171C;
+    --bg-end: #131419;
+  }
+
+  /* 深色阴影与噪点（三配色共用） */
   .dark {
-    --color-bg-start: #1a1714;
-    --color-bg-mid: #221e18;
-    --color-bg-end: #1e1a14;
-    --color-text: #f5edda;
-    --color-text-soft: #b5ab9a;
-    --color-text-faint: #8a7f75;
-    --color-card: rgba(35, 31, 26, 0.82);
-    --color-nav: rgba(28, 25, 21, 0.85);
-    --color-line: #4a443c;
-    --color-brand: #ffc75b;
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.25);
+    --shadow-2: 0 1px 3px rgba(0,0,0,0.35), 0 6px 16px rgba(0,0,0,0.25);
+    --shadow-3: 0 2px 6px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.25);
+    --shadow-4: 0 4px 12px rgba(0,0,0,0.35), 0 24px 56px rgba(0,0,0,0.25);
+    --noise-opacity: 0.06;
   }
 
   body {
     @apply font-sans;
-    color: var(--color-text);
-    background: linear-gradient(160deg, var(--color-bg-start) 0%, var(--color-bg-mid) 40%, var(--color-bg-end) 100%);
+    color: var(--ink);
+    background: linear-gradient(170deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  * {
-    transition-property: background-color, border-color, box-shadow, color;
-    transition-duration: 300ms;
-    transition-timing-function: ease-out;
-  }
-
-  /* 噪点纹理叠加 */
+  /* 噪点纸纹叠加 */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.03;
+    opacity: var(--noise-opacity);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
   }
 }
 
 @layer components {
-  /* 毛玻璃卡片基底 */
-  .glass {
-    background: var(--color-card);
-    backdrop-filter: blur(12px) saturate(1.2);
-    -webkit-backdrop-filter: blur(12px) saturate(1.2);
-    border: 1px solid var(--color-line);
+  /* L1 纸面卡片（实色 + 轮廓线 + 阴影，不用毛玻璃） */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--keyline);
+    box-shadow: var(--shadow-1);
   }
 
-  .glass-nav {
-    background: var(--color-nav);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+  /* L2 浮动层（唯一允许毛玻璃的层） */
+  .overlay {
+    background: var(--overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
-  /* 果冻内高光 */
-  .jelly-inner {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 4px rgba(0, 0, 0, 0.06);
-  }
-
-  .dark .jelly-inner {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 4px rgba(0, 0, 0, 0.15);
-  }
-
-  /* 心情光晕 */
-  .mood-glow {
-    box-shadow: 0 0 24px var(--mood-glow-color, rgba(255, 185, 56, 0.2));
-  }
-
-  .dark .mood-glow {
-    box-shadow: 0 0 32px var(--mood-glow-color, rgba(255, 199, 91, 0.28));
-  }
-
-  /* 日记信纸横线 */
-  .diary-paper {
-    background-image: repeating-linear-gradient(
-      transparent,
-      transparent 27px,
-      rgba(200, 190, 180, 0.3) 27px,
-      rgba(200, 190, 180, 0.3) 28px
+  /* 和纸胶带 */
+  .washi {
+    position: relative;
+    height: 26px;
+    width: 100px;
+    transform: rotate(-2.5deg);
+    opacity: 0.75;
+    /* 两端撕边锯齿 */
+    clip-path: polygon(
+      0% 3px, 5px 0%, 10px 3px, 15px 0%, 20px 3px, 25px 0%, 30px 3px, 35px 0%,
+      40px 3px, 45px 0%, 50px 3px, 55px 0%, 60px 3px, 65px 0%, 70px 3px, 75px 0%,
+      80px 3px, 85px 0%, 90px 3px, 95px 0%, 100% 3px,
+      100% calc(100% - 3px), 95px 100%, 90px calc(100% - 3px), 85px 100%,
+      80px calc(100% - 3px), 75px 100%, 70px calc(100% - 3px), 65px 100%,
+      60px calc(100% - 3px), 55px 100%, 50px calc(100% - 3px), 45px 100%,
+      40px calc(100% - 3px), 35px 100%, 30px calc(100% - 3px), 25px 100%,
+      20px calc(100% - 3px), 15px 100%, 10px calc(100% - 3px), 5px 100%, 0% calc(100% - 3px)
     );
   }
 
-  .dark .diary-paper {
+  /* 缝线分隔线 */
+  .stitched {
+    height: 1px;
+    border: none;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--hairline) 0px,
+      var(--hairline) 6px,
+      transparent 6px,
+      transparent 11px
+    );
+    position: relative;
+  }
+  .stitched::before,
+  .stitched::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--keyline);
+    transform: translateY(-50%);
+  }
+  .stitched::before {
+    left: -1px;
+  }
+  .stitched::after {
+    right: -1px;
+  }
+
+  /* 题字竖线（h2 标题左侧短朱红竖条） */
+  .title-tick {
+    display: inline-block;
+    width: 3px;
+    height: 1em;
+    background: var(--brand);
+    border-radius: 2px;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+
+  /* 日记信纸横线（32px 行距，匹配 diary 字号；深浅色均走 --hairline 变量） */
+  .diary-paper {
     background-image: repeating-linear-gradient(
       transparent,
-      transparent 27px,
-      rgba(120, 110, 100, 0.15) 27px,
-      rgba(120, 110, 100, 0.15) 28px
+      transparent 31px,
+      var(--hairline) 31px,
+      var(--hairline) 32px
     );
   }
 
   /* 虚线胶囊按钮 */
   .pill-dashed {
-    border: 1.5px dashed rgba(189, 178, 168, 0.5);
+    border: 1.5px dashed var(--hairline);
     border-radius: 999px;
-  }
-
-  .dark .pill-dashed {
-    border-color: rgba(189, 178, 168, 0.25);
   }
 }
 
@@ -129,13 +269,6 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
-  }
-
-  /* 日记区占位文字使用手写体 */
-  textarea::placeholder,
-  input::placeholder {
-    font-family: 'Caveat', 'Long Cang', cursive;
-    font-size: 16px;
   }
 
   /* 隐藏滚动条但保留功能 */

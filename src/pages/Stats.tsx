@@ -5,6 +5,7 @@ import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration } from '../lib/dateUtils';
 import { MOOD_CONFIGS } from '../lib/constants';
 import { useApp } from '../context/AppContext';
+import MoodSeal from '../assets/moods';
 import { ChevronLeft, ChevronRight, BookOpen, Clock, Heart, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -22,6 +23,7 @@ import type { MoodType } from '../types';
 
 export default function Stats() {
   const { theme } = useApp();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
@@ -48,7 +50,7 @@ export default function Stats() {
         totalDays: 0,
         totalMin: 0,
         topMood: null as MoodType | null,
-        dailyData: [] as { day: number; dateStr: string; hours: number }[],
+        dailyData: [] as { day: number; dateStr: string; hours: number; mood: MoodType | null }[],
         subjectData: [] as { name: string; hours: number; color: string }[],
       };
     }
@@ -56,10 +58,10 @@ export default function Stats() {
     const totalDays = records.length;
     const totalMin = records.reduce((sum, r) => sum + totalDuration(r.learnings), 0);
 
-    // Most frequent mood
+    // Most frequent mood（跳过旧数据中的未知心情值，如已删除的自定义心情）
     const moodCount: Record<string, number> = {};
     for (const r of records) {
-      if (r.mood) {
+      if (r.mood && MOOD_CONFIGS[r.mood]) {
         moodCount[r.mood] = (moodCount[r.mood] || 0) + 1;
       }
     }
@@ -76,7 +78,7 @@ export default function Stats() {
     const dailyData = records.map((r) => {
       const day = parseInt(r.date.split('-')[2], 10);
       const hours = totalDuration(r.learnings) / 60;
-      return { day, dateStr: r.date, hours: Math.round(hours * 10) / 10 };
+      return { day, dateStr: r.date, hours: Math.round(hours * 10) / 10, mood: r.mood };
     }).sort((a, b) => a.day - b.day);
 
     // Subject distribution for donut chart
@@ -97,20 +99,20 @@ export default function Stats() {
   }, [records]);
 
   const hasData = stats.totalDays > 0;
-  const chartGridColor = theme === 'dark' ? 'rgba(155,140,120,0.15)' : 'rgba(200,190,180,0.3)';
-  const chartTextColor = theme === 'dark' ? '#8A7F75' : '#948A80';
+  const chartGridColor = 'color-mix(in srgb, var(--hairline) 60%, transparent)';
+  const chartTextColor = 'var(--ink-faint)';
 
   return (
-    <div className="animate-fade-up">
+    <div className="animate-fade-up" style={{ maxWidth: '880px', margin: '0 auto' }}>
       {/* 页面标题 + 月份切换 */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="font-hand text-2xl font-semibold text-[var(--color-text)]">
+          <h1 className="font-serif text-h1 text-[var(--ink)]">
             统计
           </h1>
           <button
             onClick={() => navigate(`/annual?year=${viewYear}`)}
-            className="pill-dashed flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--color-text-soft)] transition-all hover:text-[var(--color-text)] hover:shadow-2"
+            className="pill-dashed flex items-center gap-1.5 px-3 py-1.5 font-sans text-caption text-[var(--ink-soft)] transition-all hover:text-[var(--ink)]"
           >
             <TrendingUp size={14} />
             年度回顾
@@ -119,16 +121,16 @@ export default function Stats() {
         <div className="flex items-center gap-3">
           <button
             onClick={prevMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-soft)] transition-all hover:bg-[var(--color-card)] hover:text-[var(--color-text)] hover:shadow-2"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] transition-all hover:border-[var(--ink)] hover:text-[var(--ink)]"
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="font-hand text-lg font-medium text-[var(--color-text)] min-w-[100px] text-center">
+          <span className="font-serif text-h2 text-[var(--ink)] min-w-[100px] text-center">
             {viewYear}年 {MONTH_LABELS[viewMonth]}
           </span>
           <button
             onClick={nextMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-soft)] transition-all hover:bg-[var(--color-card)] hover:text-[var(--color-text)] hover:shadow-2"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] transition-all hover:border-[var(--ink)] hover:text-[var(--ink)]"
           >
             <ChevronRight size={18} />
           </button>
@@ -139,58 +141,56 @@ export default function Stats() {
         <>
           {/* 月度摘要卡片 */}
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div
-              className="glass flex items-center gap-3 rounded-xl p-4 shadow-2"
-            >
+            <div className="card flex items-center gap-3 rounded-lg p-4">
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-full"
-                style={{ background: 'rgba(255,185,56,0.15)' }}
+                style={{ background: 'color-mix(in srgb, var(--brand) 12%, transparent)' }}
               >
-                <BookOpen size={20} className="text-brand" />
+                <BookOpen size={20} style={{ color: 'var(--brand)' }} />
               </div>
               <div>
-                <div className="font-mono text-xl font-semibold text-[var(--color-text)]">
+                <div className="font-mono text-num-lg text-[var(--ink)]">
                   {stats.totalDays}
                 </div>
-                <div className="text-xs text-[var(--color-text-soft)]">学习天数</div>
+                <div className="font-sans text-caption text-[var(--ink-soft)]">学习天数</div>
               </div>
             </div>
 
-            <div
-              className="glass flex items-center gap-3 rounded-xl p-4 shadow-2"
-            >
+            <div className="card flex items-center gap-3 rounded-lg p-4">
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-full"
-                style={{ background: `rgba(77,184,229,0.15)` }}
+                style={{ background: 'color-mix(in srgb, var(--pine) 12%, transparent)' }}
               >
-                <Clock size={20} style={{ color: '#4DB8E5' }} />
+                <Clock size={20} style={{ color: 'var(--pine)' }} />
               </div>
               <div>
-                <div className="font-mono text-xl font-semibold text-[var(--color-text)]">
+                <div className="font-mono text-num-lg text-[var(--ink)]">
                   {formatDuration(stats.totalMin)}
                 </div>
-                <div className="text-xs text-[var(--color-text-soft)]">总学习时长</div>
+                <div className="font-sans text-caption text-[var(--ink-soft)]">总学习时长</div>
               </div>
             </div>
 
-            <div
-              className="glass flex items-center gap-3 rounded-xl p-4 shadow-2"
-            >
+            <div className="card flex items-center gap-3 rounded-lg p-4">
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-full"
                 style={{
                   background: stats.topMood
-                    ? `rgba(${parseInt(MOOD_CONFIGS[stats.topMood].main.slice(1,3),16)},${parseInt(MOOD_CONFIGS[stats.topMood].main.slice(3,5),16)},${parseInt(MOOD_CONFIGS[stats.topMood].main.slice(5,7),16)},0.15)`
-                    : 'rgba(255,185,56,0.15)',
+                    ? `${isDark ? MOOD_CONFIGS[stats.topMood].dark.tint : MOOD_CONFIGS[stats.topMood].tint}`
+                    : 'color-mix(in srgb, var(--brand) 12%, transparent)',
                 }}
               >
-                <Heart size={20} style={{ color: stats.topMood ? MOOD_CONFIGS[stats.topMood].main : 'var(--color-text-faint)' }} />
+                {stats.topMood ? (
+                  <MoodSeal moodType={stats.topMood} size={20} tone="seal" />
+                ) : (
+                  <Heart size={20} style={{ color: 'var(--ink-faint)' }} />
+                )}
               </div>
               <div>
-                <div className="font-mono text-xl font-semibold text-[var(--color-text)]">
+                <div className="font-mono text-num-lg text-[var(--ink)]">
                   {stats.topMood ? MOOD_CONFIGS[stats.topMood].emoji : '-'}
                 </div>
-                <div className="text-xs text-[var(--color-text-soft)]">
+                <div className="font-sans text-caption text-[var(--ink-soft)]">
                   {stats.topMood ? `最常${MOOD_CONFIGS[stats.topMood].label}` : '无记录'}
                 </div>
               </div>
@@ -199,9 +199,9 @@ export default function Stats() {
 
           {/* 图表区 */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* 每日学习时长柱状图 */}
-            <div className="glass rounded-xl p-5 shadow-2">
-              <h3 className="mb-4 text-sm font-medium text-[var(--color-text-soft)]">每日学习时长</h3>
+            {/* 每日学习时长柱状图 — 印刷图表风 */}
+            <div className="card rounded-lg p-5">
+              <h3 className="mb-4 font-sans text-small text-[var(--ink-soft)]">每日学习时长</h3>
               {stats.dailyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={stats.dailyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -219,42 +219,40 @@ export default function Stats() {
                     />
                     <Tooltip
                       contentStyle={{
-                        background: theme === 'dark' ? 'rgba(35,31,26,0.95)' : 'rgba(255,253,249,0.95)',
-                        border: '1px solid var(--color-line)',
-                        borderRadius: '12px',
+                        background: 'color-mix(in srgb, var(--card) 96%, transparent)',
+                        border: '1px solid var(--keyline)',
+                        borderRadius: '10px',
                         fontSize: '13px',
-                        color: 'var(--color-text)',
+                        color: 'var(--ink)',
                       }}
                       formatter={(value) => [`${value}h`, '学习时长']}
                       labelFormatter={(day) => `${viewYear}年${viewMonth + 1}月${day}日`}
                     />
                     <Bar
                       dataKey="hours"
-                      fill={theme === 'dark' ? 'url(#barGradientDark)' : 'url(#barGradient)'}
-                      radius={[4, 4, 0, 0]}
+                      shape={(props: { x?: number; y?: number; width?: number; height?: number; payload?: { mood: MoodType | null } }) => {
+                        const { x = 0, y = 0, width = 0, height = 0, payload } = props;
+                        const moodCfg = payload?.mood ? MOOD_CONFIGS[payload.mood] : null;
+                        const barColor = moodCfg
+                          ? (isDark ? moodCfg.dark.solid : moodCfg.solid)
+                          : isDark ? 'rgba(240,231,213,0.70)' : 'rgba(43,35,24,0.70)';
+                        return (
+                          <rect x={x} y={y} width={width - 2} height={height} fill={barColor} rx={4} ry={4} />
+                        );
+                      }}
                     />
-                    <defs>
-                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#FFD66B" />
-                        <stop offset="100%" stopColor="#FFA51F" />
-                      </linearGradient>
-                      <linearGradient id="barGradientDark" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#FFDA80" />
-                        <stop offset="100%" stopColor="#FFB53A" />
-                      </linearGradient>
-                    </defs>
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-[220px] items-center justify-center text-sm text-[var(--color-text-faint)]">
+                <div className="flex h-[220px] items-center justify-center font-sans text-small text-[var(--ink-faint)]">
                   本月无学习记录
                 </div>
               )}
             </div>
 
             {/* 学科分布环形图 */}
-            <div className="glass rounded-xl p-5 shadow-2">
-              <h3 className="mb-4 text-sm font-medium text-[var(--color-text-soft)]">学科分布</h3>
+            <div className="card rounded-lg p-5">
+              <h3 className="mb-4 font-sans text-small text-[var(--ink-soft)]">学科分布</h3>
               {stats.subjectData.length > 0 ? (
                 <div className="flex items-center">
                   <ResponsiveContainer width="55%" height={200}>
@@ -281,16 +279,16 @@ export default function Stats() {
                       <div key={entry.name} className="flex items-center gap-2">
                         <span
                           className="h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ background: entry.color, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)' }}
+                          style={{ background: entry.color }}
                         />
-                        <span className="text-sm text-[var(--color-text)]">{entry.name}</span>
-                        <span className="font-mono text-xs text-[var(--color-text-soft)]">{entry.hours}h</span>
+                        <span className="font-sans text-small text-[var(--ink)]">{entry.name}</span>
+                        <span className="font-mono text-caption text-[var(--ink-soft)]">{entry.hours}h</span>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="flex h-[200px] items-center justify-center text-sm text-[var(--color-text-faint)]">
+                <div className="flex h-[200px] items-center justify-center font-sans text-small text-[var(--ink-faint)]">
                   本月无学习记录
                 </div>
               )}
@@ -298,31 +296,26 @@ export default function Stats() {
           </div>
         </>
       ) : (
-        /* 空状态 */
+        /* 空状态 — 印刷图表占位 */
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div
-            className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-            style={{ boxShadow: '0 0 24px rgba(255,185,56,0.15)', background: 'var(--color-card)' }}
+            className="mb-4 flex h-16 w-16 items-center justify-center rounded-full card"
           >
-            <span className="text-3xl" style={{ animation: 'breath 2s ease-in-out infinite' }}>📊</span>
+            <TrendingUp size={28} className="text-[var(--ink-faint)]" />
           </div>
-          <h2 className="font-hand text-xl text-[var(--color-text-soft)]">
+          <h2 className="font-serif text-h2 text-[var(--ink-soft)]">
             这里会随着时间长出果实
           </h2>
-          <p className="mt-2 max-w-xs text-sm text-[var(--color-text-faint)]">
+          <p className="mt-2 max-w-xs font-sans text-small text-[var(--ink-faint)]">
             坚持记录一周后，就能看到第一份统计报告
           </p>
           {/* 虚线占位图表 */}
-          <div className="mt-6 flex gap-4">
+          <div className="mt-6 flex items-end gap-4" style={{ height: '80px' }}>
             {[60, 120, 80, 150, 100].map((h, i) => (
               <div
                 key={i}
-                className="w-8 rounded-t-sm border border-dashed"
-                style={{
-                  height: `${h * 0.4}px`,
-                  borderColor: 'var(--color-line)',
-                  background: 'transparent',
-                }}
+                className="w-8 rounded-t-sm border border-dashed border-[var(--hairline)]"
+                style={{ height: `${h * 0.4}px` }}
               />
             ))}
           </div>

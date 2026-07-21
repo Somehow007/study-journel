@@ -12,11 +12,13 @@ interface BookLoaderProps {
 
 export default function BookLoader({ onComplete, lastMood }: BookLoaderProps) {
   const { theme } = useApp();
+  const isDark = theme === 'dark';
   const [phase, setPhase] = useState<LoaderPhase>('idle');
 
-  const flashColor = lastMood
-    ? MOOD_CONFIGS[lastMood].glow
-    : 'rgba(255,185,56,0.30)';
+  // Flash color: mood tint (replaces v3.x glow)
+  const tintColor = lastMood
+    ? (isDark ? MOOD_CONFIGS[lastMood].dark.tint : MOOD_CONFIGS[lastMood].tint)
+    : undefined;
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('flip'), 100);
@@ -32,17 +34,11 @@ export default function BookLoader({ onComplete, lastMood }: BookLoaderProps) {
     };
   }, [onComplete]);
 
-  // Return null after done to unmount
   if (phase === 'done') return null;
 
   const phasesExcludingDone = phase as Exclude<LoaderPhase, 'done'>;
-
-  const transform =
-    phasesExcludingDone === 'flash' ? 'rotateY(-90deg)' : 'rotateY(0deg)';
-
-  const animation =
-    phasesExcludingDone === 'flip' ? 'book-flip 400ms ease-in-out forwards' : 'none';
-
+  const transform = phasesExcludingDone === 'flash' ? 'rotateY(-90deg)' : 'rotateY(0deg)';
+  const animation = phasesExcludingDone === 'flip' ? 'book-flip 400ms ease-in-out forwards' : 'none';
   const opacity = phasesExcludingDone === 'flash' ? 0 : 1;
   const transition = phasesExcludingDone === 'flash' ? 'opacity 200ms ease-out' : 'none';
 
@@ -50,13 +46,13 @@ export default function BookLoader({ onComplete, lastMood }: BookLoaderProps) {
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{
-        background: theme === 'dark'
-          ? 'linear-gradient(160deg, #1A1714 0%, #221E18 40%, #1E1A14 100%)'
-          : 'linear-gradient(160deg, #FBF6EE 0%, #FFF0E0 40%, #FCE8D8 100%)',
+        background: isDark
+          ? 'linear-gradient(170deg, #23201A 0%, #211D17 45%, #1F1B15 100%)'
+          : 'linear-gradient(170deg, #F7F3EA 0%, #F5F0E6 45%, #F2ECDF 100%)',
         perspective: '1000px',
       }}
     >
-      {/* Book cover */}
+      {/* Book cover — card style with keyline */}
       <div
         className="relative h-48 w-36"
         style={{
@@ -68,45 +64,47 @@ export default function BookLoader({ onComplete, lastMood }: BookLoaderProps) {
           transition,
         }}
       >
-        {/* Cover */}
+        {/* Cover — paper card with keyline + vermillion seal logo */}
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center rounded-lg shadow-4"
+          className="absolute inset-0 flex flex-col items-center justify-center rounded-lg"
           style={{
-            background: theme === 'dark'
-              ? 'rgba(55,50,42,0.95)'
-              : 'rgba(255,253,249,0.95)',
-            border: '1px solid var(--color-line)',
+            background: isDark ? 'var(--card)' : 'var(--card)',
+            border: '1px solid var(--keyline)',
             backfaceVisibility: 'hidden',
+            boxShadow: 'var(--shadow-4)',
           }}
         >
           <span className="text-4xl">📔</span>
-          <span className="mt-2 font-hand text-base text-[var(--color-text-soft)]">
-            学习手帐
+          <span className="mt-2 font-serif text-title text-[var(--ink)]">
+            手帐
           </span>
+          <span className="font-hand text-caption text-[var(--ink-faint)]">Study Journal</span>
           <div
-            className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 opacity-20"
-            style={{ background: 'var(--color-line)' }}
+            className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 opacity-15"
+            style={{ background: 'var(--hairline)' }}
+          />
+          {/* 朱红印章小 logo — bottom */}
+          <div
+            className="absolute bottom-4 right-4 h-5 w-5 rounded-full"
+            style={{ background: 'var(--brand)' }}
           />
         </div>
       </div>
 
-      {/* Flash overlay */}
+      {/* Flash overlay — mood tint color */}
       {phase === 'flash' && (
         <div
           className="animate-fade-in pointer-events-none absolute inset-0"
           style={{
-            background: flashColor,
+            background: tintColor || 'color-mix(in srgb, var(--brand) 12%, transparent)',
             animation: 'book-flash 200ms ease-out forwards',
           }}
         />
       )}
 
-      {/* Loading text */}
+      {/* Loading text — serif */}
       <p
-        className="absolute bottom-20 font-hand text-base text-[var(--color-text-faint)]"
-        style={{
-          animation: 'breath 2s ease-in-out infinite',
-        }}
+        className="absolute bottom-20 font-serif text-body text-[var(--ink-faint)]"
       >
         {phase === 'flip' ? '翻开今天的一页…' : '正在打开…'}
       </p>

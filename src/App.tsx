@@ -12,7 +12,7 @@ import Settings from './pages/Settings';
 import AnnualReview from './pages/AnnualReview';
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
-  const { theme } = useApp();
+  const { theme, palette } = useApp();
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -20,6 +20,9 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+  useEffect(() => {
+    document.documentElement.dataset.palette = palette;
+  }, [palette]);
   return <>{children}</>;
 }
 

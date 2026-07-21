@@ -33,8 +33,8 @@ export default defineConfig({
         name: '学习手帐',
         short_name: '手帐',
         description: '每天都值得记录的学习日记',
-        theme_color: '#ffb938',
-        background_color: '#fbf6ee',
+        theme_color: '#F4645B',
+        background_color: '#FBF9F6',
         display: 'standalone',
         icons: [
           { src: '/book.svg', sizes: '192x192', type: 'image/svg+xml' },

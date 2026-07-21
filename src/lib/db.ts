@@ -13,12 +13,26 @@ export class StudyJournalDB extends Dexie {
     });
     this.version(2).stores({
       records: '++id, date, mood, updatedAt',
-      customMoods: 'id',
+      customMoods: 'id, createdAt',
+    });
+    // v3: 修补 v2 中遗漏的 createdAt 索引（若已有 v2 数据库则需此升级）
+    this.version(3).stores({
+      records: '++id, date, mood, updatedAt',
+      customMoods: 'id, createdAt',
     });
   }
 }
 
 export const db = new StudyJournalDB();
+
+// 启动时显式打开一次：若浏览器残留更高版本的同名库（VersionError）或被其他标签页阻塞，
+// 会在控制台给出明确错误，而不是让所有读写静默失败（表现为"点击无反应"）
+db.on('blocked', () => {
+  console.warn('[StudyJournalDB] 数据库升级被其他打开的标签页阻塞，请关闭其他标签页后刷新');
+});
+db.open().catch((err) => {
+  console.error('[StudyJournalDB] 数据库打开失败（可能本地存在更高版本的同名库，需清除站点数据）：', err);
+});
 
 // ─── 记录操作 ────────────────────────────────────────
 
@@ -147,11 +161,11 @@ export async function importData(data: ExportData | DayRecord[]): Promise<void> 
 
 // ─── 搜索 ────────────────────────────────────────────
 
-/** 搜索日记内容 */
+/** 搜索日记内容（diary 非索引字段，用 filter 全表扫描，数据量小可接受） */
 export async function searchDiary(keyword: string): Promise<DayRecord[]> {
   const lower = keyword.toLowerCase();
-  const all = await db.records.where('diary').notEqual('').toArray();
-  return all
-    .filter(r => r.diary.toLowerCase().includes(lower))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+  const all = await db.records
+    .filter((r) => !!r.diary && r.diary.toLowerCase().includes(lower))
+    .toArray();
+  return all.sort((a, b) => b.updatedAt - a.updatedAt);
 }

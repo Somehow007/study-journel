@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db';
-import type { MoodConfig, CustomMoodConfig } from '../types';
+import type { MoodConfig, CustomMoodConfig, MoodDarkColors } from '../types';
 
 /**
  * 将 CustomMoodConfig 转为 MoodConfig 格式，用于统一渲染
@@ -10,13 +10,10 @@ export function customToMoodConfig(cm: CustomMoodConfig): MoodConfig {
     type: cm.id as MoodConfig['type'],
     label: cm.label,
     emoji: cm.emoji,
-    main: cm.main,
-    light: cm.light,
+    solid: cm.solid,
+    ink: cm.ink,
+    tint: cm.tint,
     dark: cm.dark,
-    soft: cm.soft,
-    softDark: cm.softDark,
-    glow: cm.glow,
-    gradient: cm.gradient,
   };
 }
 
@@ -52,23 +49,35 @@ export function isMoodLabelDuplicate(
   return false;
 }
 
-/** Generate full mood palette from a single main color */
-export function generateMoodPalette(main: string): {
-  light: string; dark: string; soft: string; softDark: string; glow: string; gradient: string;
+/** Generate full mood palette from a single main (solid) color — v4.0 three-tone system */
+export function generateMoodPalette(solid: string): {
+  ink: string; tint: string; dark: MoodDarkColors;
 } {
-  const r = parseInt(main.slice(1, 3), 16);
-  const g = parseInt(main.slice(3, 5), 16);
-  const b = parseInt(main.slice(5, 7), 16);
+  const r = parseInt(solid.slice(1, 3), 16);
+  const g = parseInt(solid.slice(3, 5), 16);
+  const b = parseInt(solid.slice(5, 7), 16);
 
-  const lighten = (v: number, amount: number) => Math.min(255, Math.round(v + (255 - v) * amount));
+  // ink: darker, muted version for text/icons on tint backgrounds
   const darken = (v: number, amount: number) => Math.max(0, Math.round(v * (1 - amount)));
+  const ink = `#${darken(r, 0.45).toString(16).padStart(2, '0')}${darken(g, 0.45).toString(16).padStart(2, '0')}${darken(b, 0.45).toString(16).padStart(2, '0')}`;
 
-  const light = `#${lighten(r, 0.35).toString(16).padStart(2, '0')}${lighten(g, 0.35).toString(16).padStart(2, '0')}${lighten(b, 0.35).toString(16).padStart(2, '0')}`;
-  const dark = `#${darken(r, 0.3).toString(16).padStart(2, '0')}${darken(g, 0.3).toString(16).padStart(2, '0')}${darken(b, 0.3).toString(16).padStart(2, '0')}`;
-  const soft = `#${lighten(r, 0.65).toString(16).padStart(2, '0')}${lighten(g, 0.65).toString(16).padStart(2, '0')}${lighten(b, 0.65).toString(16).padStart(2, '0')}`;
-  const softDark = `#${darken(r, 0.7).toString(16).padStart(2, '0')}${darken(g, 0.7).toString(16).padStart(2, '0')}${darken(b, 0.7).toString(16).padStart(2, '0')}`;
-  const glow = `rgba(${r},${g},${b},0.20)`;
-  const gradient = `linear-gradient(160deg, ${light}, ${dark})`;
+  // tint: very light version for large area backgrounds
+  const lightenToTint = (v: number) => Math.min(255, Math.round(v + (255 - v) * 0.78));
+  const tint = `#${lightenToTint(r).toString(16).padStart(2, '0')}${lightenToTint(g).toString(16).padStart(2, '0')}${lightenToTint(b).toString(16).padStart(2, '0')}`;
 
-  return { light, dark, soft, softDark, glow, gradient };
+  // dark mode: brighten solid, lighten ink, darken tint
+  const brighten = (v: number, amount: number) => Math.min(255, Math.round(v + (255 - v) * amount));
+  const darkSolid = `#${brighten(r, 0.15).toString(16).padStart(2, '0')}${brighten(g, 0.15).toString(16).padStart(2, '0')}${brighten(b, 0.15).toString(16).padStart(2, '0')}`;
+
+  const lightenForDarkInk = (v: number) => Math.min(255, Math.round(v + (255 - v) * 0.7));
+  const darkInk = `#${lightenForDarkInk(r).toString(16).padStart(2, '0')}${lightenForDarkInk(g).toString(16).padStart(2, '0')}${lightenForDarkInk(b).toString(16).padStart(2, '0')}`;
+
+  const veryDarken = (v: number) => Math.max(0, Math.round(v * 0.18));
+  const darkTint = `#${veryDarken(r).toString(16).padStart(2, '0')}${veryDarken(g).toString(16).padStart(2, '0')}${veryDarken(b).toString(16).padStart(2, '0')}`;
+
+  return {
+    ink,
+    tint,
+    dark: { solid: darkSolid, ink: darkInk, tint: darkTint },
+  };
 }
