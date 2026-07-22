@@ -126,7 +126,7 @@ export default function MonthView() {
 
       {/* 日历网格 — 整版印刷格 */}
       <div
-        className="card overflow-hidden"
+        className="card"
         style={{ borderRadius: '14px' }}
       >
         <div className="grid grid-cols-7">

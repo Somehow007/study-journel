@@ -69,7 +69,7 @@ export default function DateCard({
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="group relative flex w-full flex-col items-center justify-between overflow-hidden transition-colors duration-150"
+        className="group relative flex w-full flex-col items-center justify-between transition-colors duration-150"
         style={{
           minHeight: '104px',
           padding: '8px 6px',

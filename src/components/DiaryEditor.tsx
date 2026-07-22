@@ -65,39 +65,40 @@ export default function DiaryEditor({ value, onChange, mood: _mood }: DiaryEdito
     }
   }, [displayValue]);
 
-  const hasContent = displayValue.trim().length > 0;
-
   return (
     <div className="relative">
-      {/* 编辑/预览切换按钮 — 右上角 */}
-      {hasContent && (
-        <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
-          <button
-            onClick={() => setIsPreview(false)}
-            className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
-              !isPreview
-                ? 'bg-[var(--paper)] text-[var(--ink)]'
-                : 'text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink-soft)]'
-            }`}
-            title="编辑"
-          >
-            <Pencil size={14} />
-          </button>
-          <button
-            onClick={() => setIsPreview(true)}
-            className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
-              isPreview
-                ? 'bg-[var(--paper)] text-[var(--ink)]'
-                : 'text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink-soft)]'
-            }`}
-            title="预览"
-          >
-            <Eye size={14} />
-          </button>
-        </div>
-      )}
-
       <div className="card diary-paper relative rounded-lg">
+        {/* 工具栏 — 卡片顶部，不遮挡正文 */}
+        <div className="flex items-center justify-between border-b border-[var(--hairline)] px-4 py-2">
+          <span className="font-sans text-caption text-[var(--ink-faint)]">
+            {isPreview ? '预览' : '编辑'}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsPreview(false)}
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                !isPreview
+                  ? 'bg-[var(--paper)] text-[var(--ink)]'
+                  : 'text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink-soft)]'
+              }`}
+              title="编辑"
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              onClick={() => setIsPreview(true)}
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                isPreview
+                  ? 'bg-[var(--paper)] text-[var(--ink)]'
+                  : 'text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink-soft)]'
+              }`}
+              title="预览"
+            >
+              <Eye size={14} />
+            </button>
+          </div>
+        </div>
+
         {isPreview ? (
           <div
             className="diary-content min-h-[200px] p-4 font-serif text-diary text-[var(--ink)]"
