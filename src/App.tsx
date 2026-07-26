@@ -1,7 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { waitForDB } from './lib/db';
+import { MOOD_CONFIGS } from './lib/constants';
+import Flower from './components/Flower';
 import Layout from './components/Layout';
 import BookLoader from './components/BookLoader';
 import MonthView from './pages/MonthView';
@@ -13,7 +16,7 @@ import Settings from './pages/Settings';
 import AnnualReview from './pages/AnnualReview';
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
-  const { theme, palette } = useApp();
+  const { theme } = useApp();
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -21,9 +24,6 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
-  useEffect(() => {
-    document.documentElement.dataset.palette = palette;
-  }, [palette]);
   return <>{children}</>;
 }
 
@@ -54,7 +54,7 @@ function AppShell() {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'var(--paper)' }}>
         <div className="flex flex-col items-center gap-4">
-          <span className="text-3xl">📔</span>
+          <Flower mood={MOOD_CONFIGS.happy} size={40} variant="head" className="animate-bloom-in" />
           <span className="font-serif text-body text-[var(--ink-soft)]">正在初始化…</span>
         </div>
       </div>
@@ -66,7 +66,7 @@ function AppShell() {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'var(--paper)' }}>
         <div className="flex flex-col items-center gap-3 text-center max-w-xs">
-          <span className="text-3xl">⚠️</span>
+          <AlertTriangle size={32} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
           <p className="font-serif text-body text-[var(--ink)]">{dbError}</p>
           <button
             onClick={() => {

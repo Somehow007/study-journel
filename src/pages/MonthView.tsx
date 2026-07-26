@@ -5,7 +5,7 @@ import { getRecordsByMonth } from '../lib/db';
 import { getCalendarDays, isToday, formatDate, totalDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
 import { useAllMoodConfigs } from '../lib/moodUtils';
-import MoodSeal from '../assets/moods';
+import MoodFlower from '../components/MoodFlower';
 import DateCard from '../components/DateCard';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
@@ -61,7 +61,7 @@ export default function MonthView() {
       <div className="mt-4 flex flex-wrap items-center justify-center gap-4 font-sans text-caption text-[var(--ink-faint)]">
         {allMoods.map((config) => (
           <span key={config.type} className="flex items-center gap-1.5">
-            <MoodSeal moodType={config.type} size={16} tone="line" />
+            <MoodFlower moodType={config.type} size={16} tone="line" />
             {config.label}
           </span>
         ))}
@@ -78,7 +78,7 @@ export default function MonthView() {
           <h1 className="font-serif text-display text-[var(--ink)] leading-none">
             {MONTH_LABELS[month]}
           </h1>
-          <p className="font-hand text-caption text-[var(--ink-faint)] mt-1">
+          <p className="font-displaylatin italic text-caption text-[var(--ink-faint)] mt-1">
             {engMonth} {year}
           </p>
         </div>
@@ -107,8 +107,8 @@ export default function MonthView() {
         </div>
       </div>
 
-      {/* 缝线分隔 */}
-      <div className="stitched mb-4" />
+      {/* 分隔线 */}
+      <div className="mb-4 h-px bg-[var(--hairline)]" />
 
       {/* 星期标题 */}
       <div className="grid grid-cols-7">

@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>花期 Blossom · 设计稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,300..600&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ tokens ============ */
+:root{
+  --bg:#F5F7F0;
+  --card:#FFFFFF;
+  --line:#E6E9DD;
+  --ink:#2C322A;
+  --ink-soft:#6D7466;
+  --ink-faint:#A7AC9E;
+  --brand:#3E7C59;
+  --brand-bright:#57A773;
+  --brand-soft:#E4EFE7;
+  --accent:#E8845C;
+  --accent-soft:#FCE8DC;
+  --mint:#DFF0E2;
+  --serif:'Noto Serif SC','Songti SC',serif;
+  --latina:'Fraunces',serif;
+  --sans:-apple-system,'PingFang SC','Helvetica Neue',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --shadow:0 1px 2px rgba(44,50,42,.04),0 8px 24px rgba(44,50,42,.05);
+  --shadow-lift:0 2px 4px rgba(44,50,42,.05),0 16px 40px rgba(44,50,42,.08);
+}
+/* mood colors */
+.m-happy  {--m-solid:#F0B429;--m-soft:#FBF1D6;--m-deep:#8A6410;}
+.m-calm   {--m-solid:#6C9BD1;--m-soft:#E3EDF7;--m-deep:#33597F;}
+.m-low    {--m-solid:#9B8FC9;--m-soft:#ECE8F5;--m-deep:#584E85;}
+.m-inspire{--m-solid:#E58AAE;--m-soft:#FAE6EF;--m-deep:#8F3E61;}
+.m-anxious{--m-solid:#E98A5F;--m-soft:#FBE8DE;--m-deep:#8F4B28;}
+.m-tired  {--m-solid:#93A693;--m-soft:#E8ECE4;--m-deep:#556352;}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{background:#EEF1E8;}
+body{
+  font-family:var(--sans);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  padding:72px 0 120px;
+}
+a{color:inherit;text-decoration:none;}
+
+/* ============ screen frame ============ */
+.screen{
+  position:relative;
+  width:1440px;
+  margin:0 auto 80px;
+  box-shadow:0 1px 2px rgba(44,50,42,.05),0 24px 64px rgba(44,50,42,.10);
+  border-radius:24px;
+  overflow:hidden;
+}
+.screen-tag{
+  position:absolute;top:20px;left:28px;z-index:20;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--ink-faint);text-transform:uppercase;
+}
+.canvas{
+  background:var(--bg);
+  background-image:
+    radial-gradient(900px 620px at 12% -8%, rgba(223,240,226,.55), rgba(223,240,226,0) 70%),
+    radial-gradient(1000px 700px at 96% 14%, rgba(252,232,220,.5), rgba(252,232,220,0) 70%),
+    radial-gradient(800px 600px at 50% 115%, rgba(223,240,226,.35), rgba(223,240,226,0) 70%);
+  min-height:900px;
+  padding:64px 56px;
+}
+
+/* ============ shared bits ============ */
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:20px;
+  box-shadow:var(--shadow);
+}
+.serif{font-family:var(--serif);}
+.mono{font-family:var(--mono);}
+.cap{font-size:12px;color:var(--ink-faint);letter-spacing:.02em;}
+.cap-mono{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);letter-spacing:.04em;}
+.latina{font-family:var(--latina);font-style:italic;color:var(--ink-faint);}
+
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  height:40px;padding:0 20px;border-radius:12px;
+  font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;
+}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 1px 2px rgba(62,124,89,.3),0 6px 16px rgba(62,124,89,.22);}
+.btn-ghost{background:var(--card);border-color:var(--line);color:var(--ink-soft);}
+.btn-accent-pill{background:var(--card);border-color:rgba(232,132,92,.45);color:var(--accent);border-radius:999px;height:36px;padding:0 18px;}
+
+.streak-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--brand-soft);color:var(--brand);
+  border-radius:999px;padding:8px 16px 8px 12px;
+  font-size:13px;font-weight:500;
+}
+.streak-badge .mono{font-size:13px;font-weight:600;color:var(--brand);}
+
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  border-radius:999px;padding:4px 12px 4px 8px;
+  font-size:12px;font-weight:500;
+  background:var(--m-soft);color:var(--m-deep);
+}
+.hairline{height:1px;background:var(--line);}
+
+/* mood dot */
+.dot{width:9px;height:9px;border-radius:50%;background:var(--m-solid);flex:none;}
+
+/* flower host */
+.flower{display:inline-block;line-height:0;flex:none;}
+.flower svg{display:block;}
+
+/* dashed empty ring */
+.ring-empty{
+  border:1px dashed var(--ink-faint);opacity:.55;
+  border-radius:50%;
+}
+
+/* ============ app shell (nav + content) ============ */
+.shell{display:flex;gap:40px;align-items:flex-start;}
+.sidenav{
+  width:220px;flex:none;
+  background:var(--card);border:1px solid var(--line);border-radius:20px;
+  box-shadow:var(--shadow);
+  padding:28px 16px 20px;
+}
+.sidenav .brand{
+  display:flex;align-items:center;gap:10px;
+  padding:0 12px 24px;
+}
+.sidenav .brand .name{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:.06em;}
+.sidenav .brand .sub{font-family:var(--latina);font-style:italic;font-size:11px;color:var(--ink-faint);display:block;margin-top:1px;}
+.nav-item{
+  display:flex;align-items:center;gap:11px;
+  height:44px;padding:0 14px;border-radius:12px;
+  font-size:14px;color:var(--ink-soft);
+  position:relative;margin-bottom:4px;
+}
+.nav-item svg{flex:none;}
+.nav-item.active{
+  background:var(--brand-soft);color:var(--brand);font-weight:500;
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:-16px;top:11px;bottom:11px;width:3px;
+  border-radius:0 3px 3px 0;background:var(--brand);
+}
+.nav-foot{padding:20px 12px 0;font-size:11px;color:var(--ink-faint);}
+.content{flex:1;max-width:860px;min-width:0;}
+
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;}
+.page-head h1{font-family:var(--serif);font-size:38px;font-weight:600;letter-spacing:.04em;line-height:1.15;}
+.page-head .head-sub{display:flex;align-items:baseline;gap:12px;margin-top:8px;}
+</style>
+<style>
+/* ============ 00 board ============ */
+#board .canvas{padding:72px 72px 80px;}
+.board-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:44px;}
+.board-head h1{font-family:var(--serif);font-size:46px;font-weight:700;letter-spacing:.08em;}
+.board-head .latina{font-size:20px;}
+.board-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+.board-block{padding:32px 36px;}
+.board-block h3{font-size:12px;font-weight:600;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:24px;font-family:var(--mono);}
+.swatch-row{display:flex;gap:14px;flex-wrap:wrap;}
+.swatch{width:96px;}
+.swatch .box{height:56px;border-radius:14px;border:1px solid rgba(44,50,42,.06);margin-bottom:8px;}
+.swatch .nm{font-size:11.5px;color:var(--ink);font-weight:500;}
+.swatch .hx{font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:2px;}
+.mood-swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.mood-sw{border-radius:14px;overflow:hidden;border:1px solid var(--line);}
+.mood-sw .band{display:flex;height:40px;}
+.mood-sw .band i{flex:1;}
+.mood-sw .meta{padding:10px 12px;background:#fff;display:flex;justify-content:space-between;align-items:baseline;}
+.mood-sw .meta .nm{font-size:12.5px;font-weight:500;}
+.mood-sw .meta .hx{font-family:var(--mono);font-size:10px;color:var(--ink-faint);}
+.type-ladder > div{display:flex;align-items:baseline;gap:20px;padding:13px 0;border-bottom:1px solid var(--line);}
+.type-ladder > div:last-child{border-bottom:none;}
+.type-ladder .spec{width:150px;flex:none;font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);}
+.board-flowers{display:flex;gap:8px;justify-content:space-between;}
+.board-flower{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 10px 14px;border-radius:16px;background:var(--m-soft);width:15%;}
+.board-flower .nm{font-size:12.5px;font-weight:500;color:var(--m-deep);}
+.board-controls{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+
+/* ============ 01 today ============ */
+.quote-card{
+  border-left:3px solid var(--brand-bright);
+  padding:6px 0 6px 22px;margin-bottom:28px;
+}
+.quote-card p{font-family:var(--serif);font-size:17px;color:var(--ink-soft);letter-spacing:.03em;}
+.quote-card .cap{margin-top:6px;display:block;}
+
+.hero-card{padding:40px 44px;display:flex;gap:48px;align-items:center;margin-bottom:28px;}
+.hero-flower{flex:none;width:230px;display:flex;flex-direction:column;align-items:center;}
+.hero-right{flex:1;min-width:0;}
+.hero-right h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:.03em;}
+.mood-picker{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin:26px 0 18px;}
+.mood-btn{
+  display:flex;flex-direction:column;align-items:center;gap:9px;
+  padding:16px 4px 13px;border-radius:16px;background:var(--m-soft);
+  transition:transform .2s;
+}
+.mood-btn .nm{font-size:12px;font-weight:500;color:var(--m-deep);}
+.mood-btn.selected{
+  background:var(--m-solid);transform:scale(1.07);
+  box-shadow:0 4px 14px rgba(44,50,42,.14);
+}
+.mood-btn.selected .nm{color:#fff;}
+
+.study-card{padding:32px 36px 28px;margin-bottom:28px;}
+.card-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.card-title-row h3{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:.03em;}
+.study-row{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--line);}
+.study-row .subj{font-size:14.5px;font-weight:500;}
+.study-row .note{font-size:12.5px;color:var(--ink-soft);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.study-row .dur{font-family:var(--mono);font-size:13.5px;color:var(--ink);font-weight:500;}
+.study-total{display:flex;align-items:baseline;justify-content:flex-end;gap:10px;padding-top:20px;}
+.study-total .t{font-size:13px;color:var(--ink-soft);}
+.study-total .v{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--ink);}
+
+.journal-card{
+  padding:32px 40px 26px;
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,var(--line) 35px,var(--line) 36px);
+  background-position:0 30px;
+}
+.journal-card h3{font-family:var(--serif);font-size:19px;font-weight:600;margin-bottom:20px;}
+.journal-card .entry{font-family:var(--serif);font-size:15.5px;line-height:36px;color:var(--ink);letter-spacing:.02em;}
+.journal-foot{display:flex;justify-content:flex-end;align-items:center;gap:7px;margin-top:18px;}
+.save-dot{width:7px;height:7px;border-radius:50%;background:var(--brand-bright);}
+
+/* ============ 02 garden ============ */
+.garden-card{padding:36px 40px 26px;}
+.cal-week{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:8px;}
+.cal-week span{text-align:center;font-size:12px;color:var(--ink-faint);padding-bottom:12px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
+.cal-cell{
+  position:relative;border-radius:14px;min-height:108px;
+  padding:9px 11px;
+  display:flex;align-items:center;justify-content:center;
+}
+.cal-cell .d{
+  position:absolute;top:8px;left:11px;
+  font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);
+}
+.cal-cell.blank{background:transparent;}
+.cal-cell.dim .d{color:var(--ink-faint);}
+.cal-cell.dim .flower,.cal-cell.dim .ring-empty{opacity:.38;}
+.cal-cell.today{
+  background:rgba(252,232,220,.55);
+}
+.cal-cell.today .d{color:var(--accent);font-weight:600;}
+.today-ring{position:absolute;inset:4px;pointer-events:none;}
+.cal-tip{
+  position:absolute;left:50%;bottom:calc(100% + 12px);transform:translateX(-50%);
+  background:#2C322A;color:#F2F4EC;border-radius:12px;
+  padding:12px 16px;width:196px;z-index:5;
+  box-shadow:0 8px 24px rgba(44,50,42,.25);
+}
+.cal-tip::after{
+  content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:6px solid transparent;border-top-color:#2C322A;
+}
+.cal-tip .t1{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+.cal-tip .t1 .td{font-family:var(--mono);font-size:11px;color:#B9C0AE;}
+.cal-tip .t1 .tm{font-size:12px;font-weight:500;}
+.cal-tip .t2{font-family:var(--mono);font-size:11px;color:#B9C0AE;margin-bottom:6px;}
+.cal-tip .t3{font-family:var(--serif);font-size:11.5px;line-height:1.6;color:#DDE2D2;}
+.garden-foot{display:flex;align-items:center;justify-content:space-between;margin-top:26px;padding-top:22px;border-top:1px solid var(--line);}
+.legend{display:flex;gap:18px;align-items:center;}
+.legend .li{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-soft);}
+
+/* ============ 03 timeline ============ */
+#timeline .wrap{max-width:720px;margin:0 auto;}
+.tl-item{display:flex;gap:0;margin-bottom:26px;}
+.tl-date{width:56px;flex:none;text-align:right;padding-top:22px;}
+.tl-date .d{font-family:var(--mono);font-size:14px;font-weight:500;}
+.tl-date .w{font-size:11px;color:var(--ink-faint);margin-top:3px;}
+.tl-rail{width:44px;flex:none;position:relative;}
+.tl-rail::before{content:'';position:absolute;left:50%;top:0;bottom:-26px;width:1px;background:var(--line);}
+.tl-item:last-child .tl-rail::before{bottom:0;}
+.tl-node{
+  position:absolute;left:50%;top:30px;transform:translate(-50%,-50%);
+  width:9px;height:9px;border-radius:50%;background:var(--m-solid);
+  box-shadow:0 0 0 4px var(--m-soft);
+}
+.tl-card{flex:1;padding:24px 28px;min-width:0;}
+.tl-card .row1{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.tl-card .subj-chips{margin-left:auto;display:flex;gap:8px;}
+.subj-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11.5px;color:var(--ink-soft);
+  border:1px solid var(--line);border-radius:999px;padding:4px 11px 4px 8px;background:#fff;
+}
+.tl-card .excerpt{font-size:13px;line-height:1.8;color:var(--ink-soft);font-family:var(--serif);}
+.tl-fresh{box-shadow:var(--shadow-lift);border-color:#DDE5D4;}
+
+/* ============ 04 stats ============ */
+.stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:28px;}
+.stat-card{padding:28px 32px;}
+.stat-card .lb{font-family:var(--serif);font-size:14px;color:var(--ink-soft);margin-bottom:12px;}
+.stat-card .vl{font-family:var(--mono);font-size:28px;font-weight:600;letter-spacing:-.01em;}
+.stat-card .vl small{font-size:14px;font-weight:500;color:var(--ink-faint);margin-left:4px;}
+.stat-card .mood-inline{display:flex;align-items:center;gap:12px;}
+.stat-card .mood-inline .nm{font-family:var(--serif);font-size:22px;font-weight:600;}
+.stat-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:24px;margin-bottom:28px;}
+.chart-card{padding:30px 34px;}
+.chart-card h3{font-family:var(--serif);font-size:18px;font-weight:600;margin-bottom:4px;}
+.chart-card .sub{font-size:12px;color:var(--ink-faint);margin-bottom:24px;}
+.bars{display:flex;align-items:flex-end;gap:0;height:170px;position:relative;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;}
+.bar{width:16px;border-radius:6px 6px 2px 2px;background:var(--m-solid);}
+.bar.empty{width:16px;height:4px;border-radius:2px;background:var(--line);}
+.bar-x{display:flex;margin-top:10px;}
+.bar-x span{flex:1;text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-faint);}
+.grid-lines{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;}
+.grid-lines i{border-top:1px dashed var(--line);}
+.donut-wrap{display:flex;align-items:center;gap:30px;}
+.donut-legend{display:flex;flex-direction:column;gap:13px;flex:1;}
+.donut-legend .li{display:flex;align-items:center;gap:10px;font-size:13px;}
+.donut-legend .li .v{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);}
+.poster-row{display:flex;gap:40px;align-items:flex-start;}
+.poster{
+  width:320px;flex:none;border-radius:24px;overflow:hidden;
+  border:1px solid var(--line);box-shadow:var(--shadow-lift);
+  background:linear-gradient(175deg,#FBFCF7 0%,#EFF6EC 52%,#E6F1E4 100%);
+  padding:34px 30px 30px;position:relative;
+}
+.poster h3{font-family:var(--serif);font-size:26px;font-weight:700;text-align:center;letter-spacing:.14em;}
+.poster .latina{display:block;text-align:center;font-size:13px;margin-top:6px;}
+.bouquet{position:relative;height:280px;margin:18px 0 8px;}
+.poster .psum{text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:10px 0 22px;letter-spacing:.06em;}
+.poster .btn{width:100%;justify-content:center;}
+.poster-note{flex:1;padding-top:40px;}
+.poster-note h4{font-family:var(--serif);font-size:20px;font-weight:600;margin-bottom:14px;}
+.poster-note p{font-size:13.5px;line-height:2;color:var(--ink-soft);max-width:400px;}
+
+/* ============ 05 dark ============ */
+#dark .canvas{
+  --bg:#131815;--card:#1B211D;--line:#2A332C;
+  --ink:#E9EDE3;--ink-soft:#9AA594;--ink-faint:#5E6A5C;
+  --brand:#6FB98A;--brand-bright:#6FB98A;--brand-soft:#243528;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
+  background:#131815;
+  color:#E9EDE3; /* 关键：显式设置，让覆盖后的 --ink 在继承链上生效 */
+  background-image:
+    radial-gradient(900px 620px at 10% -10%, rgba(60,92,70,.22), rgba(60,92,70,0) 70%),
+    radial-gradient(900px 640px at 98% 110%, rgba(46,66,52,.28), rgba(46,66,52,0) 70%);
+}
+#dark .btn-ghost{background:#1B211D;border-color:#2A332C;color:#9AA594;}
+#dark .mood-btn:not(.selected){background:rgba(255,255,255,.045);}
+#dark .mood-btn:not(.selected) .nm{color:var(--m-solid);} /* deep 色在暗底上太暗，用 solid */
+#dark .quote-card{border-left-color:#6FB98A;}
+#dark .save-dot{background:#6FB98A;}
+.dark-note{text-align:center;padding:26px 0 4px;font-size:12px;color:#5E6A5C;letter-spacing:.14em;}
+
+/* ============ 06 mobile ============ */
+#mobile .canvas{display:flex;justify-content:center;padding:64px 0 72px;}
+.phone{
+  width:375px;height:812px;flex:none;
+  border-radius:48px;background:#10130F;padding:11px;
+  box-shadow:0 30px 80px rgba(44,50,42,.35);
+}
+.phone-in{
+  width:100%;height:100%;border-radius:38px;overflow:hidden;
+  background:var(--bg);position:relative;
+  background-image:radial-gradient(360px 300px at 20% -10%,rgba(223,240,226,.6),transparent 70%);
+  display:flex;flex-direction:column;
+}
+.statusbar{height:46px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px;}
+.statusbar .time{font-family:var(--mono);font-size:12.5px;font-weight:600;}
+.m-scroll{flex:1;overflow:hidden;padding:6px 18px 0;}
+.m-head{display:flex;align-items:flex-end;justify-content:space-between;margin:8px 0 18px;}
+.m-head h2{font-family:var(--serif);font-size:25px;font-weight:600;}
+.m-hero{padding:24px 20px 20px;text-align:center;margin-bottom:16px;}
+.m-hero h3{font-family:var(--serif);font-size:17px;font-weight:600;margin-top:14px;}
+.m-moods{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+.m-mood{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 0 9px;border-radius:13px;background:var(--m-soft);}
+.m-mood .nm{font-size:11px;font-weight:500;color:var(--m-deep);}
+.m-mood.selected{background:var(--m-solid);}
+.m-mood.selected .nm{color:#fff;}
+.m-study{padding:18px 20px 14px;}
+.m-study .card-title-row{margin-bottom:8px;}
+.m-study .card-title-row h3{font-size:16px;}
+.m-study .study-row{padding:11px 0;}
+.m-study .study-row .subj{font-size:13.5px;}
+.m-study .study-row .note{display:none;}
+.m-study .study-row .dur{font-size:12.5px;}
+.tabbar{
+  flex:none;height:74px;background:#fff;border-top:1px solid var(--line);
+  display:flex;align-items:flex-start;padding:10px 8px 0;
+}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--ink-faint);}
+.tab.on{color:var(--brand);font-weight:500;}
+.home-ind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:4px;border-radius:2px;background:#10130F;opacity:.85;z-index:5;}
+</style>
+</head>
+<body>
+
+<!-- ================= 00 · 设计系统板 ================= -->
+<section class="screen" id="board">
+  <div class="canvas">
+    <div class="board-head">
+      <div>
+        <h1>花期 <span style="font-size:22px;font-weight:500;color:var(--ink-soft);">Blossom</span></h1>
+        <p class="latina" style="margin-top:10px;">every day, a flower — design system v1.0</p>
+      </div>
+      <div style="text-align:right;">
+        <span class="flower m-happy" data-flower='{"petals":7,"size":64}'></span>
+        <p class="cap-mono" style="margin-top:10px;">学习手帐 · 视觉规范</p>
+      </div>
+    </div>
+
+    <div class="board-grid">
+      <!-- 中性色 -->
+      <div class="card board-block">
+        <h3>Neutral / 中性色</h3>
+        <div class="swatch-row">
+          <div class="swatch"><div class="box" style="background:#F5F7F0;"></div><div class="nm">晨雾白 bg</div><div class="hx">#F5F7F0</div></div>
+          <div class="swatch"><div class="box" style="background:#FFFFFF;"></div><div class="nm">卡片 card</div><div class="hx">#FFFFFF</div></div>
+          <div class="swatch"><div class="box" style="background:#E6E9DD;"></div><div class="nm">描线 line</div><div class="hx">#E6E9DD</div></div>
+          <div class="swatch"><div class="box" style="background:#2C322A;"></div><div class="nm">墨 ink</div><div class="hx">#2C322A</div></div>
+          <div class="swatch"><div class="box" style="background:#6D7466;"></div><div class="nm">ink-soft</div><div class="hx">#6D7466</div></div>
+          <div class="swatch"><div class="box" style="background:#A7AC9E;"></div><div class="nm">ink-faint</div><div class="hx">#A7AC9E</div></div>
+        </div>
+        <h3 style="margin-top:30px;">Brand / 主色</h3>
+        <div class="swatch-row">
+          <div class="swatch"><div class="box" style="background:#3E7C59;"></div><div class="nm">深叶绿</div><div class="hx">#3E7C59</div></div>
+          <div class="swatch"><div class="box" style="background:#57A773;"></div><div class="nm">亮绿</div><div class="hx">#57A773</div></div>
+          <div class="swatch"><div class="box" style="background:#E4EFE7;"></div><div class="nm">浅绿底</div><div class="hx">#E4EFE7</div></div>
+          <div class="swatch"><div class="box" style="background:#E8845C;"></div><div class="nm">杏橙(点缀)</div><div class="hx">#E8845C</div></div>
+        </div>
+      </div>
+
+      <!-- 心情色 -->
+      <div class="card board-block">
+        <h3>Moods / 心情六色</h3>
+        <div class="mood-swatches">
+          <div class="mood-sw"><div class="band"><i style="background:#F0B429"></i><i style="background:#FBF1D6"></i><i style="background:#8A6410"></i></div><div class="meta"><span class="nm">开心 · 向日葵金</span><span class="hx">#F0B429</span></div></div>
+          <div class="mood-sw"><div class="band"><i style="background:#6C9BD1"></i><i style="background:#E3EDF7"></i><i style="background:#33597F"></i></div><div class="meta"><span class="nm">平静 · 绣球蓝</span><span class="hx">#6C9BD1</span></div></div>
+          <div class="mood-sw"><div class="band"><i style="background:#9B8FC9"></i><i style="background:#ECE8F5"></i><i style="background:#584E85"></i></div><div class="meta"><span class="nm">低落 · 薰衣草紫</span><span class="hx">#9B8FC9</span></div></div>
+          <div class="mood-sw"><div class="band"><i style="background:#E58AAE"></i><i style="background:#FAE6EF"></i><i style="background:#8F3E61"></i></div><div class="meta"><span class="nm">灵感 · 樱粉</span><span class="hx">#E58AAE</span></div></div>
+          <div class="mood-sw"><div class="band"><i style="background:#E98A5F"></i><i style="background:#FBE8DE"></i><i style="background:#8F4B28"></i></div><div class="meta"><span class="nm">焦虑 · 虞美人橙</span><span class="hx">#E98A5F</span></div></div>
+          <div class="mood-sw"><div class="band"><i style="background:#93A693"></i><i style="background:#E8ECE4"></i><i style="background:#556352"></i></div><div class="meta"><span class="nm">疲惫 · 鼠尾草绿</span><span class="hx">#93A693</span></div></div>
+        </div>
+      </div>
+
+      <!-- 字体 -->
+      <div class="card board-block">
+        <h3>Typography / 字体</h3>
+        <div class="type-ladder">
+          <div><span class="spec">Serif 34 · 页面大标题</span><span class="serif" style="font-size:34px;font-weight:600;">七月的花田</span></div>
+          <div><span class="spec">Serif 20 · 卡片标题</span><span class="serif" style="font-size:20px;font-weight:600;">今日学习</span></div>
+          <div><span class="spec">Sans 14 · 正文</span><span style="font-size:14px;">React 组件设计 · 自定义 Hook 整理</span></div>
+          <div><span class="spec">Mono 20 · 数字</span><span class="mono" style="font-size:20px;font-weight:600;">32h 15m</span></div>
+          <div><span class="spec">Sans 12 · caption</span><span class="cap">星期六 · 盖下一朵花，记录今天</span></div>
+          <div style="border-bottom:none;"><span class="spec">Fraunces Italic · 小注</span><span class="latina" style="font-size:19px;">July, in bloom.</span></div>
+        </div>
+      </div>
+
+      <!-- 组件 -->
+      <div class="card board-block">
+        <h3>Components / 组件</h3>
+        <div class="board-controls" style="margin-bottom:26px;">
+          <span class="btn btn-primary">记录今天</span>
+          <span class="btn btn-ghost">查看花田</span>
+          <span class="btn btn-accent-pill">今天</span>
+          <span class="streak-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+            连续 <span class="mono">12</span> 天
+          </span>
+          <span class="chip m-inspire"><span class="dot"></span>灵感</span>
+        </div>
+        <h3 style="margin-bottom:20px;">Mood Flowers / 心情花</h3>
+        <div class="board-flowers">
+          <div class="board-flower m-happy"><span class="flower" data-flower='{"petals":7,"size":46}'></span><span class="nm">开心</span></div>
+          <div class="board-flower m-calm"><span class="flower" data-flower='{"petals":6,"size":46}'></span><span class="nm">平静</span></div>
+          <div class="board-flower m-low"><span class="flower" data-flower='{"petals":6,"size":46}'></span><span class="nm">低落</span></div>
+          <div class="board-flower m-inspire"><span class="flower" data-flower='{"petals":8,"size":46}'></span><span class="nm">灵感</span></div>
+          <div class="board-flower m-anxious"><span class="flower" data-flower='{"petals":5,"size":46}'></span><span class="nm">焦虑</span></div>
+          <div class="board-flower m-tired"><span class="flower" data-flower='{"petals":6,"size":46}'></span><span class="nm">疲惫</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="screen-tag">00 · 设计系统 Design System</span>
+</section>
+
+<!-- ================= 01 · 今日页 ================= -->
+<section class="screen" id="today">
+  <div class="canvas">
+    <div class="shell">
+      <aside class="sidenav">
+        <div class="brand">
+          <span class="flower m-happy" data-flower='{"petals":7,"size":34}'></span>
+          <div><span class="name">花期</span><span class="sub">blossom</span></div>
+        </div>
+        <div class="nav-item active">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          今日
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          花田
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          时光
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v3"/><path d="M12 10v8"/><path d="M17 6v12"/></svg>
+          统计
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          设置
+        </div>
+        <div class="hairline" style="margin:18px 12px 0;"></div>
+        <div class="nav-foot">v1.0 · 本地存储中</div>
+      </aside>
+
+      <main class="content">
+        <div class="page-head">
+          <div>
+            <h1>7月26日</h1>
+            <div class="head-sub">
+              <span class="cap">星期六 · Sat</span>
+              <span class="latina" style="font-size:15px;">in bloom.</span>
+            </div>
+          </div>
+          <span class="streak-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+            连续 <span class="mono">12</span> 天
+          </span>
+        </div>
+
+        <div class="quote-card">
+          <p>「把时间种下去，就会开花。」</p>
+          <span class="cap">每日一句</span>
+        </div>
+
+        <div class="card hero-card">
+          <div class="hero-flower">
+            <span class="flower m-happy" data-flower='{"petals":7,"size":120,"withStem":true,"stemH":86}'></span>
+          </div>
+          <div class="hero-right">
+            <h2>今天是什么心情？</h2>
+            <div class="mood-picker">
+              <div class="mood-btn m-happy selected"><span class="flower" data-flower='{"petals":7,"size":34,"light":true}'></span><span class="nm">开心</span></div>
+              <div class="mood-btn m-calm"><span class="flower" data-flower='{"petals":6,"size":34}'></span><span class="nm">平静</span></div>
+              <div class="mood-btn m-low"><span class="flower" data-flower='{"petals":6,"size":34}'></span><span class="nm">低落</span></div>
+              <div class="mood-btn m-inspire"><span class="flower" data-flower='{"petals":8,"size":34}'></span><span class="nm">灵感</span></div>
+              <div class="mood-btn m-anxious"><span class="flower" data-flower='{"petals":5,"size":34}'></span><span class="nm">焦虑</span></div>
+              <div class="mood-btn m-tired"><span class="flower" data-flower='{"petals":6,"size":34}'></span><span class="nm">疲惫</span></div>
+            </div>
+            <span class="cap">盖下一朵花，记录今天</span>
+          </div>
+        </div>
+
+        <div class="card study-card">
+          <div class="card-title-row">
+            <h3>今日学习</h3>
+            <span class="btn btn-ghost" style="height:34px;padding:0 16px;border-radius:999px;font-size:13px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              添加
+            </span>
+          </div>
+          <div class="study-row m-calm"><span class="dot"></span><span class="subj">React 组件设计</span><span class="note">自定义 Hook 与状态拆分练习</span><span class="mono dur">2h 30m</span></div>
+          <div class="study-row m-happy"><span class="dot"></span><span class="subj">英语精读</span><span class="note">The Economist · 长难句 12 句</span><span class="mono dur">1h 00m</span></div>
+          <div class="study-row m-anxious" style="border-bottom:none;"><span class="dot"></span><span class="subj">算法练习</span><span class="note">动态规划 · LeetCode 3 题</span><span class="mono dur">0h 45m</span></div>
+          <div class="study-total"><span class="t">合计</span><span class="v">3h 45m</span></div>
+        </div>
+
+        <div class="card journal-card">
+          <h3>今日想法</h3>
+          <p class="entry">下午把 useReducer 的思路理顺了，像给一团毛线找到了线头。<br>傍晚下了十分钟太阳雨，窗外的绣球蓝得很好看。</p>
+          <div class="journal-foot">
+            <span class="save-dot"></span>
+            <span class="cap-mono">已保存 14:32</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <span class="screen-tag">01 · 今日页 Today</span>
+</section>
+
+<!-- ================= 02 · 花田月视图 ================= -->
+<section class="screen" id="garden">
+  <div class="canvas">
+    <div class="shell">
+      <aside class="sidenav">
+        <div class="brand">
+          <span class="flower m-inspire" data-flower='{"petals":8,"size":34}'></span>
+          <div><span class="name">花期</span><span class="sub">blossom</span></div>
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          今日
+        </div>
+        <div class="nav-item active">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          花田
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          时光
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v3"/><path d="M12 10v8"/><path d="M17 6v12"/></svg>
+          统计
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          设置
+        </div>
+        <div class="hairline" style="margin:18px 12px 0;"></div>
+        <div class="nav-foot">本月已开 18 朵</div>
+      </aside>
+
+      <main class="content" style="max-width:1020px;">
+        <div class="page-head">
+          <div>
+            <h1>七月的花田</h1>
+            <div class="head-sub">
+              <span class="cap">2026 · 第 30 周</span>
+              <span class="latina" style="font-size:15px;">July's field</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="btn btn-ghost" style="width:38px;height:38px;padding:0;border-radius:50%;justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </span>
+            <span class="btn btn-ghost" style="width:38px;height:38px;padding:0;border-radius:50%;justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </span>
+            <span class="btn btn-accent-pill">今天</span>
+          </div>
+        </div>
+
+        <div class="card garden-card">
+          <div class="cal-week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="garden-foot">
+            <div class="legend">
+              <span class="li m-happy"><span class="flower" data-flower='{"petals":7,"size":18}'></span>开心</span>
+              <span class="li m-calm"><span class="flower" data-flower='{"petals":6,"size":18}'></span>平静</span>
+              <span class="li m-low"><span class="flower" data-flower='{"petals":6,"size":18}'></span>低落</span>
+              <span class="li m-inspire"><span class="flower" data-flower='{"petals":8,"size":18}'></span>灵感</span>
+              <span class="li m-anxious"><span class="flower" data-flower='{"petals":5,"size":18}'></span>焦虑</span>
+              <span class="li m-tired"><span class="flower" data-flower='{"petals":6,"size":18}'></span>疲惫</span>
+            </div>
+            <span class="cap-mono" style="font-size:12.5px;">本月 18 朵 · 共 32h 15m</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <span class="screen-tag">02 · 花田月视图 Garden</span>
+</section>
+
+<!-- ================= 03 · 时光 ================= -->
+<section class="screen" id="timeline">
+  <div class="canvas">
+    <div class="wrap">
+      <div class="page-head" style="margin-bottom:40px;">
+        <div>
+          <h1>时光</h1>
+          <div class="head-sub">
+            <span class="cap">每一天都留了一朵花</span>
+            <span class="latina" style="font-size:15px;">pressed flowers, kept days.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date"><div class="d">7/25</div><div class="w">周五</div></div>
+        <div class="tl-rail m-calm"><span class="tl-node"></span></div>
+        <div class="card tl-card tl-fresh">
+          <div class="row1">
+            <span class="flower m-calm" data-flower='{"petals":6,"size":26}'></span>
+            <span class="chip m-calm">平静</span>
+            <span class="subj-chips">
+              <span class="subj-chip m-happy"><span class="dot"></span>英语精读 · 1h</span>
+              <span class="subj-chip m-calm"><span class="dot"></span>React · 45m</span>
+            </span>
+          </div>
+          <p class="excerpt">读完一篇关于「慢教育」的长文，划了三段话。晚上给阳台的薄荷浇了水，风很轻。</p>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date"><div class="d">7/22</div><div class="w">周二</div></div>
+        <div class="tl-rail m-calm"><span class="tl-node"></span></div>
+        <div class="card tl-card">
+          <div class="row1">
+            <span class="flower m-calm" data-flower='{"petals":6,"size":26}'></span>
+            <span class="chip m-calm">平静</span>
+            <span class="subj-chips">
+              <span class="subj-chip m-anxious"><span class="dot"></span>算法 · 1h20m</span>
+              <span class="subj-chip m-tired"><span class="dot"></span>阅读 · 40m</span>
+            </span>
+          </div>
+          <p class="excerpt">二分查找的边界问题终于不再靠运气了。睡前读了半章《园艺图鉴》。</p>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date"><div class="d">7/21</div><div class="w">周一</div></div>
+        <div class="tl-rail m-tired"><span class="tl-node"></span></div>
+        <div class="card tl-card">
+          <div class="row1">
+            <span class="flower m-tired" data-flower='{"petals":6,"size":26}'></span>
+            <span class="chip m-tired">疲惫</span>
+            <span class="subj-chips">
+              <span class="subj-chip m-happy"><span class="dot"></span>英语单词 · 30m</span>
+              <span class="subj-chip m-tired"><span class="dot"></span>阅读 · 30m</span>
+            </span>
+          </div>
+          <p class="excerpt">只学了一小时，但没有关系。疲惫的日子也要盖章，花照样开。</p>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date"><div class="d">7/20</div><div class="w">周日</div></div>
+        <div class="tl-rail m-happy"><span class="tl-node"></span></div>
+        <div class="card tl-card">
+          <div class="row1">
+            <span class="flower m-happy" data-flower='{"petals":7,"size":26}'></span>
+            <span class="chip m-happy">开心</span>
+            <span class="subj-chips">
+              <span class="subj-chip m-calm"><span class="dot"></span>React · 1h</span>
+              <span class="subj-chip m-inspire"><span class="dot"></span>速写 · 30m</span>
+            </span>
+          </div>
+          <p class="excerpt">重构完组件库的一天，像收拾好了整个抽屉。奖励自己一杯冰拿铁。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="screen-tag">03 · 时光 Timeline</span>
+</section>
+
+<!-- ================= 04 · 统计 ================= -->
+<section class="screen" id="stats">
+  <div class="canvas">
+    <div class="wrap" style="max-width:1020px;margin:0 auto;">
+      <div class="page-head">
+        <div>
+          <h1>统计</h1>
+          <div class="head-sub">
+            <span class="cap">2026 年 7 月 · 截至今日</span>
+            <span class="latina" style="font-size:15px;">the month, counted.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-cards">
+        <div class="card stat-card">
+          <div class="lb">总学习天数</div>
+          <div class="vl">18<small>天</small></div>
+        </div>
+        <div class="card stat-card">
+          <div class="lb">总学习时长</div>
+          <div class="vl">32h 15m</div>
+        </div>
+        <div class="card stat-card">
+          <div class="lb">最常心情</div>
+          <div class="mood-inline">
+            <span class="flower m-calm" data-flower='{"petals":6,"size":34}'></span>
+            <span class="nm">平静</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="card chart-card">
+          <h3>每日学习时长</h3>
+          <div class="sub">近 14 天 · 柱色随当日心情</div>
+          <div class="bars">
+            <div class="grid-lines"><i></i><i></i><i></i><i></i></div>
+            <div class="bar-col m-calm"><div class="bar" style="height:64px;"></div></div>
+            <div class="bar-col"><div class="bar empty"></div></div>
+            <div class="bar-col m-low"><div class="bar" style="height:32px;"></div></div>
+            <div class="bar-col m-happy"><div class="bar" style="height:64px;"></div></div>
+            <div class="bar-col m-calm"><div class="bar" style="height:64px;"></div></div>
+            <div class="bar-col"><div class="bar empty"></div></div>
+            <div class="bar-col m-inspire"><div class="bar" style="height:80px;"></div></div>
+            <div class="bar-col"><div class="bar empty"></div></div>
+            <div class="bar-col m-happy"><div class="bar" style="height:48px;"></div></div>
+            <div class="bar-col m-tired"><div class="bar" style="height:32px;"></div></div>
+            <div class="bar-col m-calm"><div class="bar" style="height:64px;"></div></div>
+            <div class="bar-col"><div class="bar empty"></div></div>
+            <div class="bar-col"><div class="bar empty"></div></div>
+            <div class="bar-col m-calm"><div class="bar" style="height:56px;"></div></div>
+          </div>
+          <div class="bar-x"><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span></div>
+        </div>
+
+        <div class="card chart-card">
+          <h3>学科分布</h3>
+          <div class="sub">本月 · 按学习时长</div>
+          <div class="donut-wrap">
+            <svg width="140" height="140" viewBox="0 0 140 140" style="flex:none;">
+              <circle cx="70" cy="70" r="54" fill="none" stroke="#EEF1E8" stroke-width="17"/>
+              <circle cx="70" cy="70" r="54" fill="none" stroke="#6C9BD1" stroke-width="17" stroke-dasharray="126.2 339.3" stroke-dashoffset="0" transform="rotate(-90 70 70)"/>
+              <circle cx="70" cy="70" r="54" fill="none" stroke="#F0B429" stroke-width="17" stroke-dasharray="94.7 339.3" stroke-dashoffset="-126.2" transform="rotate(-90 70 70)"/>
+              <circle cx="70" cy="70" r="54" fill="none" stroke="#E98A5F" stroke-width="17" stroke-dasharray="68.5 339.3" stroke-dashoffset="-220.9" transform="rotate(-90 70 70)"/>
+              <circle cx="70" cy="70" r="54" fill="none" stroke="#93A693" stroke-width="17" stroke-dasharray="49.9 339.3" stroke-dashoffset="-289.4" transform="rotate(-90 70 70)"/>
+              <text x="70" y="66" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="17" font-weight="600" fill="#2C322A">32h15m</text>
+              <text x="70" y="86" text-anchor="middle" font-size="10.5" fill="#A7AC9E">总计</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="li m-calm"><span class="dot"></span>React<span class="v">12h 00m</span></div>
+              <div class="li m-happy"><span class="dot"></span>英语<span class="v">9h 00m</span></div>
+              <div class="li m-anxious"><span class="dot"></span>算法<span class="v">6h 30m</span></div>
+              <div class="li m-tired"><span class="dot"></span>阅读<span class="v">4h 45m</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:36px 40px;">
+        <div class="poster-row">
+          <div class="poster">
+            <h3>七月花束</h3>
+            <span class="latina">a bouquet of July</span>
+            <div class="bouquet" id="bouquet"></div>
+            <div class="psum">18 天 · 32h 15m · 2026.07</div>
+            <span class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/></svg>
+              分享本月花束
+            </span>
+          </div>
+          <div class="poster-note">
+            <h4>月末，把花田扎成一束</h4>
+            <p>每月的最后一天，「花期」会把这个月开过的花自动扎成一束花束海报 —— 心情是花色，时长是花茎。坚持得越久，花束越丰盛。</p>
+            <p style="margin-top:12px;">这是一张可以保存、可以分享给朋友的「坚持证明」。记录的意义，在月末被看见。</p>
+            <div style="margin-top:22px;display:flex;gap:10px;">
+              <span class="chip m-happy">开心 × 5</span>
+              <span class="chip m-calm">平静 × 6</span>
+              <span class="chip m-inspire">灵感 × 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="screen-tag">04 · 统计 Stats</span>
+</section>
+
+<!-- ================= 05 · 深色模式 ================= -->
+<section class="screen" id="dark">
+  <div class="canvas">
+    <div class="shell">
+      <aside class="sidenav">
+        <div class="brand">
+          <span class="flower m-calm" data-flower='{"petals":6,"size":34,"boost":true}'></span>
+          <div><span class="name">花期</span><span class="sub">blossom</span></div>
+        </div>
+        <div class="nav-item active">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          今日
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          花田
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          时光
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v3"/><path d="M12 10v8"/><path d="M17 6v12"/></svg>
+          统计
+        </div>
+        <div class="nav-item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          夜间
+        </div>
+        <div class="hairline" style="margin:18px 12px 0;"></div>
+        <div class="nav-foot">夜色花房 · 22:41</div>
+      </aside>
+
+      <main class="content">
+        <div class="page-head">
+          <div>
+            <h1>7月26日</h1>
+            <div class="head-sub">
+              <span class="cap">星期六 · 夜晚</span>
+              <span class="latina" style="font-size:15px;">still blooming, after dark.</span>
+            </div>
+          </div>
+          <span class="streak-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+            连续 <span class="mono">12</span> 天
+          </span>
+        </div>
+
+        <div class="quote-card">
+          <p>「把时间种下去，就会开花。」</p>
+          <span class="cap">每日一句</span>
+        </div>
+
+        <div class="card hero-card">
+          <div class="hero-flower">
+            <span class="flower m-happy" data-flower='{"petals":7,"size":120,"withStem":true,"stemH":86,"boost":true}'></span>
+          </div>
+          <div class="hero-right">
+            <h2>今天是什么心情？</h2>
+            <div class="mood-picker">
+              <div class="mood-btn m-happy selected"><span class="flower" data-flower='{"petals":7,"size":34,"light":true}'></span><span class="nm">开心</span></div>
+              <div class="mood-btn m-calm"><span class="flower" data-flower='{"petals":6,"size":34,"boost":true}'></span><span class="nm">平静</span></div>
+              <div class="mood-btn m-low"><span class="flower" data-flower='{"petals":6,"size":34,"boost":true}'></span><span class="nm">低落</span></div>
+              <div class="mood-btn m-inspire"><span class="flower" data-flower='{"petals":8,"size":34,"boost":true}'></span><span class="nm">灵感</span></div>
+              <div class="mood-btn m-anxious"><span class="flower" data-flower='{"petals":5,"size":34,"boost":true}'></span><span class="nm">焦虑</span></div>
+              <div class="mood-btn m-tired"><span class="flower" data-flower='{"petals":6,"size":34,"boost":true}'></span><span class="nm">疲惫</span></div>
+            </div>
+            <span class="cap">盖下一朵花，记录今天</span>
+          </div>
+        </div>
+      </main>
+    </div>
+    <div class="dark-note">深色模式 · 夜色花房</div>
+  </div>
+  <span class="screen-tag">05 · 深色模式 Dark</span>
+</section>
+
+<!-- ================= 06 · 移动端 ================= -->
+<section class="screen" id="mobile">
+  <div class="canvas">
+    <div class="phone">
+      <div class="phone-in">
+        <div class="statusbar">
+          <span class="time">9:41</span>
+          <span style="display:flex;gap:6px;align-items:center;">
+            <svg width="16" height="12" viewBox="0 0 18 12" fill="#2C322A"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity=".35"/></svg>
+            <svg width="23" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3" stroke="#2C322A" opacity=".4"/><rect x="2" y="2" width="14" height="8" rx="1.5" fill="#2C322A"/><path d="M23 4v4c1-.3 1.5-1 1.5-2S24 4.3 23 4z" fill="#2C322A" opacity=".4"/></svg>
+          </span>
+        </div>
+        <div class="m-scroll">
+          <div class="m-head">
+            <div>
+              <h2>7月26日</h2>
+              <span class="cap" style="font-size:11px;">星期六 · <i class="latina" style="font-size:11.5px;">in bloom.</i></span>
+            </div>
+            <span class="streak-badge" style="padding:6px 12px 6px 9px;font-size:11.5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+              <span class="mono" style="font-size:11.5px;">12</span> 天
+            </span>
+          </div>
+
+          <div class="card m-hero">
+            <span class="flower m-happy" data-flower='{"petals":7,"size":88,"withStem":true,"stemH":56}'></span>
+            <h3>今天是什么心情？</h3>
+            <div class="m-moods">
+              <div class="m-mood m-happy selected"><span class="flower" data-flower='{"petals":7,"size":26,"light":true}'></span><span class="nm">开心</span></div>
+              <div class="m-mood m-calm"><span class="flower" data-flower='{"petals":6,"size":26}'></span><span class="nm">平静</span></div>
+              <div class="m-mood m-low"><span class="flower" data-flower='{"petals":6,"size":26}'></span><span class="nm">低落</span></div>
+              <div class="m-mood m-inspire"><span class="flower" data-flower='{"petals":8,"size":26}'></span><span class="nm">灵感</span></div>
+              <div class="m-mood m-anxious"><span class="flower" data-flower='{"petals":5,"size":26}'></span><span class="nm">焦虑</span></div>
+              <div class="m-mood m-tired"><span class="flower" data-flower='{"petals":6,"size":26}'></span><span class="nm">疲惫</span></div>
+            </div>
+          </div>
+
+          <div class="card m-study">
+            <div class="card-title-row">
+              <h3 class="serif">今日学习</h3>
+              <span class="cap" style="color:var(--brand);font-weight:500;">+ 添加</span>
+            </div>
+            <div class="study-row m-calm"><span class="dot"></span><span class="subj">React 组件设计</span><span class="note"></span><span class="mono dur">2h 30m</span></div>
+            <div class="study-row m-happy" style="border-bottom:none;"><span class="dot"></span><span class="subj">英语精读</span><span class="note"></span><span class="mono dur">1h 00m</span></div>
+            <div class="study-total" style="padding-top:12px;"><span class="t">合计</span><span class="v" style="font-size:19px;">3h 30m</span></div>
+          </div>
+        </div>
+
+        <div class="tabbar">
+          <div class="tab on">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            今日
+          </div>
+          <div class="tab">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            花田
+          </div>
+          <div class="tab">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            时光
+          </div>
+          <div class="tab">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+            我的
+          </div>
+        </div>
+        <span class="home-ind"></span>
+      </div>
+    </div>
+  </div>
+  <span class="screen-tag">06 · 移动端 Mobile</span>
+</section>
+
+<script>
+/* ============ 花朵 SVG 生成器 ============ */
+function petalRing(cx, cy, r, w, n, fill, opacity, offsetDeg){
+  let s = '';
+  for(let i = 0; i < n; i++){
+    const a = offsetDeg + i * 360 / n;
+    s += `<ellipse cx="${cx}" cy="${cy - r / 2}" rx="${w / 2}" ry="${r / 2}" fill="${fill}"${opacity < 1 ? ` fill-opacity="${opacity}"` : ''} transform="rotate(${a.toFixed(1)} ${cx} ${cy})"/>`;
+  }
+  return s;
+}
+
+function makeFlower(o){
+  const n = o.petals || 6, size = o.size || 48;
+  const solid = o.solid, soft = o.soft, deep = o.deep;
+  const withStem = !!o.withStem, stemH = withStem ? (o.stemH || 40) : 0;
+  const cx = size / 2, cy = size / 2;
+  let outerFill = soft, outerOp = 1, innerFill = solid, centerFill = '#FFFFFF', dotFill = deep;
+  if(o.light){ outerFill = 'rgba(255,255,255,.42)'; innerFill = '#FFFFFF'; centerFill = solid; dotFill = solid; }
+  if(o.boost){ outerFill = soft; outerOp = 1; } // 深色底上直接用浅花瓣，自然提亮
+
+  const H = size + stemH;
+  let stem = '';
+  if(withStem){
+    const sx = cx, sy = size * .9, ex = cx + size * .06, ey = size + stemH;
+    const qx = cx - size * .12, qy = size + stemH * .45;
+    const sw = Math.max(2, size * .045);
+    stem =
+      `<path d="M ${sx} ${sy} Q ${qx} ${qy} ${ex} ${ey}" fill="none" stroke="#57A773" stroke-width="${sw}" stroke-linecap="round"/>` +
+      `<ellipse cx="${cx + size * .13}" cy="${size + stemH * .40}" rx="${size * .10}" ry="${size * .05}" fill="#57A773" opacity=".9" transform="rotate(32 ${cx + size * .13} ${size + stemH * .40})"/>` +
+      `<ellipse cx="${cx - size * .11}" cy="${size + stemH * .64}" rx="${size * .09}" ry="${size * .045}" fill="#57A773" opacity=".75" transform="rotate(-28 ${cx - size * .11} ${size + stemH * .64})"/>`;
+  }
+
+  const r1 = size * .46, w1 = size * .30;
+  const r2 = size * .295, w2 = size * .21;
+  const rc = size * .095;
+
+  return `<svg width="${size}" height="${H}" viewBox="0 0 ${size} ${H}" xmlns="http://www.w3.org/2000/svg">`
+    + stem
+    + petalRing(cx, cy, r1, w1, n, outerFill, outerOp, 0)
+    + petalRing(cx, cy, r2, w2, n, innerFill, 1, 180 / n)
+    + `<circle cx="${cx}" cy="${cy}" r="${rc}" fill="${centerFill}"/>`
+    + (o.light ? '' : `<circle cx="${cx}" cy="${cy}" r="${(rc * .42).toFixed(1)}" fill="${dotFill}" opacity=".8"/>`)
+    + `</svg>`;
+}
+
+/* 将所有 .flower[data-flower] 替换为生成的 SVG（颜色取自父级心情 class 的 CSS 变量） */
+function hydrateFlowers(){
+  document.querySelectorAll('.flower[data-flower]').forEach(el => {
+    const o = JSON.parse(el.dataset.flower);
+    const cs = getComputedStyle(el);
+    o.solid = cs.getPropertyValue('--m-solid').trim();
+    o.soft  = cs.getPropertyValue('--m-soft').trim();
+    o.deep  = cs.getPropertyValue('--m-deep').trim();
+    el.innerHTML = makeFlower(o);
+  });
+}
+
+/* ============ 花田月视图数据（2026-07，7/1 = 周三） ============ */
+const MOODS = {
+  happy:  {name:'开心', solid:'#F0B429', soft:'#FBF1D6', deep:'#8A6410', petals:7},
+  calm:   {name:'平静', solid:'#6C9BD1', soft:'#E3EDF7', deep:'#33597F', petals:6},
+  low:    {name:'低落', solid:'#9B8FC9', soft:'#ECE8F5', deep:'#584E85', petals:6},
+  inspire:{name:'灵感', solid:'#E58AAE', soft:'#FAE6EF', deep:'#8F3E61', petals:8},
+  anxious:{name:'焦虑', solid:'#E98A5F', soft:'#FBE8DE', deep:'#8F4B28', petals:5},
+  tired:  {name:'疲惫', solid:'#93A693', soft:'#E8ECE4', deep:'#556352', petals:6},
+};
+const GARDEN = { /* day: [mood, hours] */
+  1:['calm',2], 2:['happy',3], 3:['inspire',1.5], 5:['tired',1], 6:['happy',2.5], 7:['calm',2],
+  8:['anxious',0.5], 10:['happy',2.5], 11:['inspire',1.5], 12:['calm',2], 14:['low',1], 15:['happy',2],
+  16:['calm',2], 18:['inspire',2.5], 20:['happy',1.5], 21:['tired',1], 22:['calm',2], 25:['calm',1.75]
+};
+const TODAY = 26, DAYS_IN_MONTH = 31;
+
+function fmtH(h){
+  const H = Math.floor(h), M = Math.round((h - H) * 60);
+  return `${H}h ${String(M).padStart(2,'0')}m`;
+}
+
+function buildGarden(){
+  const grid = document.getElementById('calGrid');
+  if(!grid) return;
+  let html = '';
+  const blank = '<div class="cal-cell blank"></div>';
+  html += blank.repeat(2); // 周一、周二（6 月）
+
+  for(let d = 1; d <= DAYS_IN_MONTH; d++){
+    const rec = GARDEN[d];
+    const isToday = d === TODAY;
+    const isFuture = d > TODAY;
+    let cls = 'cal-cell';
+    if(isToday) cls += ' today';
+    if(isFuture) cls += ' dim';
+
+    let body = '';
+    if(rec){
+      const m = MOODS[rec[0]], h = rec[1];
+      const head = Math.round(30 + h * 2.8);            // 时长 → 花朵大小
+      const stem = Math.round(8 + h * 5);               // 时长 → 花茎高度
+      body = `<span class="flower" style="display:block;">${makeFlower({petals:m.petals, solid:m.solid, soft:m.soft, deep:m.deep, size:head, withStem:true, stemH:stem})}</span>`;
+      if(d === 18){
+        body += `<div class="cal-tip">
+          <div class="t1"><span class="td">7月18日 · 周六</span><span class="tm" style="color:#E58AAE;">灵感</span></div>
+          <div class="t2">学习 2h 30m · 2 个学科</div>
+          <div class="t3">「突然想到把笔记做成卡片盒，兴奋得学了一下午。」</div>
+        </div>`;
+      }
+    }else{
+      body = `<span class="ring-empty" style="width:26px;height:26px;display:block;${isToday ? 'border-color:#E8845C;opacity:.85;' : ''}"></span>`;
+    }
+    if(isToday){
+      body += `<svg class="today-ring" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M50 5 C73 4 95 23 95 50 C95 76 74 95 49 95 C25 95 5 76 5 50 C5 25 26 6 50 5 Z" fill="none" stroke="#E8845C" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+    }
+    html += `<div class="${cls}"><span class="d">${d}</span>${body}</div>`;
+  }
+  html += blank.repeat(35 - 2 - DAYS_IN_MONTH);
+  grid.innerHTML = html;
+}
+
+/* ============ 月度花束 ============ */
+function buildBouquet(){
+  const box = document.getElementById('bouquet');
+  if(!box) return;
+  const W = 260, H = 280, gx = 130, gy = 268;
+  const heads = [ // [x, y, mood, size]
+    [130, 58,  'happy',   58],
+    [64,  96,  'calm',    50],
+    [196, 96,  'inspire', 50],
+    [38,  158, 'anxious', 42],
+    [222, 158, 'low',     42],
+    [96,  152, 'tired',   44],
+    [164, 152, 'happy',   44],
+  ];
+  let stems = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0;z-index:1;">`;
+  heads.forEach(([x, y, mood, s]) => {
+    const qx = gx + (x - gx) * .55, qy = gy - (gy - y) * .38;
+    stems += `<path d="M ${gx} ${gy} Q ${qx} ${qy} ${x} ${y + s * .3}" fill="none" stroke="#57A773" stroke-width="3" stroke-linecap="round"/>`;
+    const lx = gx + (x - gx) * .45, ly = gy - (gy - y) * .4;
+    stems += `<ellipse cx="${lx + (x > gx ? 7 : -7)}" cy="${ly}" rx="9" ry="4.5" fill="#57A773" opacity=".8" transform="rotate(${x > gx ? 35 : -35} ${lx} ${ly})"/>`;
+  });
+  // 束带蝴蝶结
+  stems += `<ellipse cx="${gx - 11}" cy="${gy - 4}" rx="11" ry="6" fill="#E8845C" transform="rotate(-28 ${gx - 11} ${gy - 4})"/>`;
+  stems += `<ellipse cx="${gx + 11}" cy="${gy - 4}" rx="11" ry="6" fill="#E8845C" transform="rotate(28 ${gx + 11} ${gy - 4})"/>`;
+  stems += `<circle cx="${gx}" cy="${gy - 3}" r="5" fill="#D1713F"/>`;
+  stems += `<path d="M ${gx - 3} ${gy + 1} L ${gx - 7} ${gy + 14}" stroke="#E8845C" stroke-width="4" stroke-linecap="round"/>`;
+  stems += `<path d="M ${gx + 3} ${gy + 1} L ${gx + 7} ${gy + 14}" stroke="#E8845C" stroke-width="4" stroke-linecap="round"/>`;
+  stems += '</svg>';
+
+  let flowers = '';
+  heads.forEach(([x, y, mood, s]) => {
+    const m = MOODS[mood];
+    flowers += `<span style="position:absolute;left:${x - s / 2}px;top:${y - s / 2}px;z-index:2;line-height:0;">${makeFlower({petals:m.petals, solid:m.solid, soft:m.soft, deep:m.deep, size:s})}</span>`;
+  });
+  box.innerHTML = stems + flowers;
+}
+
+buildGarden();
+buildBouquet();
+hydrateFlowers();
+</script>
+</body>
+</html>

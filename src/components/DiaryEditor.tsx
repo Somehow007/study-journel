@@ -4,8 +4,8 @@ import { Eye, Pencil } from 'lucide-react';
 
 // 配置 marked：安全模式 + 基础排版
 marked.setOptions({
-  breaks: true,       // GFM 换行
-  gfm: true,          // GitHub Flavored Markdown
+  breaks: true, // GFM 换行
+  gfm: true,    // GitHub Flavored Markdown
 });
 
 interface DiaryEditorProps {
@@ -52,7 +52,7 @@ export default function DiaryEditor({ value, onChange, mood: _mood }: DiaryEdito
         setTimeout(() => setSaveStatus('idle'), 2000);
       }, 1500);
     },
-    [onChange],
+    [onChange]
   );
 
   // Render markdown to HTML (memoized, only when previewing)
@@ -67,9 +67,9 @@ export default function DiaryEditor({ value, onChange, mood: _mood }: DiaryEdito
 
   return (
     <div className="relative">
-      <div className="card diary-paper relative rounded-lg">
-        {/* 工具栏 — 卡片顶部，不遮挡正文 */}
-        <div className="flex items-center justify-between border-b border-[var(--hairline)] px-4 py-2">
+      <div className="card diary-paper relative overflow-hidden rounded-xl">
+        {/* 工具栏 */}
+        <div className="flex items-center justify-between border-b border-[var(--hairline)] px-5 py-2.5">
           <span className="font-sans text-caption text-[var(--ink-faint)]">
             {isPreview ? '预览' : '编辑'}
           </span>
@@ -83,7 +83,7 @@ export default function DiaryEditor({ value, onChange, mood: _mood }: DiaryEdito
               }`}
               title="编辑"
             >
-              <Pencil size={14} />
+              <Pencil size={14} strokeWidth={1.75} />
             </button>
             <button
               onClick={() => setIsPreview(true)}
@@ -94,14 +94,14 @@ export default function DiaryEditor({ value, onChange, mood: _mood }: DiaryEdito
               }`}
               title="预览"
             >
-              <Eye size={14} />
+              <Eye size={14} strokeWidth={1.75} />
             </button>
           </div>
         </div>
 
         {isPreview ? (
           <div
-            className="diary-content min-h-[200px] p-4 font-serif text-diary text-[var(--ink)]"
+            className="diary-content min-h-[200px] p-5 font-serif text-diary text-[var(--ink)]"
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />
         ) : (
@@ -109,30 +109,27 @@ export default function DiaryEditor({ value, onChange, mood: _mood }: DiaryEdito
             ref={textareaRef}
             value={displayValue}
             onChange={handleChange}
-            placeholder="随手写点什么… 支持 Markdown。今天窗外是什么天气？"
-            className="min-h-[200px] w-full resize-none bg-transparent p-4 font-serif text-diary text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+            placeholder="随手写点什么… 今天窗外是什么天气？"
+            className="min-h-[220px] w-full resize-none bg-transparent p-5 font-serif text-diary text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+            style={{ backgroundPosition: '0 23px' }}
           />
         )}
       </div>
 
       {/* 保存状态指示 — 右下角 */}
-      <div className="absolute bottom-3 right-4 flex items-center gap-1.5">
+      <div className="pointer-events-none absolute -bottom-6 right-5 flex items-center gap-1.5">
         {saveStatus === 'saving' && (
           <span className="font-sans text-caption text-[var(--ink-faint)]">保存中…</span>
         )}
-        {saveStatus === 'saved' && (
+        {(saveStatus === 'saved' || (saveStatus === 'idle' && displayValue && lastSavedTime)) && (
           <div className="animate-fade-in flex items-center gap-1.5">
             <span
-              className="h-2 w-2 rounded-full"
-              style={{ background: 'var(--pine)', animation: 'save-pulse 200ms ease-out' }}
+              className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saved' ? 'animate-save-pulse' : ''}`}
+              style={{ background: 'var(--pine)' }}
             />
-            <span className="font-sans text-caption text-[var(--pine)]">已保存 {lastSavedTime}</span>
-          </div>
-        )}
-        {saveStatus === 'idle' && displayValue && lastSavedTime && (
-          <div className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--pine)', opacity: 0.5 }} />
-            <span className="font-sans text-caption text-[var(--ink-faint)]">已保存 {lastSavedTime}</span>
+            <span className="font-sans text-caption" style={{ color: 'var(--pine)' }}>
+              已保存 {lastSavedTime}
+            </span>
           </div>
         )}
       </div>

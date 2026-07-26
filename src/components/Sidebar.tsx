@@ -29,17 +29,17 @@ export default function Sidebar() {
         borderRight: '1px solid var(--keyline)',
       }}
     >
-      {/* Logo — 📔 + 衬线 "手帐" + Caveat Latin */}
+      {/* Logo — 衬线「手帐」+ Fraunces 拉丁小注 */}
       <div className="flex items-center gap-2 px-3 pb-5">
         <span className="text-2xl">📔</span>
         <div className="flex flex-col">
           <span className="font-serif text-h2 leading-none text-[var(--ink)]">手帐</span>
-          <span className="font-hand text-caption text-[var(--ink-faint)]">Study Journal</span>
+          <span className="font-displaylatin italic text-caption text-[var(--ink-faint)]">Study Journal</span>
         </div>
       </div>
 
-      {/* 缝线分隔 */}
-      <div className="stitched mx-3 mb-4" />
+      {/* 分隔线 */}
+      <div className="mx-3 mb-4 h-px bg-[var(--hairline)]" />
 
       {/* 今日按钮 */}
       <button
@@ -80,8 +80,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* 缝线分隔 */}
-      <div className="stitched mx-3 my-3" />
+      {/* 分隔线 */}
+      <div className="mx-3 my-3 h-px bg-[var(--hairline)]" />
 
       {/* 底部操作 */}
       <div className="flex flex-col gap-1">

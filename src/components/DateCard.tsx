@@ -1,7 +1,7 @@
 import { useMoodConfig } from '../lib/moodUtils';
 import { durationProgress } from '../lib/dateUtils';
 import { useApp } from '../context/AppContext';
-import MoodSeal from '../assets/moods';
+import MoodFlower from './MoodFlower';
 import { useState } from 'react';
 
 interface DateCardProps {
@@ -50,7 +50,7 @@ export default function DateCard({
         >
           {moodConfig && (
             <div className="mb-1 flex items-center gap-1.5">
-              {mood && <MoodSeal moodType={mood} size={16} tone="seal" />}
+              {mood && <MoodFlower moodType={mood} size={16} tone="seal" />}
               <span className="text-small text-[var(--ink)]">{moodConfig.label}</span>
             </div>
           )}
@@ -116,7 +116,7 @@ export default function DateCard({
               style={{ transform: hovered ? 'scale(1.15)' : 'scale(1)' }}
             >
               {mood && (
-                <MoodSeal
+                <MoodFlower
                   moodType={mood}
                   size={24}
                   tone="line"

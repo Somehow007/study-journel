@@ -7,12 +7,11 @@ import { db, deleteCustomMood } from '../lib/db';
 import MoodEditModal from '../components/MoodEditModal';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
-import { PALETTES } from '../lib/constants';
 import type { CustomMoodConfig } from '../types';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { theme, toggleTheme, palette, setPalette } = useApp();
+  const { theme, toggleTheme } = useApp();
   const [showMoodEdit, setShowMoodEdit] = useState(false);
   const [editingMood, setEditingMood] = useState<CustomMoodConfig | null>(null);
   const { importStatus, handleExport, triggerImport, handleFileChange, fileInputRef } = useDataIO();
@@ -77,39 +76,6 @@ export default function Settings() {
             <Moon size={16} />
             深色
           </button>
-        </div>
-      </section>
-
-      {/* Color Palette */}
-      <section className="mb-8">
-        <h2 className="mb-3 font-sans text-small text-[var(--ink-soft)]">配色主题</h2>
-        <div className="flex flex-wrap gap-3">
-          {PALETTES.map((p) => {
-            const active = palette === p.id;
-            return (
-              <button
-                key={p.id}
-                onClick={() => setPalette(p.id)}
-                className={`card flex w-36 flex-col items-start gap-2 rounded-lg p-3 text-left transition-all ${
-                  active ? 'border-[var(--brand)]' : 'hover:border-[var(--ink-faint)]'
-                }`}
-                style={active ? { boxShadow: '0 0 0 3px color-mix(in srgb, var(--brand) 15%, transparent)' } : undefined}
-                aria-pressed={active}
-              >
-                <span
-                  className="flex h-8 w-full items-center justify-center rounded-md border"
-                  style={{ background: p.swatch.paper, borderColor: 'var(--hairline)' }}
-                >
-                  <span
-                    className="h-3.5 w-3.5 rounded-full"
-                    style={{ background: p.swatch.brand }}
-                  />
-                </span>
-                <span className="font-sans text-small font-semibold text-[var(--ink)]">{p.label}</span>
-                <span className="font-sans text-caption text-[var(--ink-faint)]">{p.hint}</span>
-              </button>
-            );
-          })}
         </div>
       </section>
 

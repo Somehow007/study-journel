@@ -1,91 +1,84 @@
-import type { MoodConfig, MoodType, PaletteType } from '../types';
+import type { MoodConfig, MoodType } from '../types';
 
-/** 心情配置表 — 明快六色 · 浅色模式 + 深色模式（三套配色主题共用） */
+/** 心情配置表 — 花园六色 · 浅色模式 + 深色模式（v5.0 花期）
+ *  每种心情 = 一种花 + 三档色：solid（花瓣实色/选中态/图表）、
+ *  ink（深调，tint 底上的文字）、tint（浅底，大面积铺垫）。 */
 export const MOOD_CONFIGS: Record<MoodType, MoodConfig> = {
   happy: {
     type: 'happy',
     label: '开心',
     emoji: '😊',
-    solid: '#F4A62A',
-    ink: '#8A5A0A',
-    tint: '#FDEFCE',
-    dark: { solid: '#F7BC57', ink: '#F5DCA8', tint: '#3A2E16' },
+    flower: '向日葵金',
+    solid: '#F0B429',
+    ink: '#8A6410',
+    tint: '#FBF1D6',
+    dark: { solid: '#F5C35A', ink: '#F0DCA8', tint: '#3A3016' },
   },
   calm: {
     type: 'calm',
     label: '平静',
     emoji: '☁️',
-    solid: '#3AA7D9',
-    ink: '#1A6488',
-    tint: '#DBEFF8',
-    dark: { solid: '#5FBEE6', ink: '#C9E9F7', tint: '#1B2F38' },
+    flower: '绣球蓝',
+    solid: '#6C9BD1',
+    ink: '#33597F',
+    tint: '#E3EDF7',
+    dark: { solid: '#8FB6DE', ink: '#CFE2F2', tint: '#1E2A38' },
   },
   sad: {
     type: 'sad',
     label: '低落',
     emoji: '🌧️',
-    solid: '#9487D8',
-    ink: '#4E4483',
-    tint: '#E7E4F7',
-    dark: { solid: '#AB9FE4', ink: '#DED9F6', tint: '#262338' },
+    flower: '薰衣草紫',
+    solid: '#9B8FC9',
+    ink: '#584E85',
+    tint: '#ECE8F5',
+    dark: { solid: '#B3A8D9', ink: '#DCD6F0', tint: '#262238' },
   },
   inspired: {
     type: 'inspired',
     label: '灵感',
     emoji: '💡',
-    solid: '#E56AA0',
-    ink: '#8E2F5C',
-    tint: '#FBDEEA',
-    dark: { solid: '#EF85B5', ink: '#F9D3E4', tint: '#37202B' },
+    flower: '樱粉',
+    solid: '#E58AAE',
+    ink: '#8F3E61',
+    tint: '#FAE6EF',
+    dark: { solid: '#EEA3C0', ink: '#F6D3E2', tint: '#38202C' },
   },
   anxious: {
     type: 'anxious',
     label: '焦虑',
     emoji: '⚡',
-    solid: '#F0833E',
-    ink: '#8F4511',
-    tint: '#FDE5D4',
-    dark: { solid: '#F89A5F', ink: '#FADCC6', tint: '#3A2517' },
+    flower: '虞美人橙',
+    solid: '#E98A5F',
+    ink: '#8F4B28',
+    tint: '#FBE8DE',
+    dark: { solid: '#F0A077', ink: '#F6DAC8', tint: '#382518' },
   },
   tired: {
     type: 'tired',
     label: '疲惫',
     emoji: '😴',
-    solid: '#7E8FA8',
-    ink: '#45536B',
-    tint: '#E3E9F1',
-    dark: { solid: '#98A8BF', ink: '#D4DDE9', tint: '#232A36' },
+    flower: '鼠尾草绿',
+    solid: '#93A693',
+    ink: '#556352',
+    tint: '#E8ECE4',
+    dark: { solid: '#A9BCA9', ink: '#D8E2D4', tint: '#242C22' },
   },
 };
 
 /** 心情顺序列表 */
 export const MOOD_LIST: MoodType[] = ['happy', 'calm', 'sad', 'inspired', 'anxious', 'tired'];
 
-/** 学科标记点预设颜色（8 色：心情 solid 六色 + 松绿 + 黛蓝） */
+/** 学科标记点色板（8 色，花园色板） */
 export const SUBJECT_COLORS: string[] = [
-  '#F4A62A', // 明黄
-  '#3AA7D9', // 天青
-  '#9487D8', // 藤紫
-  '#E56AA0', // 樱粉
-  '#F0833E', // 蜜柑橙
-  '#7E8FA8', // 灰蓝
-  '#3D9B6A', // 松绿
+  '#F0B429', // 向日葵金
+  '#6C9BD1', // 绣球蓝
+  '#9B8FC9', // 薰衣草紫
+  '#E58AAE', // 樱粉
+  '#E98A5F', // 虞美人橙
+  '#93A693', // 鼠尾草绿
+  '#57A773', // 亮绿
   '#4A7BA6', // 黛蓝
-];
-
-/** 配色主题元信息（设置页选项 UI 用；实际色值见 index.css 的 data-palette 变量块） */
-export interface PaletteMeta {
-  id: PaletteType;
-  label: string;
-  hint: string;
-  /** 选项色板预览：纸底 / 品牌色 */
-  swatch: { paper: string; brand: string };
-}
-
-export const PALETTES: PaletteMeta[] = [
-  { id: 'coral', label: '珊瑚', hint: '暖白纸 × 珊瑚红', swatch: { paper: '#FBF9F6', brand: '#F4645B' } },
-  { id: 'teal', label: '青碧', hint: '冷白纸 × 青绿', swatch: { paper: '#F5F8F7', brand: '#0E9F8A' } },
-  { id: 'violet', label: '蓝紫', hint: '冷灰纸 × 蓝紫', swatch: { paper: '#F7F7FA', brand: '#6C5CE7' } },
 ];
 
 /** 星期中文标签（周一起始） */

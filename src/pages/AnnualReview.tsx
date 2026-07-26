@@ -6,7 +6,7 @@ import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration, formatDate } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useApp } from '../context/AppContext';
-import MoodSeal from '../assets/moods';
+import MoodFlower from '../components/MoodFlower';
 import { ChevronLeft, ChevronRight, BookOpen, Clock, Heart, Flame } from 'lucide-react';
 import {
   BarChart,
@@ -207,7 +207,7 @@ export default function AnnualReview() {
             </div>
             <div className="card flex items-center gap-3 rounded-lg p-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: topMoodConfig ? (isDark ? `${topMoodConfig.dark.tint}` : `${topMoodConfig.tint}`) : 'color-mix(in srgb, var(--brand) 12%, transparent)' }}>
-                {stats.topMood ? <MoodSeal moodType={stats.topMood} size={20} tone="seal" /> : <Heart size={20} style={{ color: 'var(--ink-faint)' }} />}
+                {stats.topMood ? <MoodFlower moodType={stats.topMood} size={20} tone="seal" /> : <Heart size={20} style={{ color: 'var(--ink-faint)' }} />}
               </div>
               <div>
                 <div className="font-mono text-num-lg text-[var(--ink)]">{topMoodConfig?.emoji ?? '-'}</div>
@@ -286,7 +286,7 @@ export default function AnnualReview() {
                   <div className="mb-1 font-sans text-caption text-[var(--ink-soft)]">{m.label}</div>
                   <div className="flex items-center gap-2">
                     {m.topMoodType ? (
-                      <MoodSeal moodType={m.topMoodType} size={18} tone="line" />
+                      <MoodFlower moodType={m.topMoodType} size={18} tone="line" />
                     ) : (
                       <span className="text-lg opacity-20">·</span>
                     )}

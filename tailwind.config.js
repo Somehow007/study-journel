@@ -6,22 +6,22 @@ export default {
     extend: {
       fontFamily: {
         serif: ['Noto Serif SC', 'Songti SC', 'STSong', 'serif'],
-        sans: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
-        mono: ['IBM Plex Mono', 'DM Mono', 'monospace'],
-        hand: ['Caveat', 'cursive'],
+        sans: ['system-ui', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'monospace'],
+        displaylatin: ['Fraunces', 'serif'],
       },
       fontSize: {
-        display: ['40px', { lineHeight: '48px', letterSpacing: '-0.01em', fontWeight: '600' }],
-        h1: ['28px', { lineHeight: '36px', fontWeight: '600' }],
+        display: ['40px', { lineHeight: '48px', fontWeight: '600' }],
+        h1: ['30px', { lineHeight: '38px', fontWeight: '600' }],
         h2: ['19px', { lineHeight: '28px', fontWeight: '600' }],
-        title: ['17px', { lineHeight: '26px', fontWeight: '600' }],
-        body: ['16px', { lineHeight: '28px', fontWeight: '400' }],
+        title: ['16px', { lineHeight: '24px', fontWeight: '600' }],
+        body: ['15px', { lineHeight: '26px', fontWeight: '400' }],
         diary: ['17px', { lineHeight: '32px', fontWeight: '400' }],
-        small: ['13px', { lineHeight: '20px', fontWeight: '500' }],
-        caption: ['12px', { lineHeight: '16px', fontWeight: '500', letterSpacing: '0.04em' }],
+        small: ['13px', { lineHeight: '20px', fontWeight: '400' }],
+        caption: ['12px', { lineHeight: '16px', fontWeight: '500', letterSpacing: '0.03em' }],
         num: ['13px', { lineHeight: '20px', fontWeight: '500' }],
-        'num-sm': ['15px', { lineHeight: '24px', fontWeight: '400' }],
-        'num-lg': ['24px', { lineHeight: '32px', fontWeight: '500' }],
+        'num-sm': ['15px', { lineHeight: '24px', fontWeight: '500' }],
+        'num-lg': ['28px', { lineHeight: '36px', fontWeight: '500' }],
       },
       spacing: {
         1: '4px',
@@ -37,12 +37,13 @@ export default {
         sm: '6px',
         md: '10px',
         lg: '14px',
-        xl: '18px',
+        xl: '20px',
+        '2xl': '28px',
         full: '999px',
       },
       colors: {
-        // 中性色与品牌色全部指向 CSS 变量（index.css），
-        // 由 data-palette（配色主题）与 .dark（深浅模式）驱动，此处不留硬编码色值。
+        // 中性色与品牌色唯一来源是 src/index.css 的 CSS 变量（晨园 / 夜色花房），
+        // 此处仅 var() 引用，不留硬编码色值。
         paper: 'var(--paper)',
         card: 'var(--card)',
         overlay: 'var(--overlay)',
@@ -58,30 +59,34 @@ export default {
           ink: 'var(--brand-ink)',
         },
         pine: 'var(--pine)',
+        accent: {
+          DEFAULT: 'var(--accent)',
+          ink: 'var(--accent-ink)',
+        },
         // 心情六色唯一来源是 src/lib/constants.ts 的 MOOD_CONFIGS（含深色档），
         // 不在此处重复定义，避免 token 漂移。
       },
       boxShadow: {
-        1: '0 1px 2px rgba(28,32,36,0.05), 0 2px 6px rgba(28,32,36,0.04)',
-        2: '0 1px 3px rgba(28,32,36,0.07), 0 6px 16px rgba(28,32,36,0.07)',
-        3: '0 2px 6px rgba(28,32,36,0.08), 0 12px 32px rgba(28,32,36,0.10)',
-        4: '0 4px 12px rgba(28,32,36,0.08), 0 24px 56px rgba(28,32,36,0.14)',
-        'dark-1': '0 1px 2px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.25)',
-        'dark-2': '0 1px 3px rgba(0,0,0,0.35), 0 6px 16px rgba(0,0,0,0.25)',
-        'dark-3': '0 2px 6px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.25)',
-        'dark-4': '0 4px 12px rgba(0,0,0,0.35), 0 24px 56px rgba(0,0,0,0.25)',
+        1: '0 1px 2px rgba(44,50,42,0.04), 0 8px 24px rgba(44,50,42,0.05)',
+        2: '0 2px 6px rgba(44,50,42,0.06), 0 12px 32px rgba(44,50,42,0.08)',
+        3: '0 2px 8px rgba(44,50,42,0.08), 0 16px 40px rgba(44,50,42,0.10)',
+        4: '0 4px 12px rgba(44,50,42,0.08), 0 24px 56px rgba(44,50,42,0.14)',
+        'dark-1': '0 1px 2px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.28)',
+        'dark-2': '0 2px 6px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.28)',
+        'dark-3': '0 2px 8px rgba(0,0,0,0.35), 0 16px 40px rgba(0,0,0,0.28)',
+        'dark-4': '0 4px 12px rgba(0,0,0,0.35), 0 24px 56px rgba(0,0,0,0.28)',
       },
       animation: {
-        'stamp-in': 'stamp-in 140ms cubic-bezier(0.2,0.9,0.3,1)',
+        'bloom-in': 'bloom-in 240ms cubic-bezier(0.34,1.4,0.64,1)',
         'fade-up': 'fade-up 250ms ease-out',
         'fade-in': 'fade-in 200ms ease-out',
         'save-pulse': 'save-pulse 200ms ease-out',
         'slide-up': 'slide-up 220ms ease-out',
       },
       keyframes: {
-        'stamp-in': {
-          '0%': { transform: 'scale(1.18)', opacity: '0.6' },
-          '100%': { transform: 'scale(1.0)', opacity: '1' },
+        'bloom-in': {
+          '0%': { transform: 'scale(0.6) rotate(-8deg)', opacity: '0' },
+          '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
         },
         'fade-up': {
           '0%': { opacity: '0', transform: 'translateY(8px)' },

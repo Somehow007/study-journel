@@ -5,7 +5,7 @@ import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useApp } from '../context/AppContext';
-import MoodSeal from '../assets/moods';
+import MoodFlower from '../components/MoodFlower';
 import { ChevronLeft, ChevronRight, BookOpen, Clock, Heart, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -190,7 +190,7 @@ export default function Stats() {
                 }}
               >
                 {stats.topMood ? (
-                  <MoodSeal moodType={stats.topMood} size={20} tone="seal" />
+                  <MoodFlower moodType={stats.topMood} size={20} tone="seal" />
                 ) : (
                   <Heart size={20} style={{ color: 'var(--ink-faint)' }} />
                 )}

@@ -4,8 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { getRecordByDate, upsertRecord } from '../lib/db';
 
 import { useMoodConfig } from '../lib/moodUtils';
-import { useApp } from '../context/AppContext';
-import MoodSeal from '../assets/moods';
+import MoodFlower from '../components/MoodFlower';
 import MoodSelector from '../components/MoodSelector';
 import LearningRecordCard from '../components/LearningRecordCard';
 import LearningFormModal from '../components/LearningFormModal';
@@ -27,13 +26,6 @@ export default function TodayDetail() {
   const diary = record?.diary ?? '';
 
   const moodConfig = useMoodConfig(mood);
-  const { theme } = useApp();
-  const isDark = theme === 'dark';
-
-  // Washi tape color: mood tint or hairline if no mood
-  const washiColor = moodConfig
-    ? (isDark ? moodConfig.dark.tint : moodConfig.tint)
-    : 'var(--hairline)';
 
   // Parse date for display
   const dateObj = useMemo(() => {
@@ -46,7 +38,7 @@ export default function TodayDetail() {
     ? `${dateObj.getMonth() + 1}月${dateObj.getDate()}日 星期${['日', '一', '二', '三', '四', '五', '六'][dateObj.getDay()]}`
     : date || '';
 
-  // Latin date for washi tape (e.g., "Fri, Jul 18")
+  // Latin date caption (e.g., "Fri, Jul 18") — Fraunces 斜体拉丁小注
   const latinDate = dateObj
     ? dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : '';
@@ -101,14 +93,11 @@ export default function TodayDetail() {
 
   return (
     <div className="animate-fade-up relative" style={{ maxWidth: '720px', margin: '0 auto' }}>
-      {/* 和纸胶带 — 页眉顶部 */}
+      {/* 拉丁小注 — Fraunces italic */}
       <div className="mb-4 flex justify-center">
-        <div
-          className="washi flex items-center justify-center font-hand text-caption"
-          style={{ background: washiColor, width: '120px', color: 'var(--ink-soft)' }}
-        >
+        <span className="font-displaylatin italic text-caption text-[var(--ink-faint)]">
           {latinDate}
-        </div>
+        </span>
       </div>
 
       {/* 返回 + 日期标题 */}
@@ -126,29 +115,27 @@ export default function TodayDetail() {
         <h1 className="font-serif text-h1 text-[var(--ink)]">
           {formattedDate}
         </h1>
-        {mood && moodConfig && <MoodSeal moodType={mood} size={32} tone="seal" />}
+        {mood && moodConfig && <MoodFlower moodType={mood} size={32} />}
       </div>
 
-      {/* 缝线分隔 */}
-      <div className="stitched mb-6" />
+      {/* 分隔线 */}
+      <div className="mb-6 h-px bg-[var(--hairline)]" />
 
       {/* 心情选择区 */}
       <section className="relative z-10 mb-6">
         <h2 className="mb-4 flex items-center font-serif text-h2 text-[var(--ink)]">
-          <span className="title-tick" />
           今天的心情
         </h2>
         <MoodSelector selected={mood} onSelect={handleMoodSelect} />
       </section>
 
-      {/* 缝线分隔 */}
-      <div className="stitched mb-6" />
+      {/* 分隔线 */}
+      <div className="mb-6 h-px bg-[var(--hairline)]" />
 
       {/* 学习记录区 — 账簿清单 */}
       <section className="relative z-10 mb-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center font-serif text-h2 text-[var(--ink)]">
-            <span className="title-tick" />
             今日学习
           </h2>
           <button
@@ -211,13 +198,12 @@ export default function TodayDetail() {
         )}
       </section>
 
-      {/* 缝线分隔 */}
-      <div className="stitched mb-6" />
+      {/* 分隔线 */}
+      <div className="mb-6 h-px bg-[var(--hairline)]" />
 
       {/* 日记区 — 衬线信纸 */}
       <section className="relative z-10">
         <h2 className="mb-4 flex items-center font-serif text-h2 text-[var(--ink)]">
-          <span className="title-tick" />
           今日想法
         </h2>
         <DiaryEditor value={diary} onChange={handleDiaryChange} mood={mood} />

@@ -1,66 +1,65 @@
 import { useAllMoodConfigs } from '../lib/moodUtils';
-import { useApp } from '../context/AppContext';
-import MoodSeal from '../assets/moods';
+import { useIsDark } from '../lib/useIsDark';
+import Flower from './Flower';
 
 interface MoodSelectorProps {
-  selected: string | null;  // 内置 MoodType 或自定义 nanoid
+  selected: string | null; // 内置 MoodType 或自定义 nanoid
   onSelect: (mood: string) => void;
 }
 
 export default function MoodSelector({ selected, onSelect }: MoodSelectorProps) {
-  const { theme } = useApp();
-  const isDark = theme === 'dark';
+  const isDark = useIsDark();
   const allMoods = useAllMoodConfigs();
 
   return (
-    <div className="flex flex-wrap items-center gap-3 md:gap-4">
+    <div className="grid grid-cols-3 gap-3 sm:grid-cols-6 sm:gap-3.5">
       {allMoods.map((config) => {
         const moodType = config.type;
         const isSelected = selected === moodType;
 
-        // Colors for current theme
-        const tintColor = isDark ? config.dark.tint : config.tint;
-        const solidColor = isDark ? config.dark.solid : config.solid;
+        const tint = isDark ? config.dark.tint : config.tint;
+        const solid = isDark ? config.dark.solid : config.solid;
+        const ink = isDark ? config.dark.ink : config.ink;
+        const isCustom = !config.flower;
 
         return (
           <button
             key={moodType}
             onClick={() => onSelect(moodType)}
-            className="group relative flex flex-col items-center gap-1.5"
-            style={{ animation: isSelected ? 'stamp-in 140ms cubic-bezier(0.2,0.9,0.3,1)' : 'none' }}
+            className={`group flex flex-col items-center gap-2 rounded-xl py-3 transition-colors sm:py-2.5 ${
+              isSelected ? 'animate-bloom-in' : ''
+            }`}
           >
-            {/* Seal circle — 44px */}
+            {/* 圆底 56px：未选 tint，选中 solid */}
             <span
-              className="relative flex h-[44px] w-[44px] items-center justify-center rounded-full transition-all duration-150"
+              className="relative flex h-14 w-14 items-center justify-center rounded-full transition-all duration-150"
               style={{
-                background: isSelected ? solidColor : 'transparent',
-                border: isSelected
-                  ? `2px solid ${solidColor}`
-                  : `1.5px solid var(--hairline)`,
-              }}
-              onMouseEnter={(e) => {
-                if (!isSelected) {
-                  e.currentTarget.style.background = tintColor;
-                  e.currentTarget.style.borderColor = 'transparent';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSelected) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'var(--hairline)';
-                }
+                background: isSelected ? solid : tint,
+                boxShadow: isSelected ? '0 4px 14px rgba(44,50,42,0.14)' : 'none',
               }}
             >
-              <MoodSeal
-                moodType={moodType}
-                size={isSelected ? 24 : 22}
-                tone={isSelected ? 'seal' : 'line'}
-                className="transition-transform duration-150 group-hover:scale-110"
-              />
+              {isCustom ? (
+                <span className="text-xl leading-none" style={{ color: ink }}>
+                  {config.emoji}
+                </span>
+              ) : (
+                <span className="inline-block transition-transform duration-150 group-hover:scale-[1.08]">
+                  <Flower
+                    mood={config}
+                    size={28}
+                    variant="head"
+                    selected={isSelected}
+                  />
+                </span>
+              )}
             </span>
-            {/* Label */}
-            <span className="font-sans text-caption text-[var(--ink-faint)] transition-colors group-hover:text-[var(--ink-soft)]">
-              {config.label}
+
+            {/* 花名 / 心情名 */}
+            <span
+              className="max-w-full truncate px-1 font-sans text-caption"
+              style={{ color: ink }}
+            >
+              {config.flower ?? config.label}
             </span>
           </button>
         );
