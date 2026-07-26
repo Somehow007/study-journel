@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, ArrowRight } from 'lucide-react';
 import { searchDiary } from '../lib/db';
-import { formatDate, formatDuration, totalDuration, parseDate, getWeekdayChinese } from '../lib/dateUtils';
+import { formatDuration, totalDuration, parseDate, getWeekdayChinese } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useIsDark } from '../lib/useIsDark';
 import Flower from '../components/Flower';
@@ -193,7 +193,7 @@ export default function Search() {
                           color: isDark ? moodConfig.dark.ink : moodConfig.ink,
                         }}
                       >
-                        {moodConfig.flower}
+                        {moodConfig.flower ?? moodConfig.label}
                       </span>
                     )}
                     {record.learnings.length > 0 && (

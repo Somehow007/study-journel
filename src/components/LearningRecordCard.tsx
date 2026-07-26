@@ -19,7 +19,7 @@ export default function LearningRecordCard({ item, onEdit, onDelete }: LearningR
     <button
       type="button"
       onClick={onEdit}
-      className="group flex w-full items-center gap-3.5 px-1 py-3.5 text-left transition-colors hover:bg-[var(--paper)] sm:py-3"
+      className="group flex w-full items-center gap-3.5 px-1 py-3 text-left transition-colors hover:bg-[var(--paper)] sm:py-[15px]"
     >
       {/* 学科色点 10px */}
       <span

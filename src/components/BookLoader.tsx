@@ -27,11 +27,7 @@ export default function BookLoader({ onComplete }: BookLoaderProps) {
     <div
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center transition-opacity duration-300 ease-out"
       style={{
-        background: [
-          'radial-gradient(900px 620px at 10% -10%, var(--glow-1), transparent 70%)',
-          'radial-gradient(1000px 700px at 95% 110%, var(--glow-2), transparent 70%)',
-          'linear-gradient(170deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%)',
-        ].join(', '),
+        background: 'linear-gradient(170deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%)',
         opacity: fading ? 0 : 1,
       }}
     >

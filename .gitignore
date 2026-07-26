@@ -11,6 +11,10 @@ dist
 dist-ssr
 *.local
 
+# 生成的走查截图与测试产物（可随时由 design/verify-*.mjs 重新生成）
+design/shots/
+test-results/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

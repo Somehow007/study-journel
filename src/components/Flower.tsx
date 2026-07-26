@@ -106,11 +106,13 @@ export default function Flower({
 
   /* ── 取色：mood 三档（感知深色）或单色 color ── */
   const solid = mood ? (isDark ? mood.dark.solid : mood.solid) : color!;
-  const ink = mood ? (isDark ? mood.dark.ink : mood.ink) : color!;
-  // 外层大花瓣：浅色 solid 38% 透明；深色用浅色 tint 提亮
-  // 选中态：solid 实底上渲染白花瓣，深浅模式通用
-  const outerFill = selected ? '#FFFFFF' : mood && isDark ? mood.tint : solid;
-  const outerOpacity = selected ? 0.45 : mood && isDark ? 0.92 : 0.38;
+  // 花心小点：始终用浅调 deep（mood.ink），落在白色花心上对比清晰（mockup 深色花同此理）
+  const ink = mood ? mood.ink : color!;
+  // 外层大花瓣：用浅色 tint（= mockup soft@1）。白底上呈柔和 pastel 光晕；
+  // tint 磁贴上与底同色自然隐形（仅留 solid 内瓣，等同 mockup 心情磁贴观感）；
+  // 深色近黑磁贴上则等同 boost 提亮。选中态在 solid 实底上渲染白花瓣。
+  const outerFill = selected ? '#FFFFFF' : mood ? mood.tint : solid;
+  const outerOpacity = selected ? 0.45 : mood ? 1 : 0.38;
 
   const n = petals ?? (mood ? MOOD_PETALS[mood.type] : undefined) ?? 6;
 
@@ -186,8 +188,8 @@ export default function Flower({
         )}
         {petalEls(outer, outerFill, outerOpacity)}
         {petalEls(inner, selected ? '#FFFFFF' : solid, 1)}
-        <circle cx={cx} cy={cy} r={rc} fill="#FFFFFF" />
-        <circle cx={cx} cy={cy} r={rc * 0.42} fill={selected ? solid : ink} opacity="0.8" />
+        <circle cx={cx} cy={cy} r={rc} fill={selected ? solid : '#FFFFFF'} />
+        {!selected && <circle cx={cx} cy={cy} r={rc * 0.42} fill={ink} opacity="0.8" />}
       </svg>
     </span>
   );

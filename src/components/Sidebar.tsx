@@ -1,108 +1,107 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, BarChart3, Sun, Moon, Settings, Download, Upload, Search } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { CalendarDays, Clock, BarChart3, Settings, Search, Download, Upload, Moon, Sun } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatDate } from '../lib/dateUtils';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
+import Flower from './Flower';
+import { MOOD_CONFIGS } from '../lib/constants';
 
-const navItems = [
-  { to: '/', label: '月历', icon: Calendar, end: true },
-  { to: '/memory', label: '回忆', icon: Clock, end: false },
+const mainNav = [
+  { to: `/day/${formatDate(new Date())}`, label: '今日', icon: Sun, end: false },
+  { to: '/', label: '日历', icon: CalendarDays, end: true },
+  { to: '/memory', label: '时光', icon: Clock, end: false },
   { to: '/stats', label: '统计', icon: BarChart3, end: false },
-  { to: '/search', label: '搜索', icon: Search, end: false },
 ];
 
 export default function Sidebar() {
-  const navigate = useNavigate();
   const { theme, toggleTheme } = useApp();
   const { fileInputRef, importStatus, handleExport, triggerImport, handleFileChange } = useDataIO();
 
-  const goToday = () => {
-    navigate(`/day/${formatDate(new Date())}`);
-  };
-
   return (
     <aside
-      className="sticky top-0 flex h-screen w-[208px] shrink-0 flex-col px-3 py-5"
-      style={{
-        background: 'var(--card)',
-        borderRight: '1px solid var(--keyline)',
-      }}
+      className="card sticky top-6 z-20 flex w-[220px] flex-col rounded-[20px] px-4 pb-5 pt-7"
     >
-      {/* Logo — 衬线「手帐」+ Fraunces 拉丁小注 */}
-      <div className="flex items-center gap-2 px-3 pb-5">
-        <span className="text-2xl">📔</span>
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-3 pb-6">
+        <Flower mood={MOOD_CONFIGS.happy} size={28} variant="head" />
         <div className="flex flex-col">
-          <span className="font-serif text-h2 leading-none text-[var(--ink)]">手帐</span>
-          <span className="font-displaylatin italic text-caption text-[var(--ink-faint)]">Study Journal</span>
+          <span className="font-serif text-h2 leading-none text-[var(--ink)]" style={{ letterSpacing: '0.06em' }}>花期</span>
+          <span className="font-displaylatin italic text-caption text-[var(--ink-faint)]">blossom</span>
         </div>
       </div>
 
-      {/* 分隔线 */}
-      <div className="mx-3 mb-4 h-px bg-[var(--hairline)]" />
-
-      {/* 今日按钮 */}
-      <button
-        onClick={goToday}
-        className="mx-2 mb-4 flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small text-[var(--ink)] transition-all hover:bg-[var(--paper)]"
-        aria-label="回到今天"
-      >
-        <Sun size={18} style={{ color: 'var(--brand)' }} />
-        今日
-      </button>
-
-      {/* 主导航 — 激活态：左侧 3px 朱红竖条 + paper 底 + ink 文字 */}
-      <nav className="flex flex-1 flex-col gap-1">
-        {navItems.map((item) => {
+      {/* Main nav（mockup：品牌区直接接导航，无分隔线；去掉 flex-1 让卡片随内容收高，不留空白中段） */}
+      <nav className="flex flex-col gap-1 px-3">
+        {mainNav.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
-              key={item.to}
+              key={item.label}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `relative flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small transition-all ${
+                `relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small transition-all ${
                   isActive
-                    ? 'text-[var(--ink)] bg-[var(--paper)]'
-                    : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--paper)]'
+                    ? 'bg-[var(--brand-soft)] font-medium text-[var(--brand)]'
+                    : 'text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]'
                 }`
               }
-              style={({ isActive }) =>
-                isActive
-                  ? { borderLeft: '3px solid var(--brand)', paddingLeft: '9px' }
-                  : { borderLeft: '3px solid transparent', paddingLeft: '9px' }
-              }
             >
-              <Icon size={18} />
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span
+                      className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full"
+                      style={{ background: 'var(--brand)' }}
+                    />
+                  )}
+                  <Icon size={18} strokeWidth={1.75} />
+                  <span>{item.label}</span>
+                </>
+              )}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* 分隔线 */}
-      <div className="mx-3 my-3 h-px bg-[var(--hairline)]" />
+      <div className="mx-5 mb-3 h-px bg-[var(--hairline)]" />
 
-      {/* 底部操作 */}
-      <div className="flex flex-col gap-1">
+      {/* Secondary actions */}
+      <div className="flex flex-col gap-1 px-3 pb-4">
+        <NavLink
+          to="/search"
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small transition-all ${
+              isActive
+                ? 'bg-[var(--brand-soft)] font-medium text-[var(--brand)]'
+                : 'text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]'
+            }`
+          }
+        >
+          <Search size={18} strokeWidth={1.75} />
+          搜索
+        </NavLink>
+
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:text-[var(--ink)] hover:bg-[var(--paper)]"
-          aria-label={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:bg-[var(--paper)] hover:text-[var(--ink)]"
         >
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          {theme === 'light' ? <Moon size={18} strokeWidth={1.75} /> : <Sun size={18} strokeWidth={1.75} />}
           {theme === 'light' ? '深色模式' : '浅色模式'}
         </button>
+
         <button
           onClick={handleExport}
-          className="flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:text-[var(--ink)] hover:bg-[var(--paper)]"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:bg-[var(--paper)] hover:text-[var(--ink)]"
         >
-          <Download size={18} />
+          <Download size={18} strokeWidth={1.75} />
           导出数据
         </button>
+
         <button
           onClick={triggerImport}
-          className={`flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small transition-all hover:bg-[var(--paper)] ${
+          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small transition-all hover:bg-[var(--paper)] ${
             importStatus === 'success'
               ? 'text-[var(--pine)]'
               : importStatus === 'error'
@@ -110,30 +109,25 @@ export default function Sidebar() {
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
           }`}
         >
-          <Upload size={18} />
-          {importStatus === 'success' ? '导入成功 ✓' : importStatus === 'error' ? '导入失败 ✕' : '导入数据'}
+          <Upload size={18} strokeWidth={1.75} />
+          {importStatus === 'success' ? '导入成功' : importStatus === 'error' ? '导入失败' : '导入数据'}
         </button>
+
         <NavLink
           to="/settings"
           className={({ isActive }) =>
-            `flex items-center gap-2.5 rounded-md px-3 py-2.5 font-sans text-small transition-all ${
+            `flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small transition-all ${
               isActive
-                ? 'text-[var(--ink)] bg-[var(--paper)]'
-                : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--paper)]'
+                ? 'bg-[var(--brand-soft)] font-medium text-[var(--brand)]'
+                : 'text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]'
             }`
           }
-          style={({ isActive }) =>
-            isActive
-              ? { borderLeft: '3px solid var(--brand)', paddingLeft: '9px' }
-              : { borderLeft: '3px solid transparent', paddingLeft: '9px' }
-          }
         >
-          <Settings size={18} />
+          <Settings size={18} strokeWidth={1.75} />
           设置
         </NavLink>
       </div>
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -143,8 +137,8 @@ export default function Sidebar() {
         aria-hidden="true"
       />
 
-      <div className="mt-3 px-3 text-center font-mono text-caption text-[var(--ink-faint)]">
-        v{APP_VERSION} · 本地存储
+      <div className="px-5 pb-5 text-center font-mono text-caption text-[var(--ink-faint)]">
+        v{APP_VERSION} · 本地存储中
       </div>
     </aside>
   );

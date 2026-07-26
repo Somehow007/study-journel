@@ -14,10 +14,11 @@
     --ink: #2C322A;
     --ink-soft: #6D7466;
     --ink-faint: #A7AC9E;
-    --hairline: #EBEEE0;
+    --hairline: #E6E9DD;
     --keyline: #E2E6D4;
     --brand: #3E7C59;
     --brand-ink: #2F5C42;
+    --brand-soft: #E4EFE7;
     --pine: #57A773;
     --accent: #E8845C;
     --accent-ink: #C9663F;
@@ -44,10 +45,11 @@
     --ink: #E9EDE3;
     --ink-soft: #9AA594;
     --ink-faint: #6B7666;
-    --hairline: #263029;
+    --hairline: #2A332C;
     --keyline: #323D34;
     --brand: #6FB98A;
     --brand-ink: #8FD0A6;
+    --brand-soft: #243528;
     --pine: #6FB98A;
     --accent: #F09A72;
     --accent-ink: #F2AF8C;
@@ -174,7 +176,8 @@
     color: var(--ink);
   }
 
-  /* 日记信纸横线（32px 行距，匹配 diary 字号；深浅色均走 --hairline 变量） */
+  /* 日记信纸横线（32px 行距，匹配 diary 字号；深浅色均走 --hairline 变量）
+     background-position 让首条线落在首行文字基线（textarea p-5=24 顶距 + 基线偏移 ≈ 46 → 31+15） */
   .diary-paper {
     background-image: repeating-linear-gradient(
       transparent,
@@ -182,6 +185,7 @@
       var(--hairline) 31px,
       var(--hairline) 32px
     );
+    background-position: 0 15px;
   }
 
   /* 虚线胶囊按钮 */

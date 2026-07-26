@@ -12,7 +12,7 @@ export default {
       },
       fontSize: {
         display: ['40px', { lineHeight: '48px', fontWeight: '600' }],
-        h1: ['30px', { lineHeight: '38px', fontWeight: '600' }],
+        h1: ['38px', { lineHeight: '46px', fontWeight: '600', letterSpacing: '0.04em' }],
         h2: ['19px', { lineHeight: '28px', fontWeight: '600' }],
         title: ['16px', { lineHeight: '24px', fontWeight: '600' }],
         body: ['15px', { lineHeight: '26px', fontWeight: '400' }],
@@ -82,6 +82,7 @@ export default {
         'fade-in': 'fade-in 200ms ease-out',
         'save-pulse': 'save-pulse 200ms ease-out',
         'slide-up': 'slide-up 220ms ease-out',
+        'bar-grow': 'bar-grow 700ms cubic-bezier(0.22,1,0.36,1) both',
       },
       keyframes: {
         'bloom-in': {
@@ -104,6 +105,10 @@ export default {
         'slide-up': {
           '0%': { transform: 'translateY(12px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'bar-grow': {
+          '0%': { transform: 'scaleX(0)' },
+          '100%': { transform: 'scaleX(1)' },
         },
       },
     },

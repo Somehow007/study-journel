@@ -9,15 +9,15 @@ export default function Layout() {
   // 内容区最大宽度按页型分档
   const maxWidth = useMemo(() => {
     const path = location.pathname;
-    if (path === '/') return '1040px';        // 月历
-    if (path.startsWith('/day/')) return '720px'; // 详情页
-    return '880px';                           // 回忆/统计/搜索/设置/年度回顾
+    if (path === '/') return '1040px';        // 日历
+    if (path.startsWith('/day/')) return '860px'; // 今日页
+    return '880px';                           // 时光/统计/搜索/设置/年度回顾
   }, [location.pathname]);
 
   return (
-    <div className="relative z-10 flex min-h-screen">
-      {/* Desktop sidebar — hidden on mobile */}
-      <div className="hidden md:block">
+    <div className="relative z-10 flex min-h-screen md:gap-10">
+      {/* Desktop sidebar — hidden on mobile（浮动卡片，与内容区留白） */}
+      <div className="hidden shrink-0 md:block md:py-6 md:pl-6">
         <Sidebar />
       </div>
 

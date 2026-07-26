@@ -99,9 +99,3 @@ export function formatDuration(min: number): string {
 export function totalDuration(learnings: { durationMin: number }[]): number {
   return learnings.reduce((sum, l) => sum + l.durationMin, 0);
 }
-
-/** 时长进度比例 (0-6h 映射到 0-1，满格 6h) */
-export function durationProgress(min: number): number {
-  const maxMin = 6 * 60;
-  return Math.min(min / maxMin, 1);
-}

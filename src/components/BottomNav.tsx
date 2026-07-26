@@ -1,22 +1,15 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, BarChart3, Search, Sun, Settings } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { Sun, CalendarDays, Clock, User } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
 
-const navItems = [
-  { to: '/', label: '月历', icon: Calendar, end: true },
-  { to: '/memory', label: '回忆', icon: Clock, end: false },
-  { to: '/stats', label: '统计', icon: BarChart3, end: false },
-  { to: '/search', label: '搜索', icon: Search, end: false },
-  { to: '/settings', label: '设置', icon: Settings, end: false },
+const tabs = [
+  { to: `/day/${formatDate(new Date())}`, label: '今日', icon: Sun },
+  { to: '/', label: '日历', icon: CalendarDays, end: true },
+  { to: '/memory', label: '时光', icon: Clock },
+  { to: '/settings', label: '我的', icon: User },
 ];
 
 export default function BottomNav() {
-  const navigate = useNavigate();
-
-  const goToday = () => {
-    navigate(`/day/${formatDate(new Date())}`);
-  };
-
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 border-t md:hidden"
@@ -26,32 +19,21 @@ export default function BottomNav() {
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      <div className="flex items-center justify-around px-2 py-1.5">
-        {/* Today quick button — vermillion icon */}
-        <button
-          onClick={goToday}
-          className="flex flex-col items-center gap-0.5 px-2 py-1"
-        >
-          <Sun size={20} style={{ color: 'var(--brand)' }} />
-          <span className="font-sans text-caption text-[var(--brand)]">今日</span>
-        </button>
-
-        {navItems.map((item) => {
+      <div className="flex items-center justify-around px-2 py-2">
+        {tabs.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
-              key={item.to}
+              key={item.label}
               to={item.to}
-              end={item.end}
+              end={(item as { end?: boolean }).end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 px-2 py-1 transition-colors font-sans text-caption ${
-                  isActive
-                    ? 'text-[var(--ink)]'
-                    : 'text-[var(--ink-faint)]'
+                `flex flex-1 flex-col items-center gap-0.5 px-1 py-1 font-sans text-caption transition-colors ${
+                  isActive ? 'text-[var(--brand)]' : 'text-[var(--ink-faint)]'
                 }`
               }
             >
-              <Icon size={20} />
+              <Icon size={20} strokeWidth={1.75} />
               <span>{item.label}</span>
             </NavLink>
           );

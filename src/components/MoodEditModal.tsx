@@ -123,6 +123,10 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
           </div>
         </div>
 
+        <p className="mb-4 font-sans text-small text-[var(--ink-faint)]">
+          自定义心情会以通用花型渲染，保留你选择的图标与颜色。
+        </p>
+
         {/* Label input */}
         <div className="mb-4">
           <label className="mb-2 block font-sans text-small text-[var(--ink-soft)]">名称</label>

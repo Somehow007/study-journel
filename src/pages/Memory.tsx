@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../lib/db';
-import { parseDate, totalDuration, formatDuration } from '../lib/dateUtils';
+import { parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS } from '../lib/constants';
 import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useIsDark } from '../lib/useIsDark';
 import Flower from '../components/Flower';
-import type { DayRecord } from '../types';
+
 
 function stripMarkdown(text: string): string {
   return text
