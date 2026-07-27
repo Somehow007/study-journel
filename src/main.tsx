@@ -6,7 +6,8 @@ import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    {/* basename 与 vite.config.ts 的 base 保持一致：子路径 /journal 部署 */}
+    <BrowserRouter basename="/journal">
       <App />
     </BrowserRouter>
   </React.StrictMode>,
