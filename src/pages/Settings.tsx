@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Sun, Moon, Download, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Sun, Moon, Download, Upload, RefreshCw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, deleteCustomMood } from '../lib/db';
+import { deleteCustomMood, getCustomMoods } from '../lib/api';
+import { useApiQuery } from '../lib/useApiQuery';
 import MoodEditModal from '../components/MoodEditModal';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
@@ -13,9 +13,17 @@ export default function Settings() {
   const { theme, toggleTheme, dailyGoalMin, setDailyGoalMin } = useApp();
   const [showMoodEdit, setShowMoodEdit] = useState(false);
   const [editingMood, setEditingMood] = useState<CustomMoodConfig | null>(null);
-  const { importStatus, handleExport, triggerImport, handleFileChange, fileInputRef } = useDataIO();
+  const {
+    importStatus,
+    migrating,
+    handleExport,
+    triggerImport,
+    handleFileChange,
+    handleMigrateLocal,
+    fileInputRef,
+  } = useDataIO();
 
-  const customMoods = useLiveQuery(() => db.customMoods.orderBy('createdAt').toArray(), []);
+  const { data: customMoods } = useApiQuery(getCustomMoods, []);
   const customMoodList = customMoods ?? [];
 
   const handleEditMood = (mood: CustomMoodConfig) => {
@@ -178,7 +186,20 @@ export default function Settings() {
             {importStatus === 'success' ? '导入成功' : importStatus === 'error' ? '导入失败' : '导入数据'}
             <span className="ml-auto font-mono text-caption text-[var(--ink-faint)]">JSON</span>
           </button>
+          <button
+            onClick={handleMigrateLocal}
+            disabled={migrating}
+            className="flex w-full items-center gap-3 px-4 py-3 font-sans text-small text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)] disabled:opacity-50"
+          >
+            <RefreshCw size={18} strokeWidth={1.75} className={migrating ? 'animate-spin' : ''} />
+            {migrating ? '迁移中…' : '迁移本地旧数据'}
+            <span className="ml-auto font-mono text-caption text-[var(--ink-faint)]">IndexedDB → 服务器</span>
+          </button>
         </div>
+        <p className="mt-3 font-sans text-caption text-[var(--ink-faint)]">
+          数据已存储在服务器（与博客同源，跨设备同步）。「迁移本地旧数据」用于把本浏览器
+          IndexedDB 中的第一期历史数据合并上传，幂等可重复，迁移完成后可不再使用。
+        </p>
         <input
           ref={fileInputRef}
           type="file"
@@ -197,7 +218,7 @@ export default function Settings() {
             <h2 className="font-serif text-h2 text-[var(--ink)]">花期 Blossom</h2>
             <p className="font-sans text-small text-[var(--ink-soft)]">每一天，开一朵花。</p>
             <p className="mt-1 font-mono text-caption text-[var(--ink-faint)]">
-              v{APP_VERSION} · 所有数据存储于浏览器本地
+              v{APP_VERSION} · 数据存储于服务器，跨设备同步
             </p>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { addCustomMood, updateCustomMood, deleteCustomMood } from '../lib/db';
+import { addCustomMood, updateCustomMood, deleteCustomMood } from '../lib/api';
 import { useCustomMoodConfigs, isMoodLabelDuplicate, generateMoodPalette } from '../lib/moodUtils';
 import { MOOD_CONFIGS, SUBJECT_COLORS } from '../lib/constants';
 import type { CustomMoodConfig } from '../types';

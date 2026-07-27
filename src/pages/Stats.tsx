@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
-import { getRecordsByMonth } from '../lib/db';
+import { getRecordsByMonth } from '../lib/api';
+import { useApiQuery } from '../lib/useApiQuery';
 import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
@@ -21,7 +21,7 @@ export default function Stats() {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
 
-  const records = useLiveQuery(() => getRecordsByMonth(viewYear, viewMonth), [viewYear, viewMonth]);
+  const { data: records } = useApiQuery(() => getRecordsByMonth(viewYear, viewMonth), [viewYear, viewMonth]);
   const allMoods = useAllMoodConfigs();
   const moodCfgMap = useMemo(() => {
     const map = new Map<string, typeof allMoods[0]>();

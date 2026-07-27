@@ -1,8 +1,8 @@
 import { useParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
-import { db, getRecordByDate, upsertRecord } from '../lib/db';
+import { getAllRecords, getRecordByDate, upsertRecord } from '../lib/api';
+import { useApiQuery } from '../lib/useApiQuery';
 import { useMoodConfig } from '../lib/moodUtils';
 import MoodSelector from '../components/MoodSelector';
 import LearningRecordCard, { formatDurationHM } from '../components/LearningRecordCard';
@@ -38,8 +38,8 @@ export default function TodayDetail() {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<LearningItem | null>(null);
 
-  const record = useLiveQuery(() => (date ? getRecordByDate(date) : undefined), [date]);
-  const allRecords = useLiveQuery(() => db.records.toArray(), []);
+  const { data: record } = useApiQuery(() => (date ? getRecordByDate(date) : Promise.resolve(undefined)), [date]);
+  const { data: allRecords } = useApiQuery(getAllRecords, []);
 
   const mood = record?.mood ?? null;
   const learnings = record?.learnings ?? [];

@@ -1,6 +1,6 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
-import { db } from './db';
+import { getCustomMoods } from './api';
+import { useApiQuery } from './useApiQuery';
 import { MOOD_CONFIGS } from './constants';
 import type { MoodConfig, CustomMoodConfig, MoodDarkColors } from '../types';
 
@@ -23,7 +23,7 @@ export function customToMoodConfig(cm: CustomMoodConfig): MoodConfig {
  * React Hook：获取所有自定义心情（转为 MoodConfig 格式）
  */
 export function useCustomMoodConfigs(): MoodConfig[] {
-  const customMoods = useLiveQuery(() => db.customMoods.orderBy('createdAt').toArray(), []);
+  const { data: customMoods } = useApiQuery(getCustomMoods, []);
   if (!customMoods || customMoods.length === 0) return [];
   return customMoods.map(customToMoodConfig);
 }

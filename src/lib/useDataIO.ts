@@ -1,21 +1,38 @@
 import { useState, useRef } from 'react';
-import { exportAllData, importData } from './db';
+import { exportAllData, importData } from './api';
+import { exportAllData as exportLocalData } from './db';
 import { formatDate } from './dateUtils';
 
-/** 共享的数据导出/导入逻辑（Sidebar 和 Settings 共用） */
+/**
+ * 共享的数据导出/导入逻辑（Sidebar 和 Settings 共用）。
+ *
+ * 第二期后端化后：导出/导入都走服务端（/api/journal/export、/import，按日期幂等 upsert）；
+ * 另提供「迁移本地数据」入口：把本浏览器 IndexedDB 里的旧数据（db.ts 保留读取能力）
+ * 一次性合并上传到服务端，完成第一期 → 第二期的历史数据迁移。
+ */
 export function useDataIO() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [migrating, setMigrating] = useState(false);
+
+  const flashStatus = (status: 'success' | 'error') => {
+    setImportStatus(status);
+    setTimeout(() => setImportStatus('idle'), 3000);
+  };
 
   const handleExport = async () => {
-    const data = await exportAllData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `study-journal-${formatDate(new Date())}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const data = await exportAllData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `study-journal-${formatDate(new Date())}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '导出失败');
+    }
   };
 
   const triggerImport = () => {
@@ -42,18 +59,16 @@ export function useDataIO() {
       }
 
       const confirmed = window.confirm(
-        `即将导入 ${records.length} 条记录。现有数据将被覆盖，确认继续？`
+        `即将导入 ${records.length} 条记录。同一天已有记录会被合并覆盖，其余日期不受影响。确认继续？`
       );
       if (!confirmed) return;
 
-      await importData(data);
-      // useLiveQuery 会自动响应数据变化，无需刷新页面
-      setImportStatus('success');
-      setTimeout(() => setImportStatus('idle'), 3000);
+      const result = await importData(data);
+      flashStatus('success');
+      alert(`导入完成：${result.recordsImported} 条记录、${result.moodsImported} 个自定义心情`);
     } catch (err) {
       console.error('Import failed:', err);
-      setImportStatus('error');
-      setTimeout(() => setImportStatus('idle'), 3000);
+      flashStatus('error');
       alert(err instanceof Error ? err.message : '导入失败，请检查文件格式');
     }
 
@@ -62,5 +77,40 @@ export function useDataIO() {
     }
   };
 
-  return { fileInputRef, importStatus, handleExport, triggerImport, handleFileChange };
+  /** 一次性迁移：把本浏览器 IndexedDB 中的旧数据合并上传到服务端（幂等，可重复执行） */
+  const handleMigrateLocal = async () => {
+    setMigrating(true);
+    try {
+      const local = await exportLocalData();
+      if (local.records.length === 0 && local.customMoods.length === 0) {
+        alert('浏览器本地没有可迁移的数据');
+        return;
+      }
+      const confirmed = window.confirm(
+        `浏览器本地有 ${local.records.length} 条记录、${local.customMoods.length} 个自定义心情。\n` +
+          '将合并上传到服务器（同一天/同一心情以本地版本为准，重复执行不会产生重复数据）。\n确认继续？'
+      );
+      if (!confirmed) return;
+
+      const result = await importData(local);
+      flashStatus('success');
+      alert(`迁移完成：${result.recordsImported} 条记录、${result.moodsImported} 个自定义心情已同步到服务器`);
+    } catch (err) {
+      console.error('Local migration failed:', err);
+      flashStatus('error');
+      alert(err instanceof Error ? err.message : '迁移失败');
+    } finally {
+      setMigrating(false);
+    }
+  };
+
+  return {
+    fileInputRef,
+    importStatus,
+    migrating,
+    handleExport,
+    triggerImport,
+    handleFileChange,
+    handleMigrateLocal,
+  };
 }

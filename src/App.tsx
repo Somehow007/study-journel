@@ -1,8 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
-import { waitForDB } from './lib/db';
+import { getToken } from './lib/http';
 import { MOOD_CONFIGS } from './lib/constants';
 import Flower from './components/Flower';
 import Layout from './components/Layout';
@@ -28,20 +27,19 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
 }
 
 function AppShell() {
-  const [dbReady, setDbReady] = useState(false);
-  const [dbError, setDbError] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [showLoader, setShowLoader] = useState(() => {
     return !sessionStorage.getItem('study-journal-loaded');
   });
 
-  // 等待数据库就绪
+  // 登录态检查：手帐接口仅 ADMIN 可访问，token 与博客共享（同源 localStorage）。
+  // 未登录直接回网站登录页；接口层 401 也会跳 /login，这里是进入前的快速通道。
   useEffect(() => {
-    waitForDB()
-      .then(() => setDbReady(true))
-      .catch((err) => {
-        console.error(err);
-        setDbError('数据库初始化失败，请尝试清除站点数据后刷新页面');
-      });
+    if (!getToken()) {
+      window.location.href = '/login';
+      return;
+    }
+    setAuthReady(true);
   }, []);
 
   const handleLoaderComplete = () => {
@@ -49,35 +47,13 @@ function AppShell() {
     setShowLoader(false);
   };
 
-  // DB 未就绪：显示加载状态
-  if (!dbReady && !dbError) {
+  // 登录态未就绪：显示加载状态
+  if (!authReady) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'var(--paper)' }}>
         <div className="flex flex-col items-center gap-4">
           <Flower mood={MOOD_CONFIGS.happy} size={40} variant="head" className="animate-bloom-in" />
           <span className="font-serif text-body text-[var(--ink-soft)]">正在初始化…</span>
-        </div>
-      </div>
-    );
-  }
-
-  // DB 错误
-  if (dbError) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'var(--paper)' }}>
-        <div className="flex flex-col items-center gap-3 text-center max-w-xs">
-          <AlertTriangle size={32} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
-          <p className="font-serif text-body text-[var(--ink)]">{dbError}</p>
-          <button
-            onClick={() => {
-              // 清除 IndexedDB 并刷新
-              indexedDB.deleteDatabase('StudyJournalDB');
-              window.location.reload();
-            }}
-            className="rounded-full border border-[var(--brand)] px-4 py-2 font-sans text-small text-[var(--brand)]"
-          >
-            清除并刷新
-          </button>
         </div>
       </div>
     );

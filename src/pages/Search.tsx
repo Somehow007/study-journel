@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, ArrowRight } from 'lucide-react';
-import { searchDiary } from '../lib/db';
+import { searchDiary } from '../lib/api';
 import { formatDuration, totalDuration, parseDate, getWeekdayChinese } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useIsDark } from '../lib/useIsDark';

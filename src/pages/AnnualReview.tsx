@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { getRecordsByYear } from '../lib/db';
+import { getRecordsByYear } from '../lib/api';
+import { useApiQuery } from '../lib/useApiQuery';
 import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration, formatDate } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
@@ -17,7 +17,7 @@ export default function AnnualReview() {
   const initialYear = parseInt(searchParams.get('year') ?? '') || now.getFullYear();
   const [viewYear, setViewYear] = useState(initialYear);
 
-  const records = useLiveQuery(() => getRecordsByYear(viewYear), [viewYear]);
+  const { data: records } = useApiQuery(() => getRecordsByYear(viewYear), [viewYear]);
   const allMoods = useAllMoodConfigs();
   const allMoodKeys = useMemo(() => new Set(allMoods.map((m) => m.type)), [allMoods]);
   const moodCfgMap = useMemo(() => {

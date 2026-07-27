@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../lib/db';
+import { getAllRecords } from '../lib/api';
+import { useApiQuery } from '../lib/useApiQuery';
 import { parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS } from '../lib/constants';
 import { useAllMoodConfigs } from '../lib/moodUtils';
@@ -19,7 +19,11 @@ function stripMarkdown(text: string): string {
 
 export default function Memory() {
   const isDark = useIsDark();
-  const allRecords = useLiveQuery(() => db.records.orderBy('date').reverse().toArray(), []);
+  // 服务端按 date 升序返回，时光页需要倒序（最新在上）
+  const { data: allRecords } = useApiQuery(
+    async () => (await getAllRecords()).slice().reverse(),
+    [],
+  );
   const allMoods = useAllMoodConfigs();
   const moodCfgMap = useMemo(() => {
     const map = new Map<string, typeof allMoods[0]>();

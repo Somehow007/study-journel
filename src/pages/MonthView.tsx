@@ -1,9 +1,9 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
-import { getRecordsByMonth } from '../lib/db';
+import { getRecordsByMonth } from '../lib/api';
+import { useApiQuery } from '../lib/useApiQuery';
 import { getCalendarDays, isToday, formatDate, totalDuration, parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
 import { useAllMoodConfigs } from '../lib/moodUtils';
@@ -28,7 +28,7 @@ export default function MonthView() {
   const { currentMonth, setCurrentMonth, dailyGoalMin } = useApp();
   const { year, month } = currentMonth;
 
-  const records = useLiveQuery(() => getRecordsByMonth(year, month), [year, month]);
+  const { data: records } = useApiQuery(() => getRecordsByMonth(year, month), [year, month]);
 
   const recordMap = useMemo(() => {
     const map = new Map<string, { mood: string | null; totalMin: number; diary: string }>();
