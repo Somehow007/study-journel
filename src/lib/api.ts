@@ -134,7 +134,12 @@ export async function importData(data: ExportData | DayRecord[]): Promise<Import
 
 // ─── 搜索 ────────────────────────────────────────────
 
-/** 搜索日记内容（服务端 LIKE，按 updatedAt 倒序） */
+/** 搜索日记 / 学科 / 备注（服务端 LIKE，按 updatedAt 倒序） */
 export async function searchDiary(keyword: string): Promise<DayRecord[]> {
   return apiFetch<DayRecord[]>(`/search?keyword=${encodeURIComponent(keyword)}`);
+}
+
+/** 连续记录天数。主路径：GET /streak。后端失败时由调用方用 computeStreak 回退。 */
+export async function getStreak(): Promise<{ days: number }> {
+  return apiFetch<{ days: number }>('/streak');
 }

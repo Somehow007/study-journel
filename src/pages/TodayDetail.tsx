@@ -1,30 +1,31 @@
 import { useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
-import { getAllRecords, getRecordByDate, upsertRecord } from '../lib/api';
+import { getRecordByDate, getRecordsByYear, getStreak, upsertRecord } from '../lib/api';
 import { useApiQuery } from '../lib/useApiQuery';
 import { useMoodConfig } from '../lib/moodUtils';
+import { showToast } from '../lib/toast';
+import { computeStreak } from '../lib/streak';
 import MoodSelector from '../components/MoodSelector';
 import LearningRecordCard, { formatDurationHM } from '../components/LearningRecordCard';
 import LearningFormModal from '../components/LearningFormModal';
 import DiaryEditor from '../components/DiaryEditor';
 import SproutBadge from '../components/SproutBadge';
-import Flower from '../components/Flower';
-import { computeStreak } from '../lib/streak';
+import { QueryError, QueryLoading } from '../components/QueryState';
 import { totalDuration } from '../lib/dateUtils';
 import type { LearningItem } from '../types';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
 const QUOTES = [
-  '把时间种下去，就会开花。',
-  '疲惫的日子也要记录，花照样开。',
-  '每天种一朵花，月末会有一束。',
-  '学习是缓慢的园艺，急不来。',
-  '今天的阳光，是昨天记录的回响。',
-  '不必每天都盛满，种下就好。',
-  '花田属于那些愿意弯下腰的人。',
-  '把心情写下来，就像给花浇水。',
+  '记下今天，明天才有据可查。',
+  '进度不靠感觉，靠一条条记录。',
+  '短短几分钟，也值得写下来。',
+  '连续比完美更重要。',
+  '把心情和学习放在同一页。',
+  '不必每天都盛满，写下来就好。',
+  '台账属于愿意打开它的人。',
+  '今天的一行字，是明天的线索。',
 ];
 
 function dailyQuote(dateStr: string): string {
@@ -33,13 +34,31 @@ function dailyQuote(dateStr: string): string {
   return QUOTES[hash % QUOTES.length];
 }
 
+async function loadStreak(): Promise<number> {
+  try {
+    const res = await getStreak();
+    if (typeof res?.days === 'number') return res.days;
+  } catch {
+    /* 主路径失败时回退：当年 + 跨年时上年记录，规则与后端一致（今天无记录 = 0） */
+  }
+  const year = new Date().getFullYear();
+  const current = await getRecordsByYear(year);
+  const needPrev = new Date().getMonth() === 0;
+  const prev = needPrev ? await getRecordsByYear(year - 1) : [];
+  return computeStreak([...current, ...prev].map((r) => r.date));
+}
+
 export default function TodayDetail() {
   const { date } = useParams<{ date: string }>();
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<LearningItem | null>(null);
+  const [writeError, setWriteError] = useState<string | null>(null);
 
-  const { data: record } = useApiQuery(() => (date ? getRecordByDate(date) : Promise.resolve(undefined)), [date]);
-  const { data: allRecords } = useApiQuery(getAllRecords, []);
+  const { data: record, loading, error, refresh } = useApiQuery(
+    () => (date ? getRecordByDate(date) : Promise.resolve(undefined)),
+    [date],
+  );
+  const { data: streakDays } = useApiQuery(loadStreak, []);
 
   const mood = record?.mood ?? null;
   const learnings = record?.learnings ?? [];
@@ -57,62 +76,68 @@ export default function TodayDetail() {
     ? `${dateObj.getMonth() + 1}月${dateObj.getDate()}日`
     : date || '';
   const weekday = dateObj ? `星期${WEEKDAYS[dateObj.getDay()]}` : '';
-  const latinDate = dateObj
-    ? dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-    : '';
-
   const quote = date ? dailyQuote(date) : '';
-
   const totalMin = totalDuration(learnings);
-  const stemNorm = useMemo(() => Math.min(1, Math.max(0.08, totalMin / 360)), [totalMin]);
+  const streak = streakDays ?? 0;
 
-  const streak = useMemo(() => {
-    if (!allRecords) return 0;
-    return computeStreak(allRecords.map((r) => r.date));
-  }, [allRecords]);
-
-  const handleMoodSelect = useCallback(
-    (moodType: string) => {
-      if (date) upsertRecord(date, { mood: moodType });
+  const savePatch = useCallback(
+    async (patch: { mood?: string; learnings?: LearningItem[]; diary?: string }) => {
+      if (!date) return;
+      try {
+        await upsertRecord(date, patch);
+        setWriteError(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '保存失败';
+        setWriteError(message);
+        showToast(message);
+        throw err;
+      }
     },
     [date],
+  );
+
+  const handleMoodSelect = useCallback(
+    async (moodType: string) => {
+      try {
+        await savePatch({ mood: moodType });
+      } catch {
+        /* toast already shown */
+      }
+    },
+    [savePatch],
   );
 
   const handleAddLearning = useCallback(
-    (item: LearningItem) => {
-      if (!date) return;
-      const newLearnings = [...learnings, item];
-      upsertRecord(date, { learnings: newLearnings });
+    async (item: LearningItem) => {
+      await savePatch({ learnings: [...learnings, item] });
       setShowForm(false);
     },
-    [date, learnings],
+    [learnings, savePatch],
   );
 
   const handleUpdateLearning = useCallback(
-    (item: LearningItem) => {
-      if (!date) return;
-      const newLearnings = learnings.map((l) => (l.id === item.id ? item : l));
-      upsertRecord(date, { learnings: newLearnings });
+    async (item: LearningItem) => {
+      await savePatch({ learnings: learnings.map((l) => (l.id === item.id ? item : l)) });
       setEditingItem(null);
       setShowForm(false);
     },
-    [date, learnings],
+    [learnings, savePatch],
   );
 
   const handleDeleteLearning = useCallback(
-    (id: string) => {
-      if (!date) return;
-      const newLearnings = learnings.filter((l) => l.id !== id);
-      upsertRecord(date, { learnings: newLearnings });
+    async (id: string) => {
+      try {
+        await savePatch({ learnings: learnings.filter((l) => l.id !== id) });
+      } catch {
+        /* toast already shown */
+      }
     },
-    [date, learnings],
+    [learnings, savePatch],
   );
 
-  const handleDiaryChange = useCallback(
-    (text: string) => {
-      if (date) upsertRecord(date, { diary: text });
-    },
-    [date],
+  const handleDiarySave = useCallback(
+    (text: string) => savePatch({ diary: text }),
+    [savePatch],
   );
 
   const openAdd = useCallback(() => {
@@ -121,66 +146,48 @@ export default function TodayDetail() {
   }, []);
 
   if (!date) return null;
+  if (loading && !record) return <QueryLoading />;
+  if (error && !record) {
+    return <QueryError message={error.message} onRetry={refresh} />;
+  }
 
   return (
     <div className="animate-fade-up">
-      {/* Header */}
       <header className="mb-6">
-        {/* mockup .page-head：大标题在上、星期小注在下，徽章底对齐（align-items:flex-end） */}
         <div className="mb-1 flex items-end justify-between gap-4">
           <div>
-            <h1 className="font-serif text-h1 text-[var(--ink)]">{formattedDate}</h1>
-            <p className="mt-2 font-sans text-caption text-[var(--ink-faint)]">
-              {weekday} · <span className="font-displaylatin italic">{latinDate}</span>
-            </p>
+            <h1 className="font-sans text-h1 text-[var(--ink)]">{formattedDate}</h1>
+            <p className="mt-2 font-sans text-caption text-[var(--ink-faint)]">{weekday}</p>
           </div>
           <SproutBadge days={streak} />
         </div>
 
-        {/* Daily quote（mockup .quote-card：无底色，3px 叶绿左边框） */}
         <div
           className="mt-4 border-l-[3px] py-1.5 pl-[22px] pr-3"
-          style={{ borderColor: 'var(--pine)' }}
+          style={{ borderColor: 'var(--brand)' }}
         >
-          <p className="font-serif text-[17px] leading-relaxed text-[var(--ink-soft)]" style={{ letterSpacing: '0.03em' }}>「{quote}」</p>
+          <p className="font-sans text-[17px] leading-relaxed text-[var(--ink-soft)]">「{quote}」</p>
           <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">每日一句</p>
         </div>
       </header>
 
-      {/* Hero: flower + mood selector（mockup .hero-card：padding 40/44，gap 48） */}
-      <section
-        className="card mb-6 flex flex-col items-center gap-8 rounded-xl p-7 sm:flex-row sm:items-center sm:justify-between sm:gap-12 sm:p-10"
-      >
-        <div className="flex flex-col items-center gap-2 sm:w-56">
-          <Flower
-            mood={moodConfig}
-            size={150}
-            stem={stemNorm}
-            variant="full"
-            className={moodConfig ? 'animate-bloom-in' : ''}
-          />
-          {moodConfig && (
-            <span className="font-sans text-caption" style={{ color: 'var(--ink-soft)' }}>
-              {moodConfig.flower ?? moodConfig.label}
-            </span>
-          )}
-        </div>
+      {writeError && (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 font-sans text-small text-red-600 dark:bg-red-950/40 dark:text-red-300">
+          {writeError}
+        </p>
+      )}
 
-        <div className="flex-1">
-          <h2 className="mb-1 text-center font-serif text-h2 text-[var(--ink)] sm:text-left">
-            今天是什么心情？
-          </h2>
-          <MoodSelector selected={mood} onSelect={handleMoodSelect} />
-          <p className="mt-4 text-center font-sans text-caption text-[var(--ink-faint)] sm:text-left">
-            盖下一朵花，记录今天
-          </p>
-        </div>
+      <section className="card mb-6 rounded-xl p-6 sm:p-8">
+        <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">今天是什么心情？</h2>
+        <MoodSelector selected={mood} onSelect={handleMoodSelect} />
+        <p className="mt-4 font-sans text-caption text-[var(--ink-faint)]">
+          {moodConfig ? `已记：${moodConfig.label}` : '点选心情，记下今天'}
+        </p>
       </section>
 
-      {/* Learning records */}
       <section className="card mb-6 rounded-xl p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-serif text-h2 text-[var(--ink)]">今日学习</h2>
+          <h2 className="font-sans text-h2 text-[var(--ink)]">今日学习</h2>
           <button
             onClick={openAdd}
             className="inline-flex items-center gap-1 rounded-full border border-[var(--keyline)] px-3 py-1.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:border-[var(--brand)] hover:text-[var(--brand)]"
@@ -195,12 +202,9 @@ export default function TodayDetail() {
             onClick={openAdd}
             className="w-full rounded-lg border border-dashed border-[var(--hairline)] py-8 text-center transition-colors hover:bg-[var(--paper)]"
           >
-            <span className="font-sans text-body text-[var(--ink-faint)]">
-              ＋ 记下今天的第一段学习
-            </span>
+            <span className="font-sans text-body text-[var(--ink-faint)]">＋ 记下今天的第一段学习</span>
           </button>
         ) : (
-          // mockup .study-card：无外框，行以 hairline 分隔，合计右对齐无底色
           <div>
             {learnings.map((item, idx) => (
               <div
@@ -213,7 +217,9 @@ export default function TodayDetail() {
                     setEditingItem(item);
                     setShowForm(true);
                   }}
-                  onDelete={() => handleDeleteLearning(item.id)}
+                  onDelete={() => {
+                    void handleDeleteLearning(item.id);
+                  }}
                 />
               </div>
             ))}
@@ -225,13 +231,11 @@ export default function TodayDetail() {
         )}
       </section>
 
-      {/* Diary */}
       <section>
-        <h2 className="mb-3 font-serif text-h2 text-[var(--ink)]">今日想法</h2>
-        <DiaryEditor value={diary} onChange={handleDiaryChange} mood={mood} />
+        <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">今日想法</h2>
+        <DiaryEditor value={diary} onSave={handleDiarySave} mood={mood} />
       </section>
 
-      {/* Modal */}
       {showForm && (
         <LearningFormModal
           item={editingItem}

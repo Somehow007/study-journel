@@ -5,7 +5,7 @@ import { useApiQuery } from '../lib/useApiQuery';
 import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration, formatDate } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
-import Flower from '../components/Flower';
+import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import { ChevronLeft, ChevronRight, BookOpen, Clock, Flame } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
@@ -17,17 +17,19 @@ export default function AnnualReview() {
   const initialYear = parseInt(searchParams.get('year') ?? '') || now.getFullYear();
   const [viewYear, setViewYear] = useState(initialYear);
 
-  const { data: records } = useApiQuery(() => getRecordsByYear(viewYear), [viewYear]);
+  const { data: records, loading, error, refresh } = useApiQuery(
+    () => getRecordsByYear(viewYear),
+    [viewYear],
+  );
   const allMoods = useAllMoodConfigs();
   const allMoodKeys = useMemo(() => new Set(allMoods.map((m) => m.type)), [allMoods]);
   const moodCfgMap = useMemo(() => {
-    const map = new Map<string, typeof allMoods[0]>();
+    const map = new Map<string, (typeof allMoods)[0]>();
     for (const cfg of allMoods) map.set(cfg.type, cfg);
     return map;
   }, [allMoods]);
 
   const isCurrentYear = viewYear === now.getFullYear();
-
   const prevYear = () => setViewYear((v) => v - 1);
   const nextYear = () => setViewYear((v) => v + 1);
 
@@ -137,31 +139,31 @@ export default function AnnualReview() {
   const chartGridColor = 'color-mix(in srgb, var(--hairline) 70%, transparent)';
   const chartTextColor = 'var(--ink-faint)';
 
+  if (loading && !records) return <QueryLoading />;
+  if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
+
   return (
     <div className="animate-fade-up">
-      {/* Header */}
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="font-serif text-display text-[var(--ink)]">年度回顾</h1>
-          <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">
-            <span className="font-displaylatin italic text-[var(--ink-faint)]">a year in bloom.</span>
-          </p>
+          <h1 className="font-sans text-display text-[var(--ink)]">年度回顾</h1>
+          <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">{viewYear} 年的学习与心情</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={prevYear}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] transition-all hover:border-[var(--ink)] hover:text-[var(--ink)]"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
           >
             <ChevronLeft size={18} strokeWidth={1.75} />
           </button>
-          <span className="min-w-[80px] text-center font-serif text-h2 text-[var(--ink)]">{viewYear}年</span>
+          <span className="min-w-[80px] text-center font-sans text-h2 text-[var(--ink)]">{viewYear}年</span>
           <button
             onClick={nextYear}
             disabled={isCurrentYear}
-            className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all ${
+            className={`flex h-8 w-8 items-center justify-center rounded-full border ${
               isCurrentYear
                 ? 'cursor-not-allowed border-[var(--hairline)] text-[var(--ink-faint)] opacity-30'
-                : 'border-[var(--keyline)] text-[var(--ink-soft)] hover:border-[var(--ink)] hover:text-[var(--ink)]'
+                : 'border-[var(--keyline)] text-[var(--ink-soft)]'
             }`}
           >
             <ChevronRight size={18} strokeWidth={1.75} />
@@ -171,10 +173,12 @@ export default function AnnualReview() {
 
       {hasData ? (
         <>
-          {/* Summary cards */}
           <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="card flex items-center gap-3 rounded-xl p-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: 'color-mix(in srgb, var(--brand) 12%, transparent)' }}>
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-full"
+                style={{ background: 'color-mix(in srgb, var(--brand) 12%, transparent)' }}
+              >
                 <BookOpen size={20} strokeWidth={1.75} style={{ color: 'var(--brand)' }} />
               </div>
               <div>
@@ -183,7 +187,10 @@ export default function AnnualReview() {
               </div>
             </div>
             <div className="card flex items-center gap-3 rounded-xl p-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: 'color-mix(in srgb, var(--pine) 12%, transparent)' }}>
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-full"
+                style={{ background: 'color-mix(in srgb, var(--pine) 12%, transparent)' }}
+              >
                 <Clock size={20} strokeWidth={1.75} style={{ color: 'var(--pine)' }} />
               </div>
               <div>
@@ -196,17 +203,24 @@ export default function AnnualReview() {
                 className="flex h-10 w-10 items-center justify-center rounded-full"
                 style={{ background: topMoodConfig ? topMoodConfig.tint : 'color-mix(in srgb, var(--brand) 12%, transparent)' }}
               >
-                {topMoodConfig ? <Flower mood={topMoodConfig} size={22} variant="head" /> : <span className="font-mono text-num text-[var(--ink-faint)]">-</span>}
+                {topMoodConfig ? (
+                  <span className="h-3 w-3 rounded-full" style={{ background: topMoodConfig.solid }} />
+                ) : (
+                  <span className="font-mono text-num text-[var(--ink-faint)]">-</span>
+                )}
               </div>
               <div>
-                <div className="font-serif text-h2 text-[var(--ink)]">
-                  {topMoodConfig ? topMoodConfig.flower ?? topMoodConfig.label : '-'}
+                <div className="font-sans text-h2 text-[var(--ink)]">
+                  {topMoodConfig ? topMoodConfig.label : '-'}
                 </div>
                 <div className="font-sans text-caption text-[var(--ink-soft)]">最常心情</div>
               </div>
             </div>
             <div className="card flex items-center gap-3 rounded-xl p-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: 'color-mix(in srgb, var(--accent) 12%, transparent)' }}>
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-full"
+                style={{ background: 'color-mix(in srgb, var(--accent) 12%, transparent)' }}
+              >
                 <Flame size={20} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
               </div>
               <div>
@@ -216,10 +230,9 @@ export default function AnnualReview() {
             </div>
           </div>
 
-          {/* Charts */}
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="card rounded-xl p-5">
-              <h2 className="mb-1 font-serif text-h2 text-[var(--ink)]">月度学习时长</h2>
+              <h2 className="mb-1 font-sans text-h2 text-[var(--ink)]">月度学习时长</h2>
               <p className="mb-4 font-sans text-caption text-[var(--ink-faint)]">全年 12 个月</p>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={stats.monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -241,7 +254,7 @@ export default function AnnualReview() {
             </div>
 
             <div className="card rounded-xl p-5">
-              <h2 className="mb-1 font-serif text-h2 text-[var(--ink)]">年度学科分布</h2>
+              <h2 className="mb-1 font-sans text-h2 text-[var(--ink)]">年度学科分布</h2>
               <p className="mb-4 font-sans text-caption text-[var(--ink-faint)]">按学习时长</p>
               {stats.subjectData.length > 0 ? (
                 <div className="flex items-center">
@@ -272,9 +285,8 @@ export default function AnnualReview() {
             </div>
           </div>
 
-          {/* Monthly overview */}
           <div className="card rounded-xl p-5">
-            <h2 className="mb-4 font-serif text-h2 text-[var(--ink)]">月度总览</h2>
+            <h2 className="mb-4 font-sans text-h2 text-[var(--ink)]">月度总览</h2>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
               {stats.monthlyData.map((m) => {
                 const cfg = m.topMoodType ? moodCfgMap.get(m.topMoodType) : undefined;
@@ -282,11 +294,10 @@ export default function AnnualReview() {
                   <div key={m.month} className="rounded-xl p-3 transition-all hover:bg-[var(--paper)]">
                     <div className="mb-1 font-sans text-caption text-[var(--ink-soft)]">{m.label}</div>
                     <div className="flex items-center gap-2">
-                      {cfg ? (
-                        <Flower mood={cfg} size={18} variant="head" />
-                      ) : (
-                        <Flower size={18} variant="head" />
-                      )}
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ background: cfg ? cfg.solid : 'var(--keyline)' }}
+                      />
                       <div>
                         <div className="font-mono text-num text-[var(--ink)]">{m.hours}h</div>
                         <div className="font-sans text-caption text-[var(--ink-faint)]">{m.days} 天</div>
@@ -299,13 +310,10 @@ export default function AnnualReview() {
           </div>
         </>
       ) : (
-        <div className="card flex flex-col items-center justify-center rounded-xl py-16 text-center">
-          <Flower size={64} variant="head" />
-          <h2 className="mt-6 font-serif text-h2 text-[var(--ink-soft)]">{viewYear}年还没有记录</h2>
-          <p className="mt-2 max-w-xs font-sans text-small text-[var(--ink-faint)]">
-            {isCurrentYear ? '从今天开始记录，年末时这里会变成一座繁茂的花园' : '查看其他年份吧'}
-          </p>
-        </div>
+        <QueryEmpty
+          title={`${viewYear}年还没有记录`}
+          hint={isCurrentYear ? '从今天开始记录，年末时这里会汇总全年数据' : '查看其他年份吧'}
+        />
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { addCustomMood, updateCustomMood, deleteCustomMood } from '../lib/api';
 import { useCustomMoodConfigs, isMoodLabelDuplicate, generateMoodPalette } from '../lib/moodUtils';
 import { MOOD_CONFIGS, SUBJECT_COLORS } from '../lib/constants';
+import { showToast } from '../lib/toast';
 import type { CustomMoodConfig } from '../types';
 
 interface MoodEditModalProps {
@@ -46,13 +47,18 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
       ...palette,
     };
 
-    if (isEditing && editMood) {
-      await updateCustomMood(editMood.id, config);
-    } else {
-      await addCustomMood(config);
+    try {
+      if (isEditing && editMood) {
+        await updateCustomMood(editMood.id, config);
+      } else {
+        await addCustomMood(config);
+      }
+      onClose();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '保存失败';
+      setError(message);
+      showToast(message);
     }
-
-    onClose();
   }, [label, emoji, color, palette, isEditing, editMood, customMoodConfigs, builtinLabels, onClose]);
 
   const handleDelete = useCallback(async () => {
@@ -61,8 +67,12 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
       `确定要删除"${editMood.label}"心情吗？`
     );
     if (!confirmed) return;
-    await deleteCustomMood(editMood.id);
-    onClose();
+    try {
+      await deleteCustomMood(editMood.id);
+      onClose();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '删除失败');
+    }
   }, [editMood, onClose]);
 
   return (

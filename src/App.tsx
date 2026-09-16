@@ -1,11 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import { getToken } from './lib/http';
-import { MOOD_CONFIGS } from './lib/constants';
-import Flower from './components/Flower';
+import { FORBIDDEN_EVENT, getToken } from './lib/http';
+import { isJournalAdmin } from './lib/auth';
 import Layout from './components/Layout';
 import BookLoader from './components/BookLoader';
+import ForbiddenPage from './components/ForbiddenPage';
+import LoginPage from './components/LoginPage';
 import MonthView from './pages/MonthView';
 import TodayDetail from './pages/TodayDetail';
 import Memory from './pages/Memory';
@@ -28,15 +29,26 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
 
 function AppShell() {
   const [authReady, setAuthReady] = useState(false);
+  const [forbidden, setForbidden] = useState(false);
   const [showLoader, setShowLoader] = useState(() => {
     return !sessionStorage.getItem('study-journal-loaded');
   });
 
-  // 登录态检查：手帐接口仅 ADMIN 可访问，token 与博客共享（同源 localStorage）。
-  // 未登录直接回网站登录页；接口层 401 也会跳 /login，这里是进入前的快速通道。
+  useEffect(() => {
+    const onForbidden = () => setForbidden(true);
+    window.addEventListener(FORBIDDEN_EVENT, onForbidden);
+    return () => window.removeEventListener(FORBIDDEN_EVENT, onForbidden);
+  }, []);
+
   useEffect(() => {
     if (!getToken()) {
-      window.location.href = '/login';
+      setAuthReady(true);
+      return;
+    }
+    const admin = isJournalAdmin();
+    if (admin === false) {
+      setForbidden(true);
+      setAuthReady(true);
       return;
     }
     setAuthReady(true);
@@ -47,16 +59,20 @@ function AppShell() {
     setShowLoader(false);
   };
 
-  // 登录态未就绪：显示加载状态
   if (!authReady) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'var(--paper)' }}>
-        <div className="flex flex-col items-center gap-4">
-          <Flower mood={MOOD_CONFIGS.happy} size={40} variant="head" className="animate-bloom-in" />
-          <span className="font-serif text-body text-[var(--ink-soft)]">正在初始化…</span>
-        </div>
+        <span className="font-sans text-body text-[var(--ink-soft)]">正在初始化…</span>
       </div>
     );
+  }
+
+  if (!getToken()) {
+    return <LoginPage />;
+  }
+
+  if (forbidden) {
+    return <ForbiddenPage />;
   }
 
   if (showLoader) {

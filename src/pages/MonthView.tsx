@@ -7,28 +7,20 @@ import { useApiQuery } from '../lib/useApiQuery';
 import { getCalendarDays, isToday, formatDate, totalDuration, parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
 import { useAllMoodConfigs } from '../lib/moodUtils';
+import { useIsDark } from '../lib/useIsDark';
 import DateCard from '../components/DateCard';
-import Flower from '../components/Flower';
-
-const ENGLISH_MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-function getWeekNumber(d: Date): number {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  return Math.ceil(((+date - +yearStart) / 86400000 + 1) / 7);
-}
+import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 
 export default function MonthView() {
   const navigate = useNavigate();
+  const isDark = useIsDark();
   const { currentMonth, setCurrentMonth, dailyGoalMin } = useApp();
   const { year, month } = currentMonth;
 
-  const { data: records } = useApiQuery(() => getRecordsByMonth(year, month), [year, month]);
+  const { data: records, loading, error, refresh } = useApiQuery(
+    () => getRecordsByMonth(year, month),
+    [year, month],
+  );
 
   const recordMap = useMemo(() => {
     const map = new Map<string, { mood: string | null; totalMin: number; diary: string }>();
@@ -77,21 +69,16 @@ export default function MonthView() {
   };
 
   const allMoods = useAllMoodConfigs();
-  const firstDay = new Date(year, month, 1);
-  const weekNum = getWeekNumber(firstDay);
+
+  if (loading && !records) return <QueryLoading />;
+  if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
 
   return (
     <div className="animate-fade-up">
-      {/* Header */}
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <h1 className="font-serif text-h1 text-[var(--ink)]">
-            {MONTH_LABELS[month]}日历
-          </h1>
-          <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">
-            {year} · 第 {weekNum} 周 ·{' '}
-            <span className="font-displaylatin italic">{ENGLISH_MONTHS[month]} calendar</span>
-          </p>
+          <h1 className="font-sans text-h1 text-[var(--ink)]">{MONTH_LABELS[month]}日历</h1>
+          <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">{year}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -102,7 +89,7 @@ export default function MonthView() {
           </button>
           <button
             onClick={goToday}
-            className="rounded-full border border-[var(--accent)] px-4 py-1.5 font-sans text-small text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-white"
+            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)] transition-all hover:bg-[var(--brand)] hover:text-white"
           >
             今天
           </button>
@@ -115,9 +102,7 @@ export default function MonthView() {
         </div>
       </div>
 
-      {/* 月历卡：白卡包裹 周标 + 网格 + 图例（紧凑档：整屏免滚动，padding 22/28/16） */}
-      <div className="card rounded-xl px-[28px] pt-[22px] pb-[16px]">
-        {/* Weekday labels：ink-faint，周标与网格间无分隔线 */}
+      <div className="card rounded-xl px-3 pt-3 pb-3 md:px-[28px] md:pt-[22px] md:pb-[16px]">
         <div className="grid grid-cols-7 pb-2">
           {WEEKDAY_LABELS.map((label) => (
             <div key={label} className="text-center font-sans text-caption text-[var(--ink-faint)]">
@@ -126,8 +111,7 @@ export default function MonthView() {
           ))}
         </div>
 
-        {/* Calendar grid — 独立圆角格（gap 8px 紧凑档） */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1 md:gap-2">
           {days.map((day) => {
             const record = recordMap.get(day.dateStr);
             const d = parseDate(day.dateStr);
@@ -150,31 +134,29 @@ export default function MonthView() {
           })}
         </div>
 
-        {/* Legend + summary：顶分隔线（紧凑档 mt 16 / pt 12） */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline)] pt-3">
           <div className="flex flex-wrap items-center gap-3 font-sans text-caption text-[var(--ink-faint)]">
             {allMoods.map((config) => (
               <span key={config.type} className="flex items-center gap-1.5">
-                <Flower mood={config} size={16} variant="head" />
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: isDark ? config.dark.solid : config.solid }}
+                />
                 <span>{config.label}</span>
               </span>
             ))}
           </div>
           <span className="font-sans text-caption text-[var(--ink-faint)]">
-            本月 {summary.count} 朵 · 共 {formatHM(summary.totalMin)} · 进度条以每日目标 {formatDuration(dailyGoalMin)} 为满格
+            本月 {summary.count} 天 · 共 {formatHM(summary.totalMin)} · 进度条以每日目标 {formatDuration(dailyGoalMin)} 为满格
           </span>
         </div>
       </div>
 
-      {/* Empty state */}
       {(records?.length ?? 0) === 0 && (
-        <div className="mt-10 flex flex-col items-center justify-center py-6 text-center">
-          <Flower size={64} variant="head" className="mb-3" />
-          <p className="font-serif text-h2 text-[var(--ink-soft)]">今天想记录什么心情呢？</p>
-          <p className="mt-2 font-sans text-small text-[var(--ink-faint)]">
-            点击今天的格子，盖下第一朵花
-          </p>
-        </div>
+        <QueryEmpty
+          title="这个月还没有记录"
+          hint="点击今天的格子，开始写第一条"
+        />
       )}
     </div>
   );

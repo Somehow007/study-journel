@@ -5,10 +5,27 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        serif: ['Noto Serif SC', 'Songti SC', 'STSong', 'serif'],
-        sans: ['system-ui', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
-        mono: ['IBM Plex Mono', 'monospace'],
-        displaylatin: ['Fraunces', 'serif'],
+        sans: [
+          'Inter',
+          'system-ui',
+          '-apple-system',
+          'Segoe UI',
+          'PingFang SC',
+          'Hiragino Sans GB',
+          'Microsoft YaHei',
+          'sans-serif',
+        ],
+        serif: [
+          'Inter',
+          'system-ui',
+          '-apple-system',
+          'Segoe UI',
+          'PingFang SC',
+          'Hiragino Sans GB',
+          'Microsoft YaHei',
+          'sans-serif',
+        ],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       fontSize: {
         display: ['40px', { lineHeight: '48px', fontWeight: '600' }],
@@ -77,7 +94,6 @@ export default {
         'dark-4': '0 4px 12px rgba(0,0,0,0.35), 0 24px 56px rgba(0,0,0,0.28)',
       },
       animation: {
-        'bloom-in': 'bloom-in 240ms cubic-bezier(0.34,1.4,0.64,1)',
         'fade-up': 'fade-up 250ms ease-out',
         'fade-in': 'fade-in 200ms ease-out',
         'save-pulse': 'save-pulse 200ms ease-out',
@@ -85,10 +101,6 @@ export default {
         'bar-grow': 'bar-grow 700ms cubic-bezier(0.22,1,0.36,1) both',
       },
       keyframes: {
-        'bloom-in': {
-          '0%': { transform: 'scale(0.6) rotate(-8deg)', opacity: '0' },
-          '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
-        },
         'fade-up': {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },

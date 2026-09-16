@@ -4,11 +4,10 @@ import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { getRecordsByMonth } from '../lib/api';
 import { useApiQuery } from '../lib/useApiQuery';
 import { MONTH_LABELS } from '../lib/constants';
-import { totalDuration, formatDuration } from '../lib/dateUtils';
+import { totalDuration, formatDuration, formatDate } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useApp } from '../context/AppContext';
-import Flower from '../components/Flower';
-import BouquetPoster from '../components/BouquetPoster';
+import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid,
 } from 'recharts';
@@ -21,10 +20,13 @@ export default function Stats() {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
 
-  const { data: records } = useApiQuery(() => getRecordsByMonth(viewYear, viewMonth), [viewYear, viewMonth]);
+  const { data: records, loading, error, refresh } = useApiQuery(
+    () => getRecordsByMonth(viewYear, viewMonth),
+    [viewYear, viewMonth],
+  );
   const allMoods = useAllMoodConfigs();
   const moodCfgMap = useMemo(() => {
-    const map = new Map<string, typeof allMoods[0]>();
+    const map = new Map<string, (typeof allMoods)[0]>();
     for (const cfg of allMoods) map.set(cfg.type, cfg);
     return map;
   }, [allMoods]);
@@ -96,18 +98,18 @@ export default function Stats() {
   const hasData = stats.totalDays > 0;
   const chartGridColor = 'color-mix(in srgb, var(--hairline) 70%, transparent)';
   const chartTextColor = 'var(--ink-faint)';
-
   const topMoodCfg = stats.topMood ? moodCfgMap.get(stats.topMood) : undefined;
+
+  if (loading && !records) return <QueryLoading />;
+  if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
 
   return (
     <div className="animate-fade-up">
-      {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-h1 text-[var(--ink)]">统计</h1>
+          <h1 className="font-sans text-h1 text-[var(--ink)]">统计</h1>
           <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">
-            {viewYear} 年 {viewMonth + 1} 月 · 截至今日 ·{' '}
-            <span className="font-displaylatin italic text-[var(--ink-faint)]">the month, counted.</span>
+            {viewYear} 年 {viewMonth + 1} 月
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -120,16 +122,16 @@ export default function Stats() {
           </button>
           <button
             onClick={prevMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] transition-all hover:border-[var(--ink)] hover:text-[var(--ink)]"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
           >
             <ChevronLeft size={18} strokeWidth={1.75} />
           </button>
-          <span className="min-w-[110px] text-center font-serif text-h2 text-[var(--ink)]">
+          <span className="min-w-[110px] text-center font-sans text-h2 text-[var(--ink)]">
             {viewYear}年 {MONTH_LABELS[viewMonth]}
           </span>
           <button
             onClick={nextMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] transition-all hover:border-[var(--ink)] hover:text-[var(--ink)]"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
           >
             <ChevronRight size={18} strokeWidth={1.75} />
           </button>
@@ -138,45 +140,43 @@ export default function Stats() {
 
       {hasData ? (
         <>
-          {/* Summary cards */}
-          {/* Summary cards（mockup .stat-card：标签在上、大数值在下，无图标圆） */}
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="card rounded-xl px-[32px] py-[28px]">
-              <div className="mb-3 font-serif text-[14px] text-[var(--ink-soft)]">总学习天数</div>
+              <div className="mb-3 font-sans text-[14px] text-[var(--ink-soft)]">总学习天数</div>
               <div className="font-mono text-num-lg font-semibold tracking-[-0.01em] text-[var(--ink)]">
                 {stats.totalDays}
                 <small className="ml-1 font-sans text-[14px] font-medium text-[var(--ink-faint)]">天</small>
               </div>
             </div>
-
             <div className="card rounded-xl px-[32px] py-[28px]">
-              <div className="mb-3 font-serif text-[14px] text-[var(--ink-soft)]">总学习时长</div>
+              <div className="mb-3 font-sans text-[14px] text-[var(--ink-soft)]">总学习时长</div>
               <div className="font-mono text-num-lg font-semibold tracking-[-0.01em] text-[var(--ink)]">
                 {formatDuration(stats.totalMin)}
               </div>
             </div>
-
             <div className="card rounded-xl px-[32px] py-[28px]">
-              <div className="mb-3 font-serif text-[14px] text-[var(--ink-soft)]">最常心情</div>
+              <div className="mb-3 font-sans text-[14px] text-[var(--ink-soft)]">最常心情</div>
               {topMoodCfg ? (
                 <div className="flex items-center gap-3">
-                  <Flower mood={topMoodCfg} size={34} variant="head" />
-                  <span className="font-serif text-[22px] font-semibold text-[var(--ink)]">
+                  <span
+                    className="h-3.5 w-3.5 rounded-full"
+                    style={{ background: isDark ? topMoodCfg.dark.solid : topMoodCfg.solid }}
+                  />
+                  <span className="font-sans text-[22px] font-semibold text-[var(--ink)]">
                     {topMoodCfg.label}
                   </span>
                 </div>
               ) : (
-                <div className="font-serif text-[22px] font-semibold text-[var(--ink-faint)]">-</div>
+                <div className="font-sans text-[22px] font-semibold text-[var(--ink-faint)]">-</div>
               )}
             </div>
           </div>
 
-          {/* Charts */}
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.25fr_1fr]">
             <div className="card rounded-xl p-5">
               <div className="mb-1">
-                <h2 className="font-serif text-h2 text-[var(--ink)]">每日学习时长</h2>
-                <p className="font-sans text-caption text-[var(--ink-faint)]">近 {stats.dailyData.length} 天 · 柱色随当日心情</p>
+                <h2 className="font-sans text-h2 text-[var(--ink)]">每日学习时长</h2>
+                <p className="font-sans text-caption text-[var(--ink-faint)]">点击柱状图进入当天</p>
               </div>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={stats.dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -206,17 +206,56 @@ export default function Stats() {
                   />
                   <Bar
                     dataKey="hours"
-                    shape={(props: { x?: number; y?: number; width?: number; height?: number; payload?: { mood: string | null; hours: number } }) => {
+                    cursor="pointer"
+                    onClick={(data) => {
+                      const item = data as { dateStr?: string; payload?: { dateStr?: string } };
+                      const dateStr = item.payload?.dateStr ?? item.dateStr;
+                      if (dateStr) navigate(`/day/${dateStr}`);
+                    }}
+                    shape={(props: {
+                      x?: number;
+                      y?: number;
+                      width?: number;
+                      height?: number;
+                      payload?: { mood: string | null; hours: number; dateStr: string };
+                    }) => {
                       const { x = 0, y = 0, width = 0, height = 0, payload } = props;
-                      // 空日：基线处 hairline 小刻度（mockup .bar.empty）
+                      const go = () => {
+                        if (payload?.dateStr) navigate(`/day/${payload.dateStr}`);
+                      };
                       if (!payload?.hours) {
-                        return <rect x={x + width / 2 - 4} y={y + height - 4} width={8} height={4} rx={2} fill="var(--hairline)" />;
+                        return (
+                          <rect
+                            x={x + width / 2 - 4}
+                            y={y + height - 4}
+                            width={8}
+                            height={4}
+                            rx={2}
+                            fill="var(--hairline)"
+                            onClick={go}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        );
                       }
                       const moodCfg = payload?.mood ? moodCfgMap.get(payload.mood) : undefined;
                       const barColor = moodCfg
-                        ? (isDark ? moodCfg.dark.solid : moodCfg.solid)
-                        : 'var(--hairline)';
-                      return <rect x={x + width / 2 - 8} y={y} width={16} height={height} fill={barColor} rx={6} ry={6} />;
+                        ? isDark
+                          ? moodCfg.dark.solid
+                          : moodCfg.solid
+                        : 'var(--brand)';
+                      return (
+                        <rect
+                          x={x + width / 2 - 8}
+                          y={y}
+                          width={16}
+                          height={height}
+                          fill={barColor}
+                          rx={6}
+                          ry={6}
+                          onClick={go}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      );
                     }}
                   />
                 </BarChart>
@@ -225,12 +264,11 @@ export default function Stats() {
 
             <div className="card rounded-xl p-5">
               <div className="mb-1">
-                <h2 className="font-serif text-h2 text-[var(--ink)]">学科分布</h2>
+                <h2 className="font-sans text-h2 text-[var(--ink)]">学科分布</h2>
                 <p className="font-sans text-caption text-[var(--ink-faint)]">本月 · 按学习时长</p>
               </div>
               {stats.subjectData.length > 0 ? (
                 <div className="flex items-center gap-6">
-                  {/* 环形图：固定尺寸 + HTML 中心字（比 Recharts Label/viewBox 更稳，深浅通用） */}
                   <div className="relative h-[150px] w-[150px] shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -261,13 +299,12 @@ export default function Stats() {
                     {stats.subjectData.map((entry) => (
                       <div key={entry.name} className="flex items-center gap-2">
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: entry.color }} />
-                        <span
-                          className="min-w-0 flex-1 truncate font-sans text-small text-[var(--ink)]"
-                          title={entry.name}
-                        >
+                        <span className="min-w-0 flex-1 truncate font-sans text-small text-[var(--ink)]" title={entry.name}>
                           {entry.name}
                         </span>
-                        <span className="shrink-0 font-mono text-caption text-[var(--ink-soft)]">{formatDuration(entry.min)}</span>
+                        <span className="shrink-0 font-mono text-caption text-[var(--ink-soft)]">
+                          {formatDuration(entry.min)}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -279,28 +316,22 @@ export default function Stats() {
               )}
             </div>
           </div>
-
-          {/* Bouquet poster */}
-          <BouquetPoster year={viewYear} month={viewMonth} records={records || []} moodMap={moodCfgMap} />
         </>
       ) : (
-        /* Empty state */
-        <div className="card flex flex-col items-center justify-center rounded-xl py-16 text-center">
-          <Flower size={64} variant="head" />
-          <h2 className="mt-6 font-serif text-h2 text-[var(--ink-soft)]">这里会随着时间长出果实</h2>
-          <p className="mt-2 max-w-xs font-sans text-small text-[var(--ink-faint)]">
-            坚持记录一周后，就能看到第一份统计报告
-          </p>
-          <div className="mt-6 flex items-end gap-4" style={{ height: '80px' }}>
-            {[60, 120, 80, 150, 100].map((h, i) => (
-              <div
-                key={i}
-                className="w-8 rounded-t-md border border-dashed border-[var(--hairline)]"
-                style={{ height: `${h * 0.4}px` }}
-              />
-            ))}
-          </div>
-        </div>
+        <QueryEmpty
+          title="这个月还没有记录"
+          hint="记下第一天后，这里会出现时长与心情统计"
+          action={
+            <button
+              type="button"
+              onClick={() => navigate(`/day/${formatDate(new Date())}`)}
+              className="rounded-md px-4 py-2 font-sans text-small text-white"
+              style={{ background: 'var(--brand)' }}
+            >
+              去记第一天
+            </button>
+          }
+        />
       )}
     </div>
   );

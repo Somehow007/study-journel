@@ -1,11 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { CalendarDays, Clock, BarChart3, Settings, Search, Download, Upload, Moon, Sun } from 'lucide-react';
+import { CalendarDays, Clock, BarChart3, Settings, Search, Download, Upload, Moon, Sun, BookOpen } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatDate } from '../lib/dateUtils';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
-import Flower from './Flower';
-import { MOOD_CONFIGS } from '../lib/constants';
 
 const mainNav = [
   { to: `/day/${formatDate(new Date())}`, label: '今日', icon: Sun, end: false },
@@ -19,19 +17,20 @@ export default function Sidebar() {
   const { fileInputRef, importStatus, handleExport, triggerImport, handleFileChange } = useDataIO();
 
   return (
-    <aside
-      className="card sticky top-6 z-20 flex w-[220px] flex-col rounded-[20px] px-4 pb-5 pt-7"
-    >
-      {/* Logo */}
+    <aside className="card sticky top-6 z-20 flex w-[220px] flex-col rounded-[20px] px-4 pb-5 pt-7">
       <div className="flex items-center gap-2.5 px-3 pb-6">
-        <Flower mood={MOOD_CONFIGS.happy} size={28} variant="head" />
+        <span
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
+          style={{ background: 'var(--brand)' }}
+        >
+          <BookOpen size={16} strokeWidth={2} />
+        </span>
         <div className="flex flex-col">
-          <span className="font-serif text-h2 leading-none text-[var(--ink)]" style={{ letterSpacing: '0.06em' }}>花期</span>
-          <span className="font-displaylatin italic text-caption text-[var(--ink-faint)]">blossom</span>
+          <span className="font-sans text-h2 leading-none text-[var(--ink)]">手帐</span>
+          <span className="font-sans text-caption text-[var(--ink-faint)]">学习台账</span>
         </div>
       </div>
 
-      {/* Main nav（mockup：品牌区直接接导航，无分隔线；去掉 flex-1 让卡片随内容收高，不留空白中段） */}
       <nav className="flex flex-col gap-1 px-3">
         {mainNav.map((item) => {
           const Icon = item.icon;
@@ -67,7 +66,6 @@ export default function Sidebar() {
 
       <div className="mx-5 mb-3 h-px bg-[var(--hairline)]" />
 
-      {/* Secondary actions */}
       <div className="flex flex-col gap-1 px-3 pb-4">
         <NavLink
           to="/search"
@@ -138,7 +136,7 @@ export default function Sidebar() {
       />
 
       <div className="px-5 pb-5 text-center font-mono text-caption text-[var(--ink-faint)]">
-        v{APP_VERSION} · 本地存储中
+        v{APP_VERSION} · 已同步
       </div>
     </aside>
   );

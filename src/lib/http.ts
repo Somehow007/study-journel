@@ -1,21 +1,53 @@
 /**
  * 手帐 HTTP 层：同源请求博客后端的 /api/journal 接口。
  *
- * 登录态复用博客 JWT：博客前端把 access token 存在 localStorage['mysite_access_token']
- * （JSON 字符串）。手帐与博客同源（somehow007.top），直接读取并附 Authorization 头。
+ * 登录态复用博客 JWT：博客前端把 access / refresh token 存在
+ * localStorage['mysite_access_token'] / ['mysite_refresh_token']（JSON 字符串）。
  * 响应统一为博客的 Result<T> 包装：{ code: '0', message, data }，这里解包后返回 data。
  */
 
-const TOKEN_KEY = 'mysite_access_token';
+const ACCESS_KEY = 'mysite_access_token';
+const REFRESH_KEY = 'mysite_refresh_token';
 const API_PREFIX = '/api/journal';
 
-/** 读取博客登录 token（与博客 mysite-frontend/src/utils/storage.ts 的存储格式一致） */
+export const FORBIDDEN_EVENT = 'journal:forbidden';
+
+/** 读取博客 storage.ts 同款 JSON 字符串 */
+export function readJsonStorage<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+function writeJsonStorage(key: string, value: string) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+export function setTokens(accessToken: string, refreshToken?: string) {
+  writeJsonStorage(ACCESS_KEY, accessToken);
+  if (refreshToken) writeJsonStorage(REFRESH_KEY, refreshToken);
+}
+
+export function clearTokens() {
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+/** 读取博客登录 token */
 export function getToken(): string | null {
   try {
-    const raw = localStorage.getItem(TOKEN_KEY);
+    const raw = localStorage.getItem(ACCESS_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as unknown;
-    return typeof parsed === 'string' ? parsed : raw;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return typeof parsed === 'string' && parsed ? parsed : raw;
+    } catch {
+      return raw;
+    }
   } catch {
     return null;
   }
@@ -43,9 +75,78 @@ interface FetchOptions {
   body?: string;
 }
 
+interface RefreshResp {
+  accessToken?: string;
+  refreshToken?: string;
+}
+
+/** 手帐独立开发端口上登录（5173 博客与 5174 手帐不同源，token 不共享） */
+export async function loginWithPassword(username: string, password: string): Promise<void> {
+  const res = await fetch('/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  let payload: ApiResult<RefreshResp> | null = null;
+  try {
+    payload = (await res.json()) as ApiResult<RefreshResp>;
+  } catch {
+    payload = null;
+  }
+  if (!res.ok || !payload || payload.code !== '0' || !payload.data?.accessToken) {
+    throw new ApiError(payload?.message || '登录失败', res.status, payload?.code);
+  }
+  setTokens(payload.data.accessToken, payload.data.refreshToken);
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const refreshToken = readJsonStorage<unknown>(REFRESH_KEY);
+    const token = typeof refreshToken === 'string' ? refreshToken : null;
+    if (!token) return false;
+    try {
+      const res = await fetch('/v1/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: token }),
+      });
+      if (!res.ok) return false;
+      const payload = (await res.json()) as ApiResult<RefreshResp>;
+      if (payload.code !== '0' || !payload.data?.accessToken) return false;
+      writeJsonStorage(ACCESS_KEY, payload.data.accessToken);
+      if (payload.data.refreshToken) {
+        writeJsonStorage(REFRESH_KEY, payload.data.refreshToken);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+/** 生产走博客 /login；本地 Vite 不能跳 /login（base 是 /journal/），清 token 后回手帐登录页 */
+export function goLogin() {
+  clearTokens();
+  const { protocol, hostname, port } = window.location;
+  if (port === '5174' || port === '5175') {
+    window.location.assign(`${protocol}//${hostname}:${port}/journal/`);
+    return;
+  }
+  window.location.assign('/login');
+}
+
 /**
  * 发起请求并解包 Result<T>。
- * - 401：登录态缺失/过期，跳转网站登录页
+ * - 401：先 POST /v1/auth/refresh，成功则重试原请求；失败跳转登录页
+ * - 403：派发 forbidden 事件（非管理员）
  * - 写操作（非 GET）遇到网络错误或 5xx：自动重试一次
  */
 export async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
@@ -65,22 +166,39 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}): Pro
 
   const isWrite = method !== 'GET';
   let lastError: Error | null = null;
+  let refreshed = false;
 
   for (let attempt = 0; attempt <= (isWrite ? 1 : 0); attempt++) {
     let res: Response;
     try {
       res = await doFetch();
     } catch (err) {
-      // 网络层错误（断网等）：写操作重试一次，读操作直接抛
       lastError = err instanceof Error ? err : new Error(String(err));
       if (attempt < 1 && isWrite) continue;
       throw new ApiError(`网络错误：${lastError.message}`, 0);
     }
 
+    if (res.status === 401 && !refreshed) {
+      refreshed = true;
+      const ok = await refreshAccessToken();
+      if (ok) {
+        try {
+          res = await doFetch();
+        } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err));
+          throw new ApiError(`网络错误：${lastError.message}`, 0);
+        }
+      }
+    }
+
     if (res.status === 401) {
-      // 未登录或登录过期：回网站登录页（同源）
-      window.location.href = '/login';
+      goLogin();
       throw new ApiError('未登录或登录已过期', 401);
+    }
+
+    if (res.status === 403) {
+      window.dispatchEvent(new Event(FORBIDDEN_EVENT));
+      throw new ApiError('没有访问权限', 403, 'FORBIDDEN');
     }
 
     let payload: ApiResult<T> | null = null;
@@ -95,7 +213,6 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}): Pro
     }
 
     const message = payload?.message || `请求失败（HTTP ${res.status}）`;
-    // 服务端 5xx：写操作重试一次
     if (res.status >= 500 && attempt < 1 && isWrite) {
       lastError = new ApiError(message, res.status, payload?.code);
       continue;

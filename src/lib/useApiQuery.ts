@@ -12,8 +12,8 @@ interface ApiQueryState<T> {
 /**
  * 替代 dexie-react-hooks 的 useLiveQuery：
  * - 挂载时与 deps 变化时拉取
- * - 订阅 journalEvents 数据变更总线：任何写操作（upsert/delete/import/心情 CRUD）
- *   成功后自动重新拉取，页面响应式体验与原 IndexedDB 版一致
+ * - 订阅 journalEvents 数据变更总线：任何写操作成功后自动重新拉取
+ * - 首次 / deps 变化显示 loading；后台刷新（tick）不把页面打回骨架屏
  */
 export function useApiQuery<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiQueryState<T> {
   const [data, setData] = useState<T | undefined>(undefined);
@@ -21,13 +21,18 @@ export function useApiQuery<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiQ
   const [error, setError] = useState<Error | null>(null);
   const [tick, setTick] = useState(0);
 
-  // fetcher 每次渲染可能是新闭包，用 ref 持有最新版，避免把 fetcher 放进依赖触发循环
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
+  const depsKey = JSON.stringify(deps);
+  const prevDepsKey = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    const depsChanged = prevDepsKey.current !== depsKey;
+    prevDepsKey.current = depsKey;
+    if (depsChanged) {
+      setLoading(true);
+    }
     fetcherRef
       .current()
       .then((result) => {
@@ -47,8 +52,7 @@ export function useApiQuery<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiQ
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, tick]);
+  }, [depsKey, tick]);
 
   useEffect(() => subscribeJournal(() => setTick((t) => t + 1)), []);
 

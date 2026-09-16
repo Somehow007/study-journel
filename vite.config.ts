@@ -7,7 +7,24 @@ import react from '@vitejs/plugin-react'
 // 第二期后端化：数据层走同源 /api/journal（Spring Boot journal 模块）。
 export default defineConfig({
   base: '/journal/',
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'journal-base-redirect',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const path = String((req as { url?: string }).url ?? '').split('?')[0]
+          if (path === '/' || path === '/login' || path === '/index.html') {
+            res.statusCode = 302
+            res.setHeader('Location', '/journal/')
+            res.end()
+            return
+          }
+          next()
+        })
+      },
+    },
+  ],
   server: {
     // 5174：避让博客前端的 5173（博客 CORS 白名单本就包含 5174）
     port: 5174,
@@ -17,6 +34,10 @@ export default defineConfig({
       // 生产环境由 Nginx 的 location /api/ 同源反代，无需此配置。
       // 本地联调需先在 localStorage['mysite_access_token'] 放入博客登录 token（JSON 字符串）。
       '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
+      '/v1': {
         target: 'http://localhost:8081',
         changeOrigin: true,
       },

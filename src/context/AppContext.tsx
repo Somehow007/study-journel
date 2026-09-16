@@ -4,15 +4,43 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 const DEFAULT_DAILY_GOAL_MIN = 240; // 4h
 const GOAL_MIN_LIMITS = { min: 15, max: 960 };
 const GOAL_STORAGE_KEY = 'study-journal-daily-goal-min';
+const JOURNAL_THEME_KEY = 'study-journal-theme';
+const BLOG_THEME_KEY = 'mysite_theme_v2';
+
+function readBlogThemeId(): string | null {
+  try {
+    const raw = localStorage.getItem(BLOG_THEME_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    return typeof parsed === 'string' ? parsed : raw;
+  } catch {
+    try {
+      return localStorage.getItem(BLOG_THEME_KEY);
+    } catch {
+      return null;
+    }
+  }
+}
+
+/** 博客主题：id 含 dark 或为 aurora → 深色，其余浅色 */
+export function isBlogThemeDark(id: string | null): boolean {
+  if (!id) return false;
+  return id.includes('dark') || id === 'aurora';
+}
+
+function resolveInitialTheme(): 'light' | 'dark' {
+  const stored = localStorage.getItem(JOURNAL_THEME_KEY);
+  if (stored === 'dark' || stored === 'light') return stored;
+  const blogId = readBlogThemeId();
+  if (blogId) return isBlogThemeDark(blogId) ? 'dark' : 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
 interface AppContextValue {
-  /** 当前查看的月份 */
   currentMonth: { year: number; month: number };
   setCurrentMonth: (year: number, month: number) => void;
-  /** 主题（晨园 / 夜色花房） */
   theme: 'light' | 'dark';
   toggleTheme: () => void;
-  /** 每日学习目标（分钟）— 日历进度条以此为满格 */
   dailyGoalMin: number;
   setDailyGoalMin: (min: number) => void;
 }
@@ -25,11 +53,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     year: now.getFullYear(),
     month: now.getMonth(),
   });
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const stored = localStorage.getItem('study-journal-theme');
-    if (stored === 'dark' || stored === 'light') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  const [theme, setTheme] = useState<'light' | 'dark'>(resolveInitialTheme);
 
   const setCurrentMonth = useCallback((year: number, month: number) => {
     setCurrentMonthState({ year, month });
@@ -38,7 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === 'light' ? 'dark' : 'light';
-      localStorage.setItem('study-journal-theme', next);
+      localStorage.setItem(JOURNAL_THEME_KEY, next);
       return next;
     });
   }, []);
