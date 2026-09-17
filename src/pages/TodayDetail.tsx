@@ -11,6 +11,7 @@ import LearningRecordCard, { formatDurationHM } from '../components/LearningReco
 import LearningFormModal from '../components/LearningFormModal';
 import DiaryEditor from '../components/DiaryEditor';
 import SproutBadge from '../components/SproutBadge';
+import TodayGoalsSection from '../components/TodayGoalsSection';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import { totalDuration } from '../lib/dateUtils';
 import type { LearningItem } from '../types';
@@ -184,6 +185,8 @@ export default function TodayDetail() {
           {moodConfig ? `已记：${moodConfig.label}` : '点选心情，记下今天'}
         </p>
       </section>
+
+      {date && <TodayGoalsSection date={date} />}
 
       <section className="card mb-6 rounded-xl p-6">
         <div className="mb-4 flex items-center justify-between">

@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 import { getRecordsByMonth } from '../lib/api';
+import { formatPeriod, getGoalsByPeriod } from '../lib/goalApi';
 import { useApiQuery } from '../lib/useApiQuery';
 import { getCalendarDays, isToday, formatDate, totalDuration, parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
@@ -21,6 +22,8 @@ export default function MonthView() {
     () => getRecordsByMonth(year, month),
     [year, month],
   );
+  const period = formatPeriod(year, month);
+  const { data: goalMonth } = useApiQuery(() => getGoalsByPeriod(period), [period]);
 
   const recordMap = useMemo(() => {
     const map = new Map<string, { mood: string | null; totalMin: number; diary: string }>();
@@ -114,6 +117,7 @@ export default function MonthView() {
         <div className="grid grid-cols-7 gap-1 md:gap-2">
           {days.map((day) => {
             const record = recordMap.get(day.dateStr);
+            const mark = goalMonth?.dayMarks?.[day.dateStr];
             const d = parseDate(day.dateStr);
             const isFuture = d > now;
             return (
@@ -128,6 +132,8 @@ export default function MonthView() {
                 totalMin={record?.totalMin ?? 0}
                 diary={record?.diary ?? ''}
                 goalMin={dailyGoalMin}
+                taskTotal={mark?.total ?? 0}
+                taskDone={mark?.done ?? 0}
                 onClick={() => navigate(`/day/${day.dateStr}`)}
               />
             );

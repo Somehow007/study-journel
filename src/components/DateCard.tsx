@@ -14,6 +14,8 @@ interface DateCardProps {
   totalMin: number;
   diary: string;
   goalMin: number;
+  taskTotal?: number;
+  taskDone?: number;
   onClick: () => void;
 }
 
@@ -27,6 +29,8 @@ export default function DateCard({
   totalMin,
   diary,
   goalMin,
+  taskTotal = 0,
+  taskDone = 0,
   onClick,
 }: DateCardProps) {
   const [hovered, setHovered] = useState(false);
@@ -35,6 +39,8 @@ export default function DateCard({
   const moodConfig = useMoodConfig(mood);
 
   const hasRecord = Boolean(mood || totalMin > 0 || diary);
+  const hasTasks = taskTotal > 0;
+  const tasksDone = hasTasks && taskDone >= taskTotal;
   const pct = goalMin > 0 ? Math.min(100, (totalMin / goalMin) * 100) : 100;
   const barWidth = totalMin > 0 ? Math.max(pct, 3) : 0;
   const barColor = moodConfig ? (isDark ? moodConfig.dark.solid : moodConfig.solid) : 'var(--brand)';
@@ -47,7 +53,7 @@ export default function DateCard({
 
   const dateObj = parseDate(dateStr);
   const weekday = WEEKDAY_LABELS[(dateObj.getDay() + 6) % 7];
-  const showTooltip = hovered && hasRecord;
+  const showTooltip = hovered && (hasRecord || hasTasks);
 
   return (
     <div className="relative">
@@ -81,6 +87,11 @@ export default function DateCard({
               {diary}
             </p>
           )}
+          {hasTasks && (
+            <div className="mt-1.5 font-mono text-caption text-white/60">
+              任务 {taskDone}/{taskTotal}
+            </div>
+          )}
         </div>
       )}
 
@@ -110,6 +121,16 @@ export default function DateCard({
             style={{ background: hasRecord ? dotColor : 'transparent', border: hasRecord ? undefined : '1px dashed var(--keyline)' }}
             aria-hidden="true"
           />
+          {hasTasks && (
+            <span
+              className="h-1 w-1 rounded-full"
+              style={{
+                background: tasksDone ? 'var(--brand)' : 'transparent',
+                boxShadow: tasksDone ? undefined : 'inset 0 0 0 1px var(--brand)',
+              }}
+              aria-hidden="true"
+            />
+          )}
         </span>
 
         <span className="relative hidden min-h-[96px] w-full flex-col items-center px-2.5 pb-3 pt-2 md:flex">
@@ -154,6 +175,16 @@ export default function DateCard({
                 />
               )}
             </div>
+          )}
+          {hasTasks && (
+            <span
+              className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
+              style={{
+                background: tasksDone ? 'var(--brand)' : 'transparent',
+                boxShadow: tasksDone ? undefined : 'inset 0 0 0 1px var(--brand)',
+              }}
+              aria-hidden="true"
+            />
           )}
         </span>
       </button>

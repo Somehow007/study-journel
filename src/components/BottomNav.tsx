@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Sun, CalendarDays, Clock, MoreHorizontal, BarChart3, Search, TrendingUp, Settings, X } from 'lucide-react';
+import { Sun, CalendarDays, Clock, MoreHorizontal, BarChart3, Search, TrendingUp, Settings, X, ListChecks } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
 
 const tabs = [
@@ -10,13 +10,14 @@ const tabs = [
 ];
 
 const moreItems = [
+  { to: '/plan', label: '计划', icon: ListChecks },
   { to: '/stats', label: '统计', icon: BarChart3 },
   { to: '/search', label: '搜索', icon: Search },
   { to: '/annual', label: '年度', icon: TrendingUp },
   { to: '/settings', label: '设置', icon: Settings },
 ];
 
-const MORE_PREFIXES = ['/stats', '/search', '/annual', '/settings'];
+const MORE_PREFIXES = ['/plan', '/stats', '/search', '/annual', '/settings'];
 
 export default function BottomNav() {
   const location = useLocation();

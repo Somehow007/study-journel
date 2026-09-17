@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { CalendarDays, Clock, BarChart3, Settings, Search, Download, Upload, Moon, Sun, BookOpen } from 'lucide-react';
+import { CalendarDays, Clock, BarChart3, Settings, Search, Download, Upload, Moon, Sun, BookOpen, ListChecks } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatDate } from '../lib/dateUtils';
 import { useDataIO } from '../lib/useDataIO';
@@ -7,6 +7,7 @@ import { APP_VERSION } from '../lib/version';
 
 const mainNav = [
   { to: `/day/${formatDate(new Date())}`, label: '今日', icon: Sun, end: false },
+  { to: '/plan', label: '计划', icon: ListChecks, end: false },
   { to: '/', label: '日历', icon: CalendarDays, end: true },
   { to: '/memory', label: '时光', icon: Clock, end: false },
   { to: '/stats', label: '统计', icon: BarChart3, end: false },

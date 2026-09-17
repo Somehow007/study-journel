@@ -9,6 +9,8 @@ import ForbiddenPage from './components/ForbiddenPage';
 import LoginPage from './components/LoginPage';
 import MonthView from './pages/MonthView';
 import TodayDetail from './pages/TodayDetail';
+import PlanView from './pages/PlanView';
+import GoalDetail from './pages/GoalDetail';
 import Memory from './pages/Memory';
 import Stats from './pages/Stats';
 import Search from './pages/Search';
@@ -84,6 +86,8 @@ function AppShell() {
       <Route element={<Layout />}>
         <Route path="/" element={<MonthView />} />
         <Route path="/day/:date" element={<TodayDetail />} />
+        <Route path="/plan" element={<PlanView />} />
+        <Route path="/plan/:goalId" element={<GoalDetail />} />
         <Route path="/memory" element={<Memory />} />
         <Route path="/stats" element={<Stats />} />
         <Route path="/annual" element={<AnnualReview />} />
