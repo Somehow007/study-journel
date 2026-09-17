@@ -1,62 +1,52 @@
+@import './styles/themes/tokens.css';
+@import './styles/themes/classic.css';
+@import './styles/themes/aurora.css';
+@import './styles/themes/rose-garden.css';
+@import './styles/themes/ocean-breeze.css';
+@import './styles/themes/warm-sunset.css';
+@import './styles/themes/liquid-glass.css';
+@import './styles/themes/glow.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* 站点同款 · 编辑台账：对齐博客 classic 令牌 */
-
+  /* Journal token aliases → blog data-theme variables */
   :root {
-    --paper: #F8F9FA;
-    --card: #FFFFFF;
-    --overlay: #FFFFFF;
-    --ink: #111827;
-    --ink-soft: #374151;
-    --ink-faint: #6B7280;
-    --hairline: #F3F4F6;
-    --keyline: #E5E7EB;
-    --brand: #4F46E5;
-    --brand-ink: #4338CA;
-    --brand-soft: #EEF2FF;
-    --pine: #10B981;
-    --accent: #4F46E5;
-    --accent-ink: #4338CA;
+    --paper: var(--bg-primary);
+    --card: var(--bg-elevated);
+    --overlay: var(--bg-elevated);
+    --ink: var(--text-primary);
+    --ink-soft: var(--text-secondary);
+    --ink-faint: var(--text-muted);
+    --hairline: var(--border-subtle);
+    --keyline: var(--border);
+    --brand: var(--accent);
+    --brand-ink: var(--accent-hover);
+    --brand-soft: var(--accent-subtle);
+    --pine: var(--success);
+    --accent-ink: var(--accent-hover);
 
-    --bg-start: #F8F9FA;
-    --bg-mid: #F8F9FA;
-    --bg-end: #F8F9FA;
+    --bg-start: var(--bg-primary);
+    --bg-mid: var(--bg-primary);
+    --bg-end: var(--bg-primary);
     --glow-1: transparent;
     --glow-2: transparent;
 
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
-    --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(0, 0, 0, 0.08);
-    --shadow-3: 0 2px 8px rgba(0, 0, 0, 0.08), 0 16px 40px rgba(0, 0, 0, 0.10);
-    --shadow-4: 0 4px 12px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.14);
+    --shadow-1: 0 1px 2px var(--shadow-color), 0 8px 24px var(--shadow-color);
+    --shadow-2: 0 2px 6px var(--shadow-color-md), 0 12px 32px var(--shadow-color-md);
+    --shadow-3: 0 2px 8px var(--shadow-color-md), 0 16px 40px var(--shadow-color-md);
+    --shadow-4: 0 4px 12px var(--shadow-color-md), 0 24px 56px var(--shadow-color-md);
   }
 
-  .dark {
-    --paper: #0B0F19;
-    --card: #151A2D;
-    --overlay: #1A2035;
-    --ink: #F3F4F6;
-    --ink-soft: #D1D5DB;
-    --ink-faint: #9CA3AF;
-    --hairline: #1E2438;
-    --keyline: #2D3548;
-    --brand: #818CF8;
-    --brand-ink: #6366F1;
-    --brand-soft: rgba(99, 102, 241, 0.12);
-    --pine: #34D399;
-    --accent: #818CF8;
-    --accent-ink: #6366F1;
+  html, body {
+    min-height: 100%;
+  }
 
-    --bg-start: #0B0F19;
-    --bg-mid: #0B0F19;
-    --bg-end: #0B0F19;
-
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.28);
-    --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.28), 0 12px 32px rgba(0, 0, 0, 0.35);
-    --shadow-3: 0 2px 8px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.35);
-    --shadow-4: 0 4px 12px rgba(0, 0, 0, 0.32), 0 24px 56px rgba(0, 0, 0, 0.4);
+  #root {
+    position: relative;
+    z-index: 1;
   }
 
   body {
@@ -66,6 +56,17 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition:
+      background-color 400ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+      color 400ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+      border-color 400ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+      box-shadow 400ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) !important;
   }
 }
 
@@ -172,6 +173,13 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+    }
+
+    html.theme-transitioning,
+    html.theme-transitioning *,
+    html.theme-transitioning *::before,
+    html.theme-transitioning *::after {
+      transition: none !important;
     }
   }
 

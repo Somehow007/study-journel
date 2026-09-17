@@ -13,9 +13,9 @@ export default function ToastHost() {
           key={t.id}
           className="pointer-events-auto rounded-lg px-4 py-2 font-sans text-small shadow-2"
           style={{
-            background: t.type === 'error' ? '#FEF2F2' : 'var(--card)',
-            color: t.type === 'error' ? '#B91C1C' : 'var(--ink)',
-            border: `1px solid ${t.type === 'error' ? '#FECACA' : 'var(--keyline)'}`,
+            background: t.type === 'error' ? 'var(--danger-subtle)' : 'var(--card)',
+            color: t.type === 'error' ? 'var(--danger)' : 'var(--ink)',
+            border: `1px solid ${t.type === 'error' ? 'var(--danger)' : 'var(--keyline)'}`,
           }}
         >
           {t.message}

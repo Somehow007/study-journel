@@ -210,7 +210,7 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
             </button>
             <button
               onClick={handleSave}
-              className="rounded-md px-4 py-2 font-sans text-small text-white transition-all"
+              className="rounded-md px-4 py-2 font-sans text-small text-[var(--text-inverse)] transition-all"
               style={{ background: 'var(--brand)' }}
             >
               {isEditing ? '保存' : '添加'}

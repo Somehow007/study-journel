@@ -298,7 +298,7 @@ export default function GoalDetail() {
                 type="button"
                 onClick={() => void handleAddTask()}
                 disabled={!taskTitle.trim()}
-                className="ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1.5 font-sans text-small text-white disabled:opacity-40"
+                className="ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1.5 font-sans text-small text-[var(--text-inverse)] disabled:opacity-40"
                 style={{ background: 'var(--brand)' }}
               >
                 <Plus size={14} />

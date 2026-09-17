@@ -1,0 +1,51 @@
+/* Synced from mysite-frontend/src/styles/themes/rose-garden.css — keep palettes in lockstep. */
+[data-theme="rose-garden"] {
+  --success: #10B981;
+  --success-subtle: rgb(16 185 129 / 0.12);
+  --warning: #F59E0B;
+  --warning-subtle: rgb(245 158 11 / 0.12);
+  --danger: #EF4444;
+  --danger-subtle: rgb(239 68 68 / 0.12);
+  --info: #3B82F6;
+  --info-subtle: rgb(59 130 246 / 0.12);
+
+  --bg-primary: #FFF5F7;
+  --bg-secondary: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-code: #FFF0F3;
+  --bg-accent: rgba(253, 115, 151, 0.10);
+  --text-primary: #1A0A10;
+  --text-secondary: #4A2030;
+  --text-muted: #9C5070;
+  --text-inverse: #FFFFFF;
+  --accent: #E8466E;
+  --accent-hover: #CC3358;
+  --accent-subtle: rgba(232, 70, 110, 0.11);
+  --border: #F9D0DD;
+  --border-subtle: #FCE4EC;
+  --shadow-color: rgba(253, 115, 151, 0.06);
+  --shadow-color-md: rgba(253, 115, 151, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.70);
+  --glass-border: rgba(232, 70, 110, 0.15);
+  --glass-blur: 20px;
+  --glass-saturate: 1.8;
+  --glass-shadow: 0 4px 16px rgba(253, 115, 151, 0.06), 0 12px 40px rgba(253, 115, 151, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(232, 70, 110, 0.08);
+  --code-bg: #FFF0F3;
+  --code-header-bg: #FFE6EB;
+  --code-border: #F9D0DD;
+  --code-line-highlight: rgba(232, 70, 110, 0.06);
+  --code-line-number: #C4899E;
+  --code-token-keyword: #BE185D;
+  --code-token-string: #047857;
+  --code-token-function: #DB2777;
+  --code-token-number: #B45309;
+  --code-token-comment: #9C5070;
+  --code-token-operator: #B45309;
+  --code-token-variable: #DC2626;
+  --code-token-type: #9333EA;
+  --code-token-property: #0891B2;
+  --code-token-tag: #DB2777;
+  --code-token-attr: #047857;
+  --code-token-punctuation: #9C5070;
+  --code-token-plain: #4A2030;
+}

@@ -92,7 +92,7 @@ export default function MonthView() {
           </button>
           <button
             onClick={goToday}
-            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)] transition-all hover:bg-[var(--brand)] hover:text-white"
+            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)] transition-all hover:bg-[var(--brand)] hover:text-[var(--text-inverse)]"
           >
             今天
           </button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Sun, Moon, Download, Upload, RefreshCw, BookOpen } from 'lucide-react';
+import { Plus, Pencil, Trash2, Sun, Moon, Download, Upload, RefreshCw, BookOpen, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { deleteCustomMood, getCustomMoods } from '../lib/api';
 import { useApiQuery } from '../lib/useApiQuery';
@@ -8,10 +8,16 @@ import { QueryError, QueryLoading } from '../components/QueryState';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
 import { showToast } from '../lib/toast';
+import {
+  THEME_PICKER_ITEMS,
+  getThemeMeta,
+  isPickerThemeActive,
+  isThemeDark,
+} from '../lib/theme';
 import type { CustomMoodConfig } from '../types';
 
 export default function Settings() {
-  const { theme, toggleTheme, dailyGoalMin, setDailyGoalMin } = useApp();
+  const { theme, setTheme, toggleTheme, isDark, dailyGoalMin, setDailyGoalMin } = useApp();
   const [showMoodEdit, setShowMoodEdit] = useState(false);
   const [editingMood, setEditingMood] = useState<CustomMoodConfig | null>(null);
   const {
@@ -51,32 +57,46 @@ export default function Settings() {
 
       <section className="card mb-6 rounded-xl p-5">
         <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">外观</h2>
-        <div className="inline-flex items-center gap-1 rounded-xl border border-[var(--hairline)] p-1">
-          <button
-            onClick={() => {
-              if (theme !== 'light') toggleTheme();
-            }}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 font-sans text-small transition-all ${
-              theme === 'light' ? 'bg-[var(--paper)] text-[var(--ink)]' : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
-            }`}
-          >
-            <Sun size={16} strokeWidth={1.75} />
-            浅色
-          </button>
-          <button
-            onClick={() => {
-              if (theme !== 'dark') toggleTheme();
-            }}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 font-sans text-small transition-all ${
-              theme === 'dark' ? 'bg-[var(--paper)] text-[var(--ink)]' : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
-            }`}
-          >
-            <Moon size={16} strokeWidth={1.75} />
-            深色
-          </button>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="mb-4 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-small text-[var(--ink-soft)] transition-colors hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
+        >
+          {isDark ? <Moon size={16} strokeWidth={1.75} /> : <Sun size={16} strokeWidth={1.75} />}
+          {isDark ? '切换亮色' : '切换暗色'}
+        </button>
+        <div className="grid grid-cols-2 gap-2">
+          {THEME_PICKER_ITEMS.map((item) => {
+            const active = isPickerThemeActive(theme, item);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTheme(item.id)}
+                aria-current={active ? 'true' : undefined}
+                className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 transition-all ${
+                  active
+                    ? 'border-[var(--brand)] bg-[var(--brand-soft)]'
+                    : 'border-[var(--keyline)] hover:border-[var(--brand)]'
+                }`}
+              >
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--hairline)]"
+                  style={{ backgroundColor: item.preview.bg }}
+                >
+                  <div className="h-5 w-5 rounded-md" style={{ backgroundColor: item.preview.accent }} />
+                </div>
+                <span className="w-full truncate text-center font-sans text-caption text-[var(--ink-soft)]">
+                  {item.name}
+                </span>
+                {active && <Check size={12} className="text-[var(--brand)]" />}
+              </button>
+            );
+          })}
         </div>
         <p className="mt-3 font-sans text-caption text-[var(--ink-faint)]">
-          默认跟随博客主题明暗，可在此手动覆盖。
+          与博客共用主题（当前：{getThemeMeta(theme)?.name ?? theme}
+          {isThemeDark(theme) ? ' · 暗色' : ''}）。同域下两边会一起变。
         </p>
       </section>
 
@@ -155,7 +175,7 @@ export default function Settings() {
                   </button>
                   <button
                     onClick={() => void handleDeleteMood(mood)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-faint)] hover:bg-red-500/10 hover:text-red-400"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-faint)] hover:bg-[var(--danger-subtle)] hover:text-[var(--danger)]"
                     aria-label={`删除 ${mood.label}`}
                   >
                     <Trash2 size={14} strokeWidth={1.75} />
@@ -184,7 +204,7 @@ export default function Settings() {
               importStatus === 'success'
                 ? 'text-[var(--pine)]'
                 : importStatus === 'error'
-                  ? 'text-red-400'
+                  ? 'text-[var(--danger)]'
                   : 'text-[var(--ink-soft)]'
             }`}
           >
@@ -212,7 +232,7 @@ export default function Settings() {
       <section className="card rounded-xl p-5">
         <div className="flex items-center gap-3">
           <span
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-inverse)]"
             style={{ background: 'var(--brand)' }}
           >
             <BookOpen size={18} />

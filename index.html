@@ -5,9 +5,24 @@
     <link rel="icon" type="image/svg+xml" href="/book.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>学习手帐</title>
-    <meta name="theme-color" content="#4F46E5" />
+    <meta name="theme-color" content="#F8F9FA" />
   </head>
   <body>
+    <script>
+      ;(function () {
+        var raw = localStorage.getItem('mysite_theme_v2') || 'classic-light'
+        var t = raw
+        try {
+          var parsed = JSON.parse(raw)
+          if (typeof parsed === 'string') t = parsed
+        } catch (e) {}
+        localStorage.removeItem('study-journal-theme')
+        document.documentElement.setAttribute('data-theme', t)
+        var d = String(t).indexOf('dark') !== -1 || t === 'aurora'
+        document.documentElement.classList.toggle('dark', d)
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light'
+      })()
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

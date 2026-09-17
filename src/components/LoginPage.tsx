@@ -32,7 +32,7 @@ export default function LoginPage() {
         <p className="mt-1 font-sans text-small text-[var(--ink-faint)]">使用管理员账号登录</p>
 
         {error && (
-          <p className="mt-4 rounded-md px-3 py-2 font-sans text-small" style={{ background: '#FEE2E2', color: '#B91C1C' }}>
+          <p className="mt-4 rounded-md px-3 py-2 font-sans text-small" style={{ background: 'var(--danger-subtle)', color: 'var(--danger)' }}>
             {error}
           </p>
         )}
@@ -65,7 +65,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="mt-6 w-full rounded-md py-2.5 font-sans text-small text-white disabled:opacity-50"
+          className="mt-6 w-full rounded-md py-2.5 font-sans text-small text-[var(--text-inverse)] disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {loading ? '登录中…' : '登录'}

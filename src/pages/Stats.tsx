@@ -6,15 +6,14 @@ import { useApiQuery } from '../lib/useApiQuery';
 import { MONTH_LABELS } from '../lib/constants';
 import { totalDuration, formatDuration, formatDate } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
-import { useApp } from '../context/AppContext';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
+import { useIsDark } from '../lib/useIsDark';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid,
 } from 'recharts';
 
 export default function Stats() {
-  const { theme } = useApp();
-  const isDark = theme === 'dark';
+  const isDark = useIsDark();
   const navigate = useNavigate();
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
@@ -325,7 +324,7 @@ export default function Stats() {
             <button
               type="button"
               onClick={() => navigate(`/day/${formatDate(new Date())}`)}
-              className="rounded-md px-4 py-2 font-sans text-small text-white"
+              className="rounded-md px-4 py-2 font-sans text-small text-[var(--text-inverse)]"
               style={{ background: 'var(--brand)' }}
             >
               去记第一天

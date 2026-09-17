@@ -192,7 +192,7 @@ export default function LearningFormModal({ item, onConfirm, onClose }: Learning
             <button
               type="submit"
               disabled={!subject.trim() || durationMin < 1 || submitting}
-              className="rounded-md px-5 py-2 font-sans text-small text-white transition-all disabled:opacity-40"
+              className="rounded-md px-5 py-2 font-sans text-small text-[var(--text-inverse)] transition-all disabled:opacity-40"
               style={{ background: 'var(--brand)' }}
             >
               {submitting ? '保存中…' : item ? '保存' : '添加'}

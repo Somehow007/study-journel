@@ -11,7 +11,7 @@ export default function ForbiddenPage() {
           href={typeof window !== 'undefined' && (window.location.port === '5174' || window.location.port === '5175')
             ? `${window.location.protocol}//${window.location.hostname}:5173/`
             : '/'}
-          className="mt-6 inline-block rounded-md px-5 py-2 font-sans text-small text-white"
+          className="mt-6 inline-block rounded-md px-5 py-2 font-sans text-small text-[var(--text-inverse)]"
           style={{ background: 'var(--brand)' }}
         >
           返回博客

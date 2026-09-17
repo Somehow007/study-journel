@@ -27,12 +27,12 @@ export default function MoodSelector({ selected, onSelect }: MoodSelectorProps) 
             style={{
               background: isSelected ? solid : tint,
               borderColor: isSelected ? 'transparent' : 'var(--keyline)',
-              color: isSelected ? '#FFFFFF' : ink,
+              color: isSelected ? 'var(--text-inverse)' : ink,
             }}
           >
             <span
               className="h-2.5 w-2.5 rounded-full"
-              style={{ background: isSelected ? '#FFFFFF' : solid }}
+              style={{ background: isSelected ? 'var(--text-inverse)' : solid }}
               aria-hidden="true"
             />
             {config.label}

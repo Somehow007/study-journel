@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useMoodConfig } from '../lib/moodUtils';
-import { useApp } from '../context/AppContext';
 import { parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS } from '../lib/constants';
+import { useIsDark } from '../lib/useIsDark';
 
 interface DateCardProps {
   day: number;
@@ -34,8 +34,7 @@ export default function DateCard({
   onClick,
 }: DateCardProps) {
   const [hovered, setHovered] = useState(false);
-  const { theme } = useApp();
-  const isDark = theme === 'dark';
+  const isDark = useIsDark();
   const moodConfig = useMoodConfig(mood);
 
   const hasRecord = Boolean(mood || totalMin > 0 || diary);
@@ -61,13 +60,14 @@ export default function DateCard({
         <div
           className="animate-fade-in absolute bottom-full left-1/2 z-30 mb-3 hidden w-48 -translate-x-1/2 rounded-xl px-4 py-3 md:block"
           style={{
-            background: isDark ? '#1A2035' : '#111827',
+            background: 'var(--overlay)',
+            border: '1px solid var(--keyline)',
             boxShadow: 'var(--shadow-2)',
             pointerEvents: 'none',
           }}
         >
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="font-mono text-caption text-white/70">
+            <span className="font-mono text-caption text-[var(--ink-faint)]">
               {dateObj.getMonth() + 1}/{dateObj.getDate()} · {weekday}
             </span>
             {moodConfig && (
@@ -77,18 +77,18 @@ export default function DateCard({
             )}
           </div>
           {totalMin > 0 && (
-            <div className="font-mono text-caption text-white/70">
+            <div className="font-mono text-caption text-[var(--ink-soft)]">
               学习 {Math.floor(totalMin / 60)}h {String(totalMin % 60).padStart(2, '0')}m
-              <span className="text-white/40"> / 目标 {formatDuration(goalMin)}</span>
+              <span className="text-[var(--ink-faint)]"> / 目标 {formatDuration(goalMin)}</span>
             </div>
           )}
           {diary && (
-            <p className="mt-1.5 line-clamp-2 font-sans text-caption leading-relaxed text-white/80">
+            <p className="mt-1.5 line-clamp-2 font-sans text-caption leading-relaxed text-[var(--ink-soft)]">
               {diary}
             </p>
           )}
           {hasTasks && (
-            <div className="mt-1.5 font-mono text-caption text-white/60">
+            <div className="mt-1.5 font-mono text-caption text-[var(--ink-faint)]">
               任务 {taskDone}/{taskTotal}
             </div>
           )}

@@ -23,7 +23,7 @@ export function QueryError({ message, onRetry }: QueryErrorProps) {
         <button
           type="button"
           onClick={onRetry}
-          className="mt-4 rounded-md px-4 py-2 font-sans text-small text-white"
+          className="mt-4 rounded-md px-4 py-2 font-sans text-small text-[var(--text-inverse)]"
           style={{ background: 'var(--brand)' }}
         >
           重试

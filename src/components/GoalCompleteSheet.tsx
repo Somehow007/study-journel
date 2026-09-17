@@ -169,7 +169,7 @@ export default function GoalCompleteSheet({
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-md px-5 py-2 font-sans text-small text-white disabled:opacity-40"
+              className="rounded-md px-5 py-2 font-sans text-small text-[var(--text-inverse)] disabled:opacity-40"
               style={{ background: 'var(--brand)' }}
             >
               {submitting ? '保存中…' : '完成'}

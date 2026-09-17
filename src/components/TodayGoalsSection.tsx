@@ -129,7 +129,7 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
                   <button
                     type="button"
                     onClick={() => setSheet({ item, mode: 'count' })}
-                    className="rounded-full px-3 py-1 font-sans text-caption text-white"
+                    className="rounded-full px-3 py-1 font-sans text-caption text-[var(--text-inverse)]"
                     style={{ background: item.color }}
                   >
                     完成

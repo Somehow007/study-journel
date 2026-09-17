@@ -14,14 +14,14 @@ const mainNav = [
 ];
 
 export default function Sidebar() {
-  const { theme, toggleTheme } = useApp();
+  const { isDark, toggleTheme } = useApp();
   const { fileInputRef, importStatus, handleExport, triggerImport, handleFileChange } = useDataIO();
 
   return (
     <aside className="card sticky top-6 z-20 flex w-[220px] flex-col rounded-[20px] px-4 pb-5 pt-7">
       <div className="flex items-center gap-2.5 px-3 pb-6">
         <span
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-inverse)]"
           style={{ background: 'var(--brand)' }}
         >
           <BookOpen size={16} strokeWidth={2} />
@@ -86,8 +86,8 @@ export default function Sidebar() {
           onClick={toggleTheme}
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:bg-[var(--paper)] hover:text-[var(--ink)]"
         >
-          {theme === 'light' ? <Moon size={18} strokeWidth={1.75} /> : <Sun size={18} strokeWidth={1.75} />}
-          {theme === 'light' ? '深色模式' : '浅色模式'}
+          {isDark ? <Sun size={18} strokeWidth={1.75} /> : <Moon size={18} strokeWidth={1.75} />}
+          {isDark ? '浅色模式' : '深色模式'}
         </button>
 
         <button
@@ -103,8 +103,8 @@ export default function Sidebar() {
           className={`flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small transition-all hover:bg-[var(--paper)] ${
             importStatus === 'success'
               ? 'text-[var(--pine)]'
-              : importStatus === 'error'
-                ? 'text-red-400'
+                : importStatus === 'error'
+                ? 'text-[var(--danger)]'
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
           }`}
         >

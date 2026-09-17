@@ -20,11 +20,10 @@ import AnnualReview from './pages/AnnualReview';
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useApp();
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.setAttribute('data-theme', theme);
+    const dark = theme.includes('dark') || theme === 'aurora';
+    document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
   }, [theme]);
   return <>{children}</>;
 }

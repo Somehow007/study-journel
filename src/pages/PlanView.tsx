@@ -126,7 +126,7 @@ export default function PlanView() {
           <button
             type="button"
             onClick={() => setCurrentMonth(now.getFullYear(), now.getMonth())}
-            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)] hover:bg-[var(--brand)] hover:text-white"
+            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)] hover:bg-[var(--brand)] hover:text-[var(--text-inverse)]"
           >
             本月
           </button>
@@ -171,7 +171,7 @@ export default function PlanView() {
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="rounded-md px-4 py-2 font-sans text-small text-white"
+              className="rounded-md px-4 py-2 font-sans text-small text-[var(--text-inverse)]"
               style={{ background: 'var(--brand)' }}
             >
               制定本月目标
