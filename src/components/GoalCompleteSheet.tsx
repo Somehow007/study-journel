@@ -72,18 +72,16 @@ export default function GoalCompleteSheet({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
+    <div className="journal-sheet fixed inset-0 z-[60] flex items-end justify-center md:items-center">
       <div className="absolute inset-0 animate-fade-in bg-black/40" onClick={onClose} />
       <form
         onSubmit={handleSubmit}
-        className="overlay animate-slide-up relative w-full max-w-md rounded-t-2xl md:rounded-xl"
-        style={{
-          border: '1px solid var(--keyline)',
-          boxShadow: 'var(--shadow-4)',
-          paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))',
-        }}
+        className="overlay journal-sheet-panel animate-slide-up relative"
       >
-        <div className="px-6 pb-6 pt-6">
+        <div className="flex justify-center pt-2 md:hidden" aria-hidden="true">
+          <span className="h-1 w-10 rounded-full bg-[var(--keyline)]" />
+        </div>
+        <div className="px-5 pb-2 pt-3 md:px-6 md:pt-6">
           <button
             type="button"
             onClick={onClose}
@@ -92,7 +90,7 @@ export default function GoalCompleteSheet({
             <X size={18} />
           </button>
           <h3 className="mb-1 font-sans text-title text-[var(--ink)]">记下完成</h3>
-          <p className="mb-5 font-sans text-caption text-[var(--ink-faint)]">{title}</p>
+          <p className="mb-4 font-sans text-caption text-[var(--ink-faint)]">{title}</p>
 
           {mode === 'count' && (
             <div className="mb-4">
@@ -140,13 +138,13 @@ export default function GoalCompleteSheet({
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            rows={3}
+            rows={2}
             placeholder="写一句今天的收获"
-            className="card mb-4 w-full rounded-md px-3 py-2 font-sans text-body text-[var(--ink)] outline-none"
+            className="card mb-3 w-full rounded-md px-3 py-2 font-sans text-body text-[var(--ink)] outline-none"
             style={{ border: '1px solid var(--keyline)', boxShadow: 'none', resize: 'none' }}
           />
 
-          <label className="mb-5 flex items-center gap-2 font-sans text-small text-[var(--ink-soft)]">
+          <label className="mb-4 flex items-center gap-2 font-sans text-small text-[var(--ink-soft)]">
             <input
               type="checkbox"
               checked={syncLearning}
@@ -158,18 +156,18 @@ export default function GoalCompleteSheet({
 
           {error && <p className="mb-3 font-sans text-caption text-red-500">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-[var(--keyline)] px-4 py-2 font-sans text-small text-[var(--ink-soft)]"
+              className="rounded-md border border-[var(--keyline)] py-2.5 font-sans text-small text-[var(--ink-soft)]"
             >
               取消
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-md px-5 py-2 font-sans text-small text-[var(--text-inverse)] disabled:opacity-40"
+              className="rounded-md py-2.5 font-sans text-small text-[var(--text-inverse)] disabled:opacity-40"
               style={{ background: 'var(--brand)' }}
             >
               {submitting ? '保存中…' : '完成'}

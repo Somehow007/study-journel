@@ -38,6 +38,8 @@
     --shadow-2: 0 2px 6px var(--shadow-color-md), 0 12px 32px var(--shadow-color-md);
     --shadow-3: 0 2px 8px var(--shadow-color-md), 0 16px 40px var(--shadow-color-md);
     --shadow-4: 0 4px 12px var(--shadow-color-md), 0 24px 56px var(--shadow-color-md);
+
+    --journal-bottom-nav: calc(4.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   html, body {
@@ -81,6 +83,37 @@
     background: var(--overlay);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* 移动端：弹层贴底铺满，打开时收起底栏，避免悬空卡片 */
+  @media (max-width: 767px) {
+    body:has(.journal-sheet) {
+      overflow: hidden;
+    }
+    body:has(.journal-sheet) .journal-bottom-nav {
+      display: none;
+    }
+  }
+
+  .journal-sheet-panel {
+    width: 100%;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    border-top: 1px solid var(--keyline);
+    border-radius: 20px 20px 0 0;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    box-shadow: var(--shadow-4);
+  }
+
+  @media (min-width: 768px) {
+    .journal-sheet-panel {
+      width: 100%;
+      max-width: 28rem;
+      border: 1px solid var(--keyline);
+      border-radius: 20px;
+      padding-bottom: 1.5rem;
+    }
   }
 
   .diary-content h1,

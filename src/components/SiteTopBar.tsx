@@ -36,7 +36,7 @@ export default function SiteTopBar() {
       <span className="min-w-0 truncate font-medium text-[var(--ink)]">{title}</span>
       <span className="shrink-0 text-[var(--ink-faint)]">/ 手帐</span>
       {username && (
-        <span className="ml-auto shrink-0 truncate text-[var(--ink-faint)]">{username}</span>
+        <span className="ml-auto hidden shrink-0 truncate text-[var(--ink-faint)] sm:inline">{username}</span>
       )}
     </header>
   );

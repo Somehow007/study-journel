@@ -12,6 +12,7 @@ export default function Layout() {
     const path = location.pathname;
     if (path === '/') return '1040px';
     if (path.startsWith('/day/')) return '860px';
+    if (path === '/memory') return '720px';
     return '880px';
   }, [location.pathname]);
 
@@ -23,7 +24,7 @@ export default function Layout() {
           <Sidebar />
         </div>
 
-        <main className="flex-1 overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-[var(--journal-bottom-nav)] md:pb-0">
           <div className="mx-auto px-5 py-7 md:px-7 md:pb-10" style={{ maxWidth }}>
             <Outlet />
           </div>

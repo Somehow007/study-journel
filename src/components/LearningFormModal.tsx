@@ -66,17 +66,14 @@ export default function LearningFormModal({ item, onConfirm, onClose }: Learning
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
+    <div className="journal-sheet fixed inset-0 z-[60] flex items-end justify-center md:items-center">
       <div className="absolute inset-0 animate-fade-in bg-black/40" onClick={onClose} />
 
       <form
         onSubmit={handleSubmit}
-        className="overlay animate-slide-up relative w-full max-w-md rounded-t-2xl md:rounded-xl"
+        className="overlay journal-sheet-panel animate-slide-up relative"
         style={{
-          border: '1px solid var(--keyline)',
-          boxShadow: 'var(--shadow-4)',
           transform: dragY ? `translateY(${dragY}px)` : undefined,
-          paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))',
         }}
       >
         <div
@@ -88,7 +85,7 @@ export default function LearningFormModal({ item, onConfirm, onClose }: Learning
           <span className="h-1 w-10 rounded-full bg-[var(--keyline)]" />
         </div>
 
-        <div className="px-6 pb-6 pt-3 md:pt-6">
+        <div className="px-5 pb-2 pt-3 md:px-6 md:pb-6 md:pt-6">
           <button
             type="button"
             onClick={onClose}

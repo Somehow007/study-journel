@@ -29,18 +29,24 @@ export default function BottomNav() {
     setMoreOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (!moreOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [moreOpen]);
+
   return (
     <>
       {moreOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMoreOpen(false)} />
+        <div className="journal-sheet md:hidden">
           <div
-            className="overlay absolute inset-x-0 bottom-0 rounded-t-2xl px-4 pt-3"
-            style={{
-              paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
-              boxShadow: 'var(--shadow-4)',
-            }}
-          >
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div className="overlay journal-sheet-panel fixed inset-x-0 bottom-0 z-[60] px-4 pt-3">
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--keyline)]" />
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-sans text-title text-[var(--ink)]">更多</h3>
@@ -52,7 +58,7 @@ export default function BottomNav() {
                 <X size={18} />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2 pb-2">
+            <div className="grid grid-cols-2 gap-2">
               {moreItems.map((item) => {
                 const Icon = item.icon;
                 const active = location.pathname.startsWith(item.to);
@@ -61,7 +67,7 @@ export default function BottomNav() {
                     key={item.to}
                     type="button"
                     onClick={() => navigate(item.to)}
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-3 text-left font-sans text-small ${
+                    className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 py-3 text-left font-sans text-small ${
                       active
                         ? 'border-transparent bg-[var(--brand-soft)] text-[var(--brand)]'
                         : 'border-[var(--keyline)] text-[var(--ink-soft)]'
@@ -78,7 +84,7 @@ export default function BottomNav() {
       )}
 
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t md:hidden"
+        className="journal-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t md:hidden"
         style={{
           background: 'var(--card)',
           borderColor: 'var(--keyline)',

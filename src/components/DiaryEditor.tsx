@@ -113,12 +113,12 @@ export default function DiaryEditor({ value, onSave, mood: _mood }: DiaryEditorP
         )}
       </div>
 
-      <div className="pointer-events-none absolute -bottom-6 right-5 flex items-center gap-1.5">
+      <div className="mt-2 flex h-5 items-center justify-end px-1">
         {saveStatus === 'saving' && (
           <span className="font-sans text-caption text-[var(--ink-faint)]">保存中…</span>
         )}
         {saveStatus === 'error' && (
-          <span className="font-sans text-caption text-red-500">保存失败</span>
+          <span className="font-sans text-caption text-[var(--danger)]">保存失败</span>
         )}
         {(saveStatus === 'saved' || (saveStatus === 'idle' && displayValue && lastSavedTime)) && (
           <div className="animate-fade-in flex items-center gap-1.5">

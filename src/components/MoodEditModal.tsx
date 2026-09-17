@@ -77,12 +77,12 @@ export default function MoodEditModal({ onClose, editMood }: MoodEditModalProps)
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-4 pb-[calc(1rem+var(--journal-bottom-nav))] md:p-4"
       style={{ background: 'color-mix(in srgb, var(--ink) 20%, transparent)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="overlay mx-4 w-full max-w-sm rounded-xl p-6 animate-fade-up"
+        className="overlay max-h-full w-full max-w-sm overflow-y-auto rounded-xl p-6 animate-fade-up"
         style={{ border: '1px solid var(--keyline)', boxShadow: 'var(--shadow-4)' }}
         onClick={(e) => e.stopPropagation()}
       >
