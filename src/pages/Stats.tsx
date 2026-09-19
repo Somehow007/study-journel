@@ -103,7 +103,7 @@ export default function Stats() {
   if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
 
   return (
-    <div className="animate-fade-up">
+    <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-sans text-h1 text-[var(--ink)]">统计</h1>

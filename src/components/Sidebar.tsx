@@ -1,17 +1,9 @@
-import { NavLink } from 'react-router-dom';
 import { CalendarDays, Clock, BarChart3, Settings, Search, Download, Upload, Moon, Sun, BookOpen, ListChecks } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatDate } from '../lib/dateUtils';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
-
-const mainNav = [
-  { to: `/day/${formatDate(new Date())}`, label: '今日', icon: Sun, end: false },
-  { to: '/plan', label: '计划', icon: ListChecks, end: false },
-  { to: '/', label: '日历', icon: CalendarDays, end: true },
-  { to: '/memory', label: '时光', icon: Clock, end: false },
-  { to: '/stats', label: '统计', icon: BarChart3, end: false },
-];
+import { Pressable, PressableLink } from './ui/Pressable';
 
 export default function Sidebar() {
   const { isDark, toggleTheme } = useApp();
@@ -33,15 +25,21 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-1 px-3">
-        {mainNav.map((item) => {
+        {[
+          { to: `/day/${formatDate(new Date())}`, label: '今日', icon: Sun, end: false },
+          { to: '/plan', label: '计划', icon: ListChecks, end: false },
+          { to: '/', label: '日历', icon: CalendarDays, end: true },
+          { to: '/memory', label: '时光', icon: Clock, end: false },
+          { to: '/stats', label: '统计', icon: BarChart3, end: false },
+        ].map((item) => {
           const Icon = item.icon;
           return (
-            <NavLink
+            <PressableLink
               key={item.label}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small transition-all ${
+                `relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small ${
                   isActive
                     ? 'bg-[var(--brand-soft)] font-medium text-[var(--brand)]'
                     : 'text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]'
@@ -60,7 +58,7 @@ export default function Sidebar() {
                   <span>{item.label}</span>
                 </>
               )}
-            </NavLink>
+            </PressableLink>
           );
         })}
       </nav>
@@ -68,10 +66,10 @@ export default function Sidebar() {
       <div className="mx-5 mb-3 h-px bg-[var(--hairline)]" />
 
       <div className="flex flex-col gap-1 px-3 pb-4">
-        <NavLink
+        <PressableLink
           to="/search"
           className={({ isActive }) =>
-            `flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small transition-all ${
+            `flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small ${
               isActive
                 ? 'bg-[var(--brand-soft)] font-medium text-[var(--brand)]'
                 : 'text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]'
@@ -80,42 +78,42 @@ export default function Sidebar() {
         >
           <Search size={18} strokeWidth={1.75} />
           搜索
-        </NavLink>
+        </PressableLink>
 
-        <button
+        <Pressable
           onClick={toggleTheme}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:bg-[var(--paper)] hover:text-[var(--ink)]"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
         >
           {isDark ? <Sun size={18} strokeWidth={1.75} /> : <Moon size={18} strokeWidth={1.75} />}
           {isDark ? '浅色模式' : '深色模式'}
-        </button>
+        </Pressable>
 
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:bg-[var(--paper)] hover:text-[var(--ink)]"
+        <Pressable
+          onClick={() => void handleExport()}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
         >
           <Download size={18} strokeWidth={1.75} />
           导出数据
-        </button>
+        </Pressable>
 
-        <button
+        <Pressable
           onClick={triggerImport}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small transition-all hover:bg-[var(--paper)] ${
+          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 font-sans text-small hover:bg-[var(--paper)] ${
             importStatus === 'success'
               ? 'text-[var(--pine)]'
-                : importStatus === 'error'
+              : importStatus === 'error'
                 ? 'text-[var(--danger)]'
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
           }`}
         >
           <Upload size={18} strokeWidth={1.75} />
           {importStatus === 'success' ? '导入成功' : importStatus === 'error' ? '导入失败' : '导入数据'}
-        </button>
+        </Pressable>
 
-        <NavLink
+        <PressableLink
           to="/settings"
           className={({ isActive }) =>
-            `flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small transition-all ${
+            `flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-sans text-small ${
               isActive
                 ? 'bg-[var(--brand-soft)] font-medium text-[var(--brand)]'
                 : 'text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]'
@@ -124,7 +122,7 @@ export default function Sidebar() {
         >
           <Settings size={18} strokeWidth={1.75} />
           设置
-        </NavLink>
+        </PressableLink>
       </div>
 
       <input

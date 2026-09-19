@@ -11,6 +11,7 @@ import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useIsDark } from '../lib/useIsDark';
 import DateCard from '../components/DateCard';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
+import { Pressable } from '../components/ui/Pressable';
 
 export default function MonthView() {
   const navigate = useNavigate();
@@ -77,31 +78,36 @@ export default function MonthView() {
   if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
 
   return (
-    <div className="animate-fade-up">
+    <div>
       <div className="mb-3 flex items-end justify-between">
         <div>
           <h1 className="font-sans text-h1 text-[var(--ink)]">{MONTH_LABELS[month]}日历</h1>
           <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">{year}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Pressable
+            variant="icon"
             onClick={prevMonth}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] transition-all hover:border-[var(--ink)] hover:text-[var(--ink)]"
+            aria-label="上个月"
+            className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
           >
             <ChevronLeft size={18} strokeWidth={1.75} />
-          </button>
-          <button
+          </Pressable>
+          <Pressable
+            variant="pill"
             onClick={goToday}
-            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)] transition-all hover:bg-[var(--brand)] hover:text-[var(--text-inverse)]"
+            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)]"
           >
             今天
-          </button>
-          <button
+          </Pressable>
+          <Pressable
+            variant="icon"
             onClick={nextMonth}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] transition-all hover:border-[var(--ink)] hover:text-[var(--ink)]"
+            aria-label="下个月"
+            className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
           >
             <ChevronRight size={18} strokeWidth={1.75} />
-          </button>
+          </Pressable>
         </div>
       </div>
 

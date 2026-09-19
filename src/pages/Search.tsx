@@ -6,7 +6,9 @@ import { searchDiary } from '../lib/api';
 import { formatDuration, totalDuration, parseDate, getWeekdayChinese } from '../lib/dateUtils';
 import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useIsDark } from '../lib/useIsDark';
-import { QueryEmpty, QueryLoading } from '../components/QueryState';
+import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
+import { Pressable } from '../components/ui/Pressable';
+import { showToast } from '../lib/toast';
 import type { DayRecord, MoodConfig } from '../types';
 
 function formatSearchDate(dateStr: string): string {
@@ -66,6 +68,7 @@ export default function Search() {
   const [results, setResults] = useState<DayRecord[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
   const allMoods = useAllMoodConfigs();
@@ -84,15 +87,20 @@ export default function Search() {
       setResults([]);
       setHasSearched(false);
       setLoading(false);
+      setSearchError(null);
       return;
     }
     setHasSearched(true);
     setLoading(true);
+    setSearchError(null);
     try {
       const found = await searchDiary(kw.trim());
       setResults(found);
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '搜索失败';
+      setSearchError(message);
       setResults([]);
+      showToast(message, 'error', { onRetry: () => void doSearch(kw) });
     } finally {
       setLoading(false);
     }
@@ -115,7 +123,7 @@ export default function Search() {
   }, []);
 
   return (
-    <div className="animate-fade-up mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl">
       <div className="mb-6">
         <h1 className="font-sans text-h1 text-ink">搜索</h1>
         <p className="mt-1 font-sans text-caption text-ink-faint">日记、学科、备注</p>
@@ -140,6 +148,8 @@ export default function Search() {
         <QueryEmpty title="输入关键词开始搜索" hint="会同时匹配日记、学科名称和备注" />
       ) : loading ? (
         <QueryLoading />
+      ) : searchError ? (
+        <QueryError message={searchError} onRetry={() => void doSearch(keyword)} />
       ) : results.length === 0 ? (
         <QueryEmpty title="没有找到相关记录" hint="换个关键词试试？" />
       ) : (
@@ -152,10 +162,11 @@ export default function Search() {
                 (l) => matchesKw(l.subject, keyword) || matchesKw(l.note, keyword),
               );
               return (
-                <button
+                <Pressable
+                  variant="card"
                   key={record.date}
                   onClick={() => navigate(`/day/${record.date}`)}
-                  className="card group w-full rounded-xl p-4 text-left transition-shadow hover:shadow-2"
+                  className="card group w-full rounded-xl p-4 text-left"
                 >
                   <div className="mb-2 flex items-center gap-3">
                     <span
@@ -205,7 +216,7 @@ export default function Search() {
                       ))}
                     </div>
                   )}
-                </button>
+                </Pressable>
               );
             })}
           </div>

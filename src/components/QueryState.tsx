@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Pressable } from './ui/Pressable';
 
 interface QueryErrorProps {
   message?: string;
@@ -20,14 +21,13 @@ export function QueryError({ message, onRetry }: QueryErrorProps) {
     <div className="card rounded-xl px-6 py-10 text-center">
       <p className="font-sans text-body text-[var(--ink-soft)]">{message || '加载失败，请稍后重试'}</p>
       {onRetry && (
-        <button
-          type="button"
+        <Pressable
           onClick={onRetry}
           className="mt-4 rounded-md px-4 py-2 font-sans text-small text-[var(--text-inverse)]"
           style={{ background: 'var(--brand)' }}
         >
           重试
-        </button>
+        </Pressable>
       )}
     </div>
   );

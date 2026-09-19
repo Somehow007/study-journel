@@ -8,6 +8,7 @@ import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
 import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useIsDark } from '../lib/useIsDark';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
+import { Pressable } from '../components/ui/Pressable';
 import type { DayRecord } from '../types';
 
 const DIARY_ONLY_KEY = 'study-journal-memory-diary-only';
@@ -84,41 +85,46 @@ export default function Memory() {
   if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
 
   return (
-    <div className="animate-fade-up">
+    <div>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-sans text-h1 text-[var(--ink)]">时光</h1>
           <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">按时间线回顾每一天</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
+          <Pressable
+            variant="pill"
             role="switch"
             aria-checked={diaryOnly}
+            aria-label="只看有想法"
             onClick={toggleDiaryOnly}
-            className={`rounded-full border px-3 py-1.5 font-sans text-caption transition-colors ${
+            className={`rounded-full border px-3 py-1.5 font-sans text-caption ${
               diaryOnly
                 ? 'border-transparent bg-[var(--brand-soft)] text-[var(--brand)]'
                 : 'border-[var(--keyline)] text-[var(--ink-soft)]'
             }`}
           >
             只看有想法
-          </button>
+          </Pressable>
           <div className="flex items-center gap-2">
-            <button
+            <Pressable
+              variant="icon"
               onClick={() => setViewYear((y) => y - 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
+              className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
+              aria-label="上一年"
             >
               <ChevronLeft size={16} />
-            </button>
+            </Pressable>
             <span className="min-w-[64px] text-center font-sans text-small text-[var(--ink)]">{viewYear}</span>
-            <button
+            <Pressable
+              variant="icon"
               onClick={() => setViewYear((y) => Math.min(now.getFullYear(), y + 1))}
               disabled={viewYear >= now.getFullYear()}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] disabled:opacity-30"
+              className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
+              aria-label="下一年"
             >
               <ChevronRight size={16} />
-            </button>
+            </Pressable>
           </div>
         </div>
       </header>
@@ -164,11 +170,10 @@ export default function Memory() {
                           aria-hidden="true"
                         />
                       </div>
-                      <button
-                        type="button"
+                      <Pressable
+                        variant="card"
                         onClick={() => navigate(`/day/${record.date}`)}
-                        className="card flex-1 rounded-xl px-4 py-4 text-left transition-shadow duration-200 hover:shadow-2 md:px-6 md:py-5"
-                        style={{ boxShadow: 'var(--shadow-1)' }}
+                        className="card flex-1 rounded-xl px-4 py-4 text-left md:px-6 md:py-5"
                       >
                         <div className="flex items-center gap-2">
                           <div className="md:hidden">
@@ -216,7 +221,7 @@ export default function Memory() {
                             )}
                           </div>
                         )}
-                      </button>
+                      </Pressable>
                     </article>
                   );
                 })}

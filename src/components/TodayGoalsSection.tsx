@@ -1,19 +1,29 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import GoalCompleteSheet, { type GoalCompleteValues } from './GoalCompleteSheet';
-import GoalProgressBar from './GoalProgressBar';
 import { completeGoalTask, deleteCheckIn, getTodayGoals, upsertCheckIn } from '../lib/goalApi';
 import { showToast } from '../lib/toast';
 import { useApiQuery } from '../lib/useApiQuery';
-import type { GoalTask, TodayGoalItem } from '../types/goal';
+import { useNavigate } from 'react-router-dom';
+import GoalCompleteSheet, { type GoalCompleteValues } from './GoalCompleteSheet';
+import GoalProgressBar from './GoalProgressBar';
+import { Pressable } from './ui/Pressable';
+import { QueryError } from './QueryState';
+import type { GoalCheckIn, GoalTask, TodayGoalItem, TodayGoals } from '../types/goal';
 
 interface TodayGoalsSectionProps {
   date: string;
 }
 
+function patchItems(data: TodayGoals | undefined, goalId: string, updater: (item: TodayGoalItem) => TodayGoalItem): TodayGoals | undefined {
+  if (!data) return data;
+  return {
+    ...data,
+    items: data.items.map((item) => (item.goalId === goalId ? updater(item) : item)),
+  };
+}
+
 export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
   const navigate = useNavigate();
-  const { data, error } = useApiQuery(() => getTodayGoals(date), [date]);
+  const { data, error, refresh, setData } = useApiQuery(() => getTodayGoals(date), [date]);
   const [sheet, setSheet] = useState<
     | { item: TodayGoalItem; mode: 'count' }
     | { item: TodayGoalItem; mode: 'task'; task: GoalTask }
@@ -25,7 +35,7 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
     return (
       <section className="card mb-6 rounded-xl p-6">
         <h2 className="mb-2 font-sans text-h2 text-[var(--ink)]">今日任务</h2>
-        <p className="font-sans text-small text-red-500">{error.message}</p>
+        <QueryError message={error.message} onRetry={refresh} />
       </section>
     );
   }
@@ -34,13 +44,13 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
       <section className="card mb-6 rounded-xl p-6">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-sans text-h2 text-[var(--ink)]">今日任务</h2>
-          <button
-            type="button"
+          <Pressable
+            variant="pill"
             onClick={() => navigate('/plan')}
             className="font-sans text-caption text-[var(--brand)]"
           >
             去制定
-          </button>
+          </Pressable>
         </div>
         <p className="font-sans text-body text-[var(--ink-faint)]">今天没有待办任务</p>
       </section>
@@ -50,8 +60,24 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
   const handleConfirm = async (values: GoalCompleteValues) => {
     if (!sheet) return;
     const before = sheet.item.percent;
+    const prev = data;
     try {
       if (sheet.mode === 'count') {
+        setData((cur) =>
+          patchItems(cur, sheet.item.goalId, (item) => ({
+            ...item,
+            todayCheckin: {
+              id: item.todayCheckin?.id ?? 'optimistic',
+              goalId: item.goalId,
+              date,
+              quantity: values.quantity ?? item.suggestedToday ?? 1,
+              durationMin: values.durationMin ?? null,
+              note: values.note ?? '',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            } satisfies GoalCheckIn,
+          })),
+        );
         const updated = await upsertCheckIn(sheet.item.goalId, date, {
           id: sheet.item.todayCheckin?.id,
           quantity: values.quantity ?? sheet.item.suggestedToday ?? 1,
@@ -61,6 +87,14 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
         });
         if (before < 100 && updated.percent >= 100) showToast('这颗开了', 'success');
       } else {
+        setData((cur) =>
+          patchItems(cur, sheet.item.goalId, (item) => ({
+            ...item,
+            todayTasks: item.todayTasks.map((task) =>
+              task.id === sheet.task.id ? { ...task, done: true } : task,
+            ),
+          })),
+        );
         const updated = await completeGoalTask(sheet.item.goalId, sheet.task.id, {
           done: true,
           durationMin: values.durationMin,
@@ -72,6 +106,7 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
       }
       setSheet(null);
     } catch (err) {
+      setData(prev);
       showToast(err instanceof Error ? err.message : '保存失败');
     }
   };
@@ -80,20 +115,19 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
     <section className="card mb-6 rounded-xl p-6">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-sans text-h2 text-[var(--ink)]">今日任务</h2>
-        <button
-          type="button"
+        <Pressable
+          variant="pill"
           onClick={() => navigate('/plan')}
           className="font-sans text-caption text-[var(--brand)]"
         >
           月计划
-        </button>
+        </Pressable>
       </div>
 
       <div className="flex flex-col gap-4">
         {items.map((item) => (
           <div key={item.goalId}>
-            <button
-              type="button"
+            <Pressable
               onClick={() => navigate(`/plan/${item.goalId}`)}
               className="mb-2 flex w-full items-center justify-between text-left"
             >
@@ -102,7 +136,7 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
                 {item.title}
               </span>
               <span className="font-mono text-caption text-[var(--ink-faint)]">{item.percent}%</span>
-            </button>
+            </Pressable>
             <GoalProgressBar percent={item.percent} color={item.color} reached={item.reached} />
 
             {item.type === 'COUNT' && (
@@ -114,26 +148,31 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
                   {item.remaining != null && !item.reached ? ` · 还剩 ${item.remaining}` : ''}
                 </p>
                 {item.todayCheckin ? (
-                  <button
-                    type="button"
+                  <Pressable
+                    variant="pill"
                     onClick={() => {
-                      void deleteCheckIn(item.goalId, date).catch((err) =>
-                        showToast(err instanceof Error ? err.message : '取消失败'),
+                      const prev = data;
+                      setData((cur) =>
+                        patchItems(cur, item.goalId, (it) => ({ ...it, todayCheckin: null })),
                       );
+                      void deleteCheckIn(item.goalId, date).catch((err) => {
+                        setData(prev);
+                        showToast(err instanceof Error ? err.message : '取消失败');
+                      });
                     }}
                     className="rounded-full border border-[var(--keyline)] px-3 py-1 font-sans text-caption text-[var(--ink-soft)]"
                   >
                     取消
-                  </button>
+                  </Pressable>
                 ) : (
-                  <button
-                    type="button"
+                  <Pressable
+                    variant="pill"
                     onClick={() => setSheet({ item, mode: 'count' })}
                     className="rounded-full px-3 py-1 font-sans text-caption text-[var(--text-inverse)]"
                     style={{ background: item.color }}
                   >
                     完成
-                  </button>
+                  </Pressable>
                 )}
               </div>
             )}
@@ -142,19 +181,29 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
               <ul className="mt-3 space-y-2">
                 {item.todayTasks.map((task) => (
                   <li key={task.id} className="flex items-start gap-2.5">
-                    <button
-                      type="button"
+                    <Pressable
+                      variant="icon"
                       aria-label={task.done ? '取消完成' : '标记完成'}
                       onClick={() => {
                         if (task.done) {
-                          void completeGoalTask(item.goalId, task.id, { done: false }).catch((err) =>
-                            showToast(err instanceof Error ? err.message : '更新失败'),
+                          const prev = data;
+                          setData((cur) =>
+                            patchItems(cur, item.goalId, (it) => ({
+                              ...it,
+                              todayTasks: it.todayTasks.map((t) =>
+                                t.id === task.id ? { ...t, done: false } : t,
+                              ),
+                            })),
                           );
+                          void completeGoalTask(item.goalId, task.id, { done: false }).catch((err) => {
+                            setData(prev);
+                            showToast(err instanceof Error ? err.message : '更新失败');
+                          });
                           return;
                         }
                         setSheet({ item, mode: 'task', task });
                       }}
-                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+                      className="mt-0.5 flex shrink-0 items-center justify-center rounded-full border"
                       style={{
                         borderColor: task.done ? item.color : 'var(--keyline)',
                         background: task.done ? item.color : 'transparent',
@@ -163,7 +212,7 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
                       {task.done && (
                         <span className="block h-1.5 w-2.5 -translate-y-px rotate-[-50deg] border-b-2 border-l-2 border-white" />
                       )}
-                    </button>
+                    </Pressable>
                     <span
                       className="font-sans text-small text-[var(--ink)]"
                       style={{ textDecoration: task.done ? 'line-through' : undefined, opacity: task.done ? 0.55 : 1 }}

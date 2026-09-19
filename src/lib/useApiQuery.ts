@@ -7,6 +7,8 @@ interface ApiQueryState<T> {
   error: Error | null;
   /** 手动重新拉取 */
   refresh: () => void;
+  /** 乐观更新；失败时由调用方回滚 */
+  setData: (updater: T | undefined | ((prev: T | undefined) => T | undefined)) => void;
 }
 
 /**
@@ -16,7 +18,7 @@ interface ApiQueryState<T> {
  * - 首次 / deps 变化显示 loading；后台刷新（tick）不把页面打回骨架屏
  */
 export function useApiQuery<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiQueryState<T> {
-  const [data, setData] = useState<T | undefined>(undefined);
+  const [data, setDataState] = useState<T | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [tick, setTick] = useState(0);
@@ -37,7 +39,7 @@ export function useApiQuery<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiQ
       .current()
       .then((result) => {
         if (!cancelled) {
-          setData(result);
+          setDataState(result);
           setError(null);
         }
       })
@@ -58,5 +60,11 @@ export function useApiQuery<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiQ
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
-  return { data, loading, error, refresh };
+  const setData = useCallback((updater: T | undefined | ((prev: T | undefined) => T | undefined)) => {
+    setDataState((prev) =>
+      typeof updater === 'function' ? (updater as (p: T | undefined) => T | undefined)(prev) : updater,
+    );
+  }, []);
+
+  return { data, loading, error, refresh, setData };
 }

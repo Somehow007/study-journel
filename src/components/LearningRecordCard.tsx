@@ -1,5 +1,6 @@
 import type { LearningItem } from '../types';
 import { X } from 'lucide-react';
+import { Pressable } from './ui/Pressable';
 
 interface LearningRecordCardProps {
   item: LearningItem;
@@ -16,44 +17,30 @@ export function formatDurationHM(min: number): string {
 
 export default function LearningRecordCard({ item, onEdit, onDelete }: LearningRecordCardProps) {
   return (
-    <button
-      type="button"
-      onClick={onEdit}
-      className="group flex w-full items-center gap-3.5 px-1 py-3 text-left transition-colors hover:bg-[var(--paper)] sm:py-[15px]"
-    >
-      {/* 学科色点 10px */}
-      <span
-        className="h-2.5 w-2.5 shrink-0 rounded-full"
-        style={{ background: item.color }}
-      />
-
-      {/* 学科名 + 备注 */}
-      <div className="flex min-w-0 flex-1 items-baseline gap-2">
-        <span className="font-sans text-title text-[var(--ink)]">{item.subject}</span>
-        {item.note && (
-          <span className="hidden truncate font-sans text-small text-[var(--ink-soft)] sm:block">
-            {item.note}
-          </span>
-        )}
-      </div>
-
-      {/* 时长 */}
-      <span className="shrink-0 font-mono text-num text-[var(--ink)]">
-        {formatDurationHM(item.durationMin)}
-      </span>
-
-      {/* 删除按钮：hover 显示，触屏常显 */}
-      <span
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--ink-faint)] opacity-0 transition-all duration-150 hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 touch-visible"
-        role="button"
-        aria-label="删除"
+    <div className="group flex w-full items-center gap-2 px-1 py-1">
+      <Pressable
+        onClick={onEdit}
+        className="flex min-w-0 flex-1 items-center gap-3.5 rounded-lg px-1 py-3 text-left sm:py-[15px]"
+      >
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: item.color }} />
+        <div className="flex min-w-0 flex-1 items-baseline gap-2">
+          <span className="font-sans text-title text-[var(--ink)]">{item.subject}</span>
+          {item.note && (
+            <span className="hidden truncate font-sans text-small text-[var(--ink-soft)] sm:block">
+              {item.note}
+            </span>
+          )}
+        </div>
+        <span className="shrink-0 font-mono text-num text-[var(--ink)]">{formatDurationHM(item.durationMin)}</span>
+      </Pressable>
+      <Pressable
+        variant="icon"
+        onClick={onDelete}
+        aria-label={`删除 ${item.subject}`}
+        className="flex shrink-0 items-center justify-center rounded-full text-[var(--ink-faint)] opacity-0 hover:bg-[var(--danger-subtle)] hover:text-[var(--danger)] group-hover:opacity-100 touch-visible"
       >
         <X size={16} strokeWidth={1.75} />
-      </span>
-    </button>
+      </Pressable>
+    </div>
   );
 }

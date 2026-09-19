@@ -5,9 +5,11 @@ import { deleteCustomMood, getCustomMoods } from '../lib/api';
 import { useApiQuery } from '../lib/useApiQuery';
 import MoodEditModal from '../components/MoodEditModal';
 import { QueryError, QueryLoading } from '../components/QueryState';
+import { Pressable } from '../components/ui/Pressable';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
 import { showToast } from '../lib/toast';
+import { askConfirm } from '../lib/confirm';
 import {
   THEME_PICKER_ITEMS,
   getThemeMeta,
@@ -39,7 +41,12 @@ export default function Settings() {
   };
 
   const handleDeleteMood = async (mood: CustomMoodConfig) => {
-    const confirmed = window.confirm(`确定要删除"${mood.label}"心情吗？`);
+    const confirmed = await askConfirm({
+      title: '删除心情',
+      message: `确定要删除「${mood.label}」心情吗？`,
+      confirmLabel: '删除',
+      danger: true,
+    });
     if (!confirmed) return;
     try {
       await deleteCustomMood(mood.id);
@@ -49,7 +56,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="animate-fade-up max-w-2xl">
+    <div className="max-w-2xl">
       <header className="mb-6">
         <h1 className="font-sans text-h1 text-[var(--ink)]">设置</h1>
         <p className="mt-1 font-sans text-caption text-[var(--ink-faint)]">外观、目标与数据</p>
@@ -57,24 +64,22 @@ export default function Settings() {
 
       <section className="card mb-6 rounded-xl p-5">
         <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">外观</h2>
-        <button
-          type="button"
+        <Pressable
           onClick={toggleTheme}
-          className="mb-4 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-small text-[var(--ink-soft)] transition-colors hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
+          className="mb-4 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-small text-[var(--ink-soft)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
         >
           {isDark ? <Moon size={16} strokeWidth={1.75} /> : <Sun size={16} strokeWidth={1.75} />}
           {isDark ? '切换亮色' : '切换暗色'}
-        </button>
+        </Pressable>
         <div className="grid grid-cols-2 gap-2">
           {THEME_PICKER_ITEMS.map((item) => {
             const active = isPickerThemeActive(theme, item);
             return (
-              <button
+              <Pressable
                 key={item.id}
-                type="button"
                 onClick={() => setTheme(item.id)}
                 aria-current={active ? 'true' : undefined}
-                className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 transition-all ${
+                className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 ${
                   active
                     ? 'border-[var(--brand)] bg-[var(--brand-soft)]'
                     : 'border-[var(--keyline)] hover:border-[var(--brand)]'
@@ -90,7 +95,7 @@ export default function Settings() {
                   {item.name}
                 </span>
                 {active && <Check size={12} className="text-[var(--brand)]" />}
-              </button>
+              </Pressable>
             );
           })}
         </div>
@@ -107,17 +112,18 @@ export default function Settings() {
         </p>
         <div className="flex flex-wrap gap-2">
           {[60, 120, 180, 240, 360, 480].map((min) => (
-            <button
+            <Pressable
               key={min}
+              variant="pill"
               onClick={() => setDailyGoalMin(min)}
-              className={`rounded-full border px-4 py-1.5 font-mono text-small transition-all ${
+              className={`rounded-full border px-4 py-1.5 font-mono text-small ${
                 dailyGoalMin === min
                   ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]'
-                  : 'border-[var(--hairline)] text-[var(--ink-soft)] hover:border-[var(--ink)] hover:text-[var(--ink)]'
+                  : 'border-[var(--hairline)] text-[var(--ink-soft)]'
               }`}
             >
               {min / 60}h
-            </button>
+            </Pressable>
           ))}
         </div>
       </section>
@@ -125,16 +131,17 @@ export default function Settings() {
       <section className="card mb-6 rounded-xl p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-sans text-h2 text-[var(--ink)]">自定义心情</h2>
-          <button
+          <Pressable
+            variant="pill"
             onClick={() => {
               setEditingMood(null);
               setShowMoodEdit(true);
             }}
-            className="pill-dashed inline-flex items-center gap-1 rounded-full px-3 py-1.5 font-sans text-caption text-[var(--ink-soft)] transition-all hover:text-[var(--ink)]"
+            className="pill-dashed inline-flex items-center gap-1 rounded-full px-3 py-1.5 font-sans text-caption text-[var(--ink-soft)]"
           >
             <Plus size={14} strokeWidth={1.75} />
             添加心情
-          </button>
+          </Pressable>
         </div>
         <p className="mb-4 font-sans text-small text-[var(--ink-faint)]">自定义心情会以色点显示在日历上。</p>
 
@@ -166,20 +173,22 @@ export default function Settings() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button
+                  <Pressable
+                    variant="icon"
                     onClick={() => handleEditMood(mood)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
+                    className="flex items-center justify-center rounded-full text-[var(--ink-faint)]"
                     aria-label={`编辑 ${mood.label}`}
                   >
                     <Pencil size={14} strokeWidth={1.75} />
-                  </button>
-                  <button
+                  </Pressable>
+                  <Pressable
+                    variant="icon"
                     onClick={() => void handleDeleteMood(mood)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-faint)] hover:bg-[var(--danger-subtle)] hover:text-[var(--danger)]"
+                    className="flex items-center justify-center rounded-full text-[var(--ink-faint)] hover:bg-[var(--danger-subtle)] hover:text-[var(--danger)]"
                     aria-label={`删除 ${mood.label}`}
                   >
                     <Trash2 size={14} strokeWidth={1.75} />
-                  </button>
+                  </Pressable>
                 </div>
               </div>
             ))}
@@ -190,17 +199,17 @@ export default function Settings() {
       <section className="card mb-6 rounded-xl p-5">
         <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">数据管理</h2>
         <div className="divide-y rounded-xl border border-[var(--hairline)]">
-          <button
-            onClick={handleExport}
-            className="flex w-full items-center gap-3 px-4 py-3 font-sans text-small text-[var(--ink-soft)] hover:text-[var(--ink)]"
+          <Pressable
+            onClick={() => void handleExport()}
+            className="flex w-full items-center gap-3 px-4 py-3 font-sans text-small text-[var(--ink-soft)]"
           >
             <Download size={18} strokeWidth={1.75} />
             导出全部数据
             <span className="ml-auto font-mono text-caption text-[var(--ink-faint)]">JSON</span>
-          </button>
-          <button
+          </Pressable>
+          <Pressable
             onClick={triggerImport}
-            className={`flex w-full items-center gap-3 px-4 py-3 font-sans text-small hover:text-[var(--ink)] ${
+            className={`flex w-full items-center gap-3 px-4 py-3 font-sans text-small ${
               importStatus === 'success'
                 ? 'text-[var(--pine)]'
                 : importStatus === 'error'
@@ -211,16 +220,16 @@ export default function Settings() {
             <Upload size={18} strokeWidth={1.75} />
             {importStatus === 'success' ? '导入成功' : importStatus === 'error' ? '导入失败' : '导入数据'}
             <span className="ml-auto font-mono text-caption text-[var(--ink-faint)]">JSON</span>
-          </button>
-          <button
-            onClick={handleMigrateLocal}
+          </Pressable>
+          <Pressable
+            onClick={() => void handleMigrateLocal()}
             disabled={migrating}
-            className="flex w-full items-center gap-3 px-4 py-3 font-sans text-small text-[var(--ink-soft)] hover:text-[var(--ink)] disabled:opacity-50"
+            className="flex w-full items-center gap-3 px-4 py-3 font-sans text-small text-[var(--ink-soft)]"
           >
             <RefreshCw size={18} strokeWidth={1.75} className={migrating ? 'animate-spin' : ''} />
             {migrating ? '迁移中…' : '迁移本地旧数据'}
             <span className="ml-auto font-mono text-caption text-[var(--ink-faint)]">IndexedDB → 服务器</span>
-          </button>
+          </Pressable>
         </div>
         <p className="mt-3 font-sans text-caption text-[var(--ink-faint)]">
           数据已存储在服务器（与博客同源，跨设备同步）。「迁移本地旧数据」用于把本浏览器 IndexedDB

@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { loginWithPassword } from '../lib/http';
+import { Pressable } from './ui/Pressable';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -62,14 +63,14 @@ export default function LoginPage() {
           style={{ borderColor: 'var(--keyline)', background: 'var(--card)', color: 'var(--ink)' }}
         />
 
-        <button
+        <Pressable
           type="submit"
           disabled={loading}
-          className="mt-6 w-full rounded-md py-2.5 font-sans text-small text-[var(--text-inverse)] disabled:opacity-50"
+          className="mt-6 w-full rounded-md py-2.5 font-sans text-small text-[var(--text-inverse)]"
           style={{ background: 'var(--brand)' }}
         >
           {loading ? '登录中…' : '登录'}
-        </button>
+        </Pressable>
       </form>
     </div>
   );

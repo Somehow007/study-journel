@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import GoalFormModal from '../components/GoalFormModal';
 import GoalProgressBar from '../components/GoalProgressBar';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
+import { Pressable } from '../components/ui/Pressable';
 import { useApp } from '../context/AppContext';
 import { createGoal, formatPeriod, getGoalsByPeriod } from '../lib/goalApi';
 import { showToast } from '../lib/toast';
@@ -53,7 +54,7 @@ function GoalCard({ goal, onClick }: { goal: GoalSummary; onClick: () => void })
     <button
       type="button"
       onClick={onClick}
-      className="card w-full rounded-xl p-5 text-left transition-all hover:border-[var(--brand)]"
+      className="pressable-card card w-full rounded-xl p-5 text-left"
       style={{
         border: goal.reached ? `1px solid ${goal.color}` : undefined,
         boxShadow: goal.reached ? `0 0 0 3px color-mix(in srgb, ${goal.color} 18%, transparent)` : undefined,
@@ -109,34 +110,36 @@ export default function PlanView() {
   const reachedCount = data?.reachedCount ?? 0;
 
   return (
-    <div className="animate-fade-up">
+    <div>
       <div className="mb-5 flex items-end justify-between">
         <div>
           <h1 className="font-sans text-h1 text-[var(--ink)]">{MONTH_LABELS[month]}计划</h1>
           <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">{year}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <Pressable
+            variant="icon"
             onClick={prevMonth}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] hover:text-[var(--ink)]"
+            aria-label="上个月"
+            className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
           >
             <ChevronLeft size={18} strokeWidth={1.75} />
-          </button>
-          <button
-            type="button"
+          </Pressable>
+          <Pressable
+            variant="pill"
             onClick={() => setCurrentMonth(now.getFullYear(), now.getMonth())}
-            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)] hover:bg-[var(--brand)] hover:text-[var(--text-inverse)]"
+            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)]"
           >
             本月
-          </button>
-          <button
-            type="button"
+          </Pressable>
+          <Pressable
+            variant="icon"
             onClick={nextMonth}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)] hover:text-[var(--ink)]"
+            aria-label="下个月"
+            className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
           >
             <ChevronRight size={18} strokeWidth={1.75} />
-          </button>
+          </Pressable>
         </div>
       </div>
 
@@ -153,14 +156,14 @@ export default function PlanView() {
 
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-sans text-h2 text-[var(--ink)]">目标</h2>
-        <button
-          type="button"
+        <Pressable
+          variant="pill"
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-1 rounded-full border border-[var(--keyline)] px-3 py-1.5 font-sans text-small text-[var(--ink-soft)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--keyline)] px-3 py-1.5 font-sans text-small text-[var(--ink-soft)]"
         >
           <Plus size={14} strokeWidth={1.75} />
           添加
-        </button>
+        </Pressable>
       </div>
 
       {goals.length === 0 ? (
@@ -168,14 +171,13 @@ export default function PlanView() {
           title="这个月还没有目标"
           hint="定一个可衡量的月目标，拆到每天，完成就能看见进度。"
           action={
-            <button
-              type="button"
+            <Pressable
               onClick={() => setShowForm(true)}
               className="rounded-md px-4 py-2 font-sans text-small text-[var(--text-inverse)]"
               style={{ background: 'var(--brand)' }}
             >
               制定本月目标
-            </button>
+            </Pressable>
           }
         />
       ) : (

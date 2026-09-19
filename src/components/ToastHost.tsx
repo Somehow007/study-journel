@@ -1,4 +1,5 @@
 import { useToasts } from '../lib/toast';
+import { Pressable } from './ui/Pressable';
 
 export default function ToastHost() {
   const toasts = useToasts();
@@ -11,14 +12,24 @@ export default function ToastHost() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="pointer-events-auto rounded-lg px-4 py-2 font-sans text-small shadow-2"
+          className="toast-item pointer-events-auto flex items-center gap-3 rounded-lg px-4 py-2 font-sans text-small shadow-2"
           style={{
-            background: t.type === 'error' ? 'var(--danger-subtle)' : 'var(--card)',
-            color: t.type === 'error' ? 'var(--danger)' : 'var(--ink)',
-            border: `1px solid ${t.type === 'error' ? 'var(--danger)' : 'var(--keyline)'}`,
+            background: t.type === 'error' ? 'var(--danger-subtle)' : 'var(--success-subtle)',
+            color: t.type === 'error' ? 'var(--danger)' : 'var(--pine)',
+            border: `1px solid ${t.type === 'error' ? 'var(--danger)' : 'var(--pine)'}`,
           }}
         >
-          {t.message}
+          <span>{t.message}</span>
+          {t.onRetry && (
+            <Pressable
+              variant="pill"
+              onClick={t.onRetry}
+              className="min-h-0 rounded-full px-2 py-0.5 font-sans text-caption"
+              style={{ color: 'inherit', border: '1px solid currentColor' }}
+            >
+              重试
+            </Pressable>
+          )}
         </div>
       ))}
     </div>

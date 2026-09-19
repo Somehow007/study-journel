@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { marked } from 'marked';
 import { Eye, Pencil } from 'lucide-react';
+import { Pressable } from './ui/Pressable';
 
 marked.setOptions({
   breaks: true,
@@ -20,14 +21,51 @@ export default function DiaryEditor({ value, onSave, mood: _mood }: DiaryEditorP
   const [isPreview, setIsPreview] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const displayRef = useRef(displayValue);
+  const onSaveRef = useRef(onSave);
+  const flushedRef = useRef(value);
+
+  displayRef.current = displayValue;
+  onSaveRef.current = onSave;
 
   useEffect(() => {
     setDisplayValue(value);
+    flushedRef.current = value;
   }, [value]);
+
+  const markSaved = useCallback(() => {
+    setSaveStatus('saved');
+    const now = new Date();
+    setLastSavedTime(
+      `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+    );
+    window.setTimeout(() => setSaveStatus('idle'), 2000);
+  }, []);
+
+  const flush = useCallback(async () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = undefined;
+    }
+    const text = displayRef.current;
+    if (text === flushedRef.current) return;
+    setSaveStatus('saving');
+    try {
+      await onSaveRef.current(text);
+      flushedRef.current = text;
+      markSaved();
+    } catch {
+      setSaveStatus('error');
+    }
+  }, [markSaved]);
 
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      const text = displayRef.current;
+      if (text !== flushedRef.current) {
+        void onSaveRef.current(text);
+      }
     };
   }, []);
 
@@ -41,20 +79,16 @@ export default function DiaryEditor({ value, onSave, mood: _mood }: DiaryEditorP
       debounceRef.current = setTimeout(() => {
         void (async () => {
           try {
-            await onSave(text);
-            setSaveStatus('saved');
-            const now = new Date();
-            setLastSavedTime(
-              `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
-            );
-            setTimeout(() => setSaveStatus('idle'), 2000);
+            await onSaveRef.current(text);
+            flushedRef.current = text;
+            markSaved();
           } catch {
             setSaveStatus('error');
           }
         })();
       }, 1500);
     },
-    [onSave],
+    [markSaved],
   );
 
   const renderedHtml = useMemo(() => {
@@ -68,33 +102,37 @@ export default function DiaryEditor({ value, onSave, mood: _mood }: DiaryEditorP
 
   return (
     <div className="relative">
-      <div className="card diary-paper group relative overflow-hidden rounded-xl">
+      <div className="card diary-paper relative overflow-hidden rounded-xl">
         <div
-          className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full px-1 py-0.5 opacity-30 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100"
+          className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full px-1 py-0.5 backdrop-blur-sm"
           style={{ background: 'color-mix(in srgb, var(--card) 78%, transparent)' }}
         >
-          <button
+          <Pressable
+            variant="icon"
             onClick={() => setIsPreview(false)}
-            className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+            className={`flex items-center justify-center rounded-full ${
               !isPreview
                 ? 'bg-[var(--paper)] text-[var(--ink)]'
                 : 'text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink-soft)]'
             }`}
             title="编辑"
+            aria-label="编辑"
           >
             <Pencil size={14} strokeWidth={1.75} />
-          </button>
-          <button
+          </Pressable>
+          <Pressable
+            variant="icon"
             onClick={() => setIsPreview(true)}
-            className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+            className={`flex items-center justify-center rounded-full ${
               isPreview
                 ? 'bg-[var(--paper)] text-[var(--ink)]'
                 : 'text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink-soft)]'
             }`}
             title="预览"
+            aria-label="预览"
           >
             <Eye size={14} strokeWidth={1.75} />
-          </button>
+          </Pressable>
         </div>
 
         {isPreview ? (
@@ -107,6 +145,9 @@ export default function DiaryEditor({ value, onSave, mood: _mood }: DiaryEditorP
             ref={textareaRef}
             value={displayValue}
             onChange={handleChange}
+            onBlur={() => {
+              void flush();
+            }}
             placeholder="随手写点什么… 今天完成了什么？"
             className="min-h-[220px] w-full resize-none bg-transparent p-5 pr-12 font-sans text-diary text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
           />

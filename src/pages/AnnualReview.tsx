@@ -143,7 +143,7 @@ export default function AnnualReview() {
   if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
 
   return (
-    <div className="animate-fade-up">
+    <div>
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="font-sans text-display text-[var(--ink)]">年度回顾</h1>

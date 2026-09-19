@@ -16,6 +16,7 @@ import {
 } from '../lib/goalApi';
 import { formatDate } from '../lib/dateUtils';
 import { showToast } from '../lib/toast';
+import { askConfirm } from '../lib/confirm';
 import { useApiQuery } from '../lib/useApiQuery';
 import type { GoalCheckIn, GoalTask } from '../types/goal';
 
@@ -93,7 +94,13 @@ export default function GoalDetail() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`删除目标「${goal.title}」？进度会一并清掉。`)) return;
+    const confirmed = await askConfirm({
+      title: '删除目标',
+      message: `删除目标「${goal.title}」？进度会一并清掉。`,
+      confirmLabel: '删除',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteGoal(goal.id);
       navigate('/plan');
@@ -144,7 +151,7 @@ export default function GoalDetail() {
   };
 
   return (
-    <div className="animate-fade-up">
+    <div>
       <button
         type="button"
         onClick={() => navigate('/plan')}
@@ -224,11 +231,18 @@ export default function GoalDetail() {
                     type="button"
                     onClick={() => {
                       if (checkin) {
-                        if (window.confirm(`取消 ${date.slice(8)} 日的打卡？`)) {
+                        void (async () => {
+                          const ok = await askConfirm({
+                            title: '取消打卡',
+                            message: `取消 ${date.slice(8)} 日的打卡？`,
+                            confirmLabel: '取消打卡',
+                            danger: true,
+                          });
+                          if (!ok) return;
                           void deleteCheckIn(goal.id, date).catch((err) =>
                             showToast(err instanceof Error ? err.message : '取消失败'),
                           );
-                        }
+                        })();
                         return;
                       }
                       setSheet({

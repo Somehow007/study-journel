@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { getRecordByDate, getRecordsByYear, getStreak, upsertRecord } from '../lib/api';
 import { useApiQuery } from '../lib/useApiQuery';
 import { useMoodConfig } from '../lib/moodUtils';
@@ -13,8 +13,9 @@ import DiaryEditor from '../components/DiaryEditor';
 import SproutBadge from '../components/SproutBadge';
 import TodayGoalsSection from '../components/TodayGoalsSection';
 import { QueryError, QueryLoading } from '../components/QueryState';
+import { Pressable } from '../components/ui/Pressable';
 import { totalDuration } from '../lib/dateUtils';
-import type { LearningItem } from '../types';
+import type { DayRecord, LearningItem } from '../types';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -49,13 +50,30 @@ async function loadStreak(): Promise<number> {
   return computeStreak([...current, ...prev].map((r) => r.date));
 }
 
+function mergeRecord(
+  cur: DayRecord | undefined,
+  date: string,
+  patch: { mood?: string; learnings?: LearningItem[]; diary?: string },
+): DayRecord {
+  const now = Date.now();
+  return {
+    date,
+    mood: patch.mood !== undefined ? patch.mood : cur?.mood ?? null,
+    learnings: patch.learnings ?? cur?.learnings ?? [],
+    diary: patch.diary !== undefined ? patch.diary : cur?.diary ?? '',
+    createdAt: cur?.createdAt ?? now,
+    updatedAt: now,
+    id: cur?.id,
+  };
+}
+
 export default function TodayDetail() {
   const { date } = useParams<{ date: string }>();
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<LearningItem | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
 
-  const { data: record, loading, error, refresh } = useApiQuery(
+  const { data: record, loading, error, refresh, setData } = useApiQuery(
     () => (date ? getRecordByDate(date) : Promise.resolve(undefined)),
     [date],
   );
@@ -64,6 +82,10 @@ export default function TodayDetail() {
   const mood = record?.mood ?? null;
   const learnings = record?.learnings ?? [];
   const diary = record?.diary ?? '';
+  const recordRef = useRef(record);
+  const learningsRef = useRef(learnings);
+  recordRef.current = record;
+  learningsRef.current = learnings;
 
   const moodConfig = useMoodConfig(mood);
 
@@ -84,17 +106,25 @@ export default function TodayDetail() {
   const savePatch = useCallback(
     async (patch: { mood?: string; learnings?: LearningItem[]; diary?: string }) => {
       if (!date) return;
+      const prev = recordRef.current;
+      const next = mergeRecord(prev, date, patch);
+      recordRef.current = next;
+      if (patch.learnings) learningsRef.current = patch.learnings;
+      setData(next);
       try {
         await upsertRecord(date, patch);
         setWriteError(null);
       } catch (err) {
+        recordRef.current = prev;
+        learningsRef.current = prev?.learnings ?? [];
+        setData(prev);
         const message = err instanceof Error ? err.message : '保存失败';
         setWriteError(message);
-        showToast(message);
+        showToast(message, 'error', { onRetry: () => void savePatch(patch) });
         throw err;
       }
     },
-    [date],
+    [date, setData],
   );
 
   const handleMoodSelect = useCallback(
@@ -110,30 +140,33 @@ export default function TodayDetail() {
 
   const handleAddLearning = useCallback(
     async (item: LearningItem) => {
-      await savePatch({ learnings: [...learnings, item] });
+      await savePatch({ learnings: [...learningsRef.current, item] });
       setShowForm(false);
+      setEditingItem(null);
     },
-    [learnings, savePatch],
+    [savePatch],
   );
 
   const handleUpdateLearning = useCallback(
     async (item: LearningItem) => {
-      await savePatch({ learnings: learnings.map((l) => (l.id === item.id ? item : l)) });
+      await savePatch({
+        learnings: learningsRef.current.map((l) => (l.id === item.id ? item : l)),
+      });
       setEditingItem(null);
       setShowForm(false);
     },
-    [learnings, savePatch],
+    [savePatch],
   );
 
   const handleDeleteLearning = useCallback(
     async (id: string) => {
       try {
-        await savePatch({ learnings: learnings.filter((l) => l.id !== id) });
+        await savePatch({ learnings: learningsRef.current.filter((l) => l.id !== id) });
       } catch {
         /* toast already shown */
       }
     },
-    [learnings, savePatch],
+    [savePatch],
   );
 
   const handleDiarySave = useCallback(
@@ -153,7 +186,7 @@ export default function TodayDetail() {
   }
 
   return (
-    <div className="animate-fade-up">
+    <div>
       <header className="mb-6">
         <div className="mb-1 flex items-end justify-between gap-4">
           <div>
@@ -191,22 +224,23 @@ export default function TodayDetail() {
       <section className="card mb-6 rounded-xl p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-sans text-h2 text-[var(--ink)]">今日学习</h2>
-          <button
+          <Pressable
+            variant="pill"
             onClick={openAdd}
-            className="inline-flex items-center gap-1 rounded-full border border-[var(--keyline)] px-3 py-1.5 font-sans text-small text-[var(--ink-soft)] transition-all hover:border-[var(--brand)] hover:text-[var(--brand)]"
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--keyline)] px-3 py-1.5 font-sans text-small text-[var(--ink-soft)]"
           >
             <Plus size={14} strokeWidth={1.75} />
             添加
-          </button>
+          </Pressable>
         </div>
 
         {learnings.length === 0 ? (
-          <button
+          <Pressable
             onClick={openAdd}
-            className="w-full rounded-lg border border-dashed border-[var(--hairline)] py-8 text-center transition-colors hover:bg-[var(--paper)]"
+            className="w-full rounded-lg border border-dashed border-[var(--hairline)] py-8 text-center"
           >
             <span className="font-sans text-body text-[var(--ink-faint)]">＋ 记下今天的第一段学习</span>
-          </button>
+          </Pressable>
         ) : (
           <div>
             {learnings.map((item, idx) => (

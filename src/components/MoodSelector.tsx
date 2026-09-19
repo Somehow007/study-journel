@@ -23,7 +23,7 @@ export default function MoodSelector({ selected, onSelect }: MoodSelectorProps) 
             key={config.type}
             type="button"
             onClick={() => onSelect(config.type)}
-            className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-sans text-small transition-all"
+            className="pressable-pill inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-sans text-small"
             style={{
               background: isSelected ? solid : tint,
               borderColor: isSelected ? 'transparent' : 'var(--keyline)',

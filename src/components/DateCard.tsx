@@ -96,12 +96,12 @@ export default function DateCard({
       )}
 
       <button
+        type="button"
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="group relative flex w-full flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-150 hover:bg-[var(--paper)] md:rounded-lg"
+        className="pressable-card group relative flex w-full flex-col items-center justify-center overflow-hidden rounded-md md:rounded-lg"
         style={{
-          minHeight: undefined,
           background: isToday ? 'var(--brand-soft)' : undefined,
           opacity: isFuture && !hasRecord ? 0.45 : 1,
         }}
@@ -161,11 +161,10 @@ export default function DateCard({
               aria-label={`学习时长进度 ${Math.round(pct)}%`}
             >
               <div
-                className="h-full origin-left animate-bar-grow rounded-full"
+                className="h-full origin-left rounded-full"
                 style={{
                   width: `${barWidth}%`,
                   background: barColor,
-                  animationDelay: `${Math.min(day, 31) * 14}ms`,
                 }}
               />
               {goalReached && (
