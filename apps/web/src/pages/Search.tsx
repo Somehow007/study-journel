@@ -112,7 +112,8 @@ function EntryHitCard({
   keyword: string;
   onOpen: () => void;
 }) {
-  const hitText = `${entry.title || entry.subjectName}${entry.note ? ` · ${entry.note}` : ''}`;
+  const title = entry.title || entry.subjectName;
+  const hitText = entry.note && entry.note !== title ? `${title} · ${entry.note}` : title;
   return (
     <Pressable variant="card" onClick={onOpen} className="card group w-full rounded-xl p-4 text-left">
       <div className="mb-2 flex items-center gap-3">

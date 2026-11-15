@@ -32,7 +32,7 @@ export default function LearningRecordCard({ item, onEdit, onDelete }: LearningR
             </span>
           )}
           <span className="truncate font-sans text-title text-[var(--ink)]">{title}</span>
-          {item.note && (
+          {item.note && item.note !== title && (
             <span className="hidden truncate font-sans text-small text-[var(--ink-soft)] sm:block">
               {item.note}
             </span>

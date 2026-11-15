@@ -132,17 +132,22 @@ export default function TodayDetail() {
   const handleAddEntry = useCallback(
     async (draft: EntryDraft) => {
       if (!date) return;
-      const subjectId = await resolveSubjectId(draft);
-      await createEntry({
-        date,
-        subjectId,
-        title: draft.title || undefined,
-        note: draft.note,
-        durationMin: draft.durationMin,
-      });
-      invalidateAll(qc);
-      setShowForm(false);
-      setEditingItem(null);
+      try {
+        const subjectId = await resolveSubjectId(draft);
+        await createEntry({
+          date,
+          subjectId,
+          title: draft.title || undefined,
+          note: draft.note,
+          durationMin: draft.durationMin,
+        });
+        invalidateAll(qc);
+        setShowForm(false);
+        setEditingItem(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '保存失败';
+        showToast(message, 'error', { onRetry: () => void handleAddEntry(draft) });
+      }
     },
     [date, qc, resolveSubjectId],
   );
@@ -150,16 +155,21 @@ export default function TodayDetail() {
   const handleUpdateEntry = useCallback(
     async (draft: EntryDraft) => {
       if (!editingItem) return;
-      const subjectId = await resolveSubjectId(draft);
-      await updateEntry(editingItem.id, {
-        subjectId,
-        title: draft.title,
-        note: draft.note,
-        durationMin: draft.durationMin,
-      });
-      invalidateAll(qc);
-      setEditingItem(null);
-      setShowForm(false);
+      try {
+        const subjectId = await resolveSubjectId(draft);
+        await updateEntry(editingItem.id, {
+          subjectId,
+          title: draft.title,
+          note: draft.note,
+          durationMin: draft.durationMin,
+        });
+        invalidateAll(qc);
+        setEditingItem(null);
+        setShowForm(false);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '保存失败';
+        showToast(message, 'error', { onRetry: () => void handleUpdateEntry(draft) });
+      }
     },
     [editingItem, qc, resolveSubjectId],
   );
