@@ -26,7 +26,7 @@
 |---|---|---|
 | 前端框架 | React 18 + Vite + TS + Tailwind（**保留**） | 现有 9 页/30+ 组件可平移；概念稿已按此出图 |
 | 前端数据层 | TanStack Query 5（M3 引入） | 服务端状态缓存/失效/乐观更新 |
-| 后端语言 | **Go**（go.mod `go 1.23` 起步，CI 用稳定版） | 单二进制部署、RSS <30M、2G 服务器友好、并发模型简单 |
+| 后端语言 | **Go**（go.mod `go 1.27.4`；依赖底线 ≥1.26，modernc/sqlite 与 x/crypto 要求） | 单二进制部署、RSS <30M、2G 服务器友好、并发模型简单 |
 | HTTP 路由 | `github.com/go-chi/chi/v5` | 轻量、贴近 stdlib、中间件生态成熟 |
 | 数据访问 | `database/sql` + **sqlc**（`db/queries/*.sql` → 生成类型安全 Go） | SQL 显式可审计；便宜模型不容易写出 ORM 魔法 bug |
 | SQLite 驱动 | **`modernc.org/sqlite`**（纯 Go） | `CGO_ENABLED=0` → `GOOS=linux GOARCH=amd64 go build` 出单文件二进制，服务器**零运行时依赖**（不装 Node/Java） |
