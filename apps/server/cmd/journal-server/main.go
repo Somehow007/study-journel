@@ -140,6 +140,10 @@ func runCreateUser(args []string) int {
 			return 1
 		}
 	}
+	if pw == "" {
+		fmt.Fprintln(os.Stderr, "create-user: 密码不能为空")
+		return 2
+	}
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	sqlDB, err := openAndMigrate(*dbPath, log)
