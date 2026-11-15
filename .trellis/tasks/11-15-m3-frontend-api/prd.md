@@ -75,3 +75,27 @@
 - M4：mysite sj_* → v3 迁移 + 部署切换；IndexedDB 兜底已删，旧数据只走服务端迁移。
 - M6：B 格纸 UI + setting.theme 三主题切换。
 - M7：focus_session/score、settings 考试信息 UI、科目预设进 goal。
+
+## Resolution
+
+**状态：代码完成并提交（`e3a503a` 契约层 + `d374daa` 原子切换），自动化验证全绿；1440/390 视觉走查待 owner 确认后归档。**
+
+### 验证结论
+
+- `pnpm -F web typecheck`：通过（补 `src/vite-env.d.ts` 提供 `import.meta.env` 类型）。
+- `pnpm -F web test`：vitest 46 用例全过（`testdata/domain-cases.json` 双端同文件）。
+- `pnpm -F web build`：通过（`tsc && vite build`，产物 764KB gzip 227KB）。
+- `./scripts/verify.sh`：全绿（web typecheck+build + server gofmt/vet/test + sqlc 一致性）。
+- 运行时冒烟：`journal-server -db /tmp/journal-smoke.db`(:8090) + `pnpm dev`(:5175) → `vite proxy /api→8090` 端到端验证：`/journal/` 200、`/` 302→`/journal/`、`POST /api/v1/auth/login` 种 Cookie、`GET /auth/me`、`/settings`、`/days?from&to` 均返回 `{code:"0",data}` 包络。
+- 残留检查：`rg` 无 `DayRecord|LearningItem|getRecordsBy|useApiQuery|journalEvents|customMoods|moodUtils|from './db'` 引用（仅 `legacyIdb.ts`/`useDataIO.ts` 迁移路径与 api.ts 注释）；localStorage 仅剩主题 key、diary-only UI 偏好、settings 迁移 flag。
+
+### 与方案的偏差
+
+- Dexie 已删；`legacyIdb.ts`（原生 IndexedDB 读取，非 Dexie）保留作一次性迁移兜底——比方案更保守，旧数据不丢。
+- `vite-plugin-pwa` 仍在 devDeps 未用（vite.config 早已移除）；清理留作独立小任务。
+- commit 拆分与方案一致：A=契约层（`e3a503a`）、B=原子切换（`d374daa`）；docs/归档随走查确认后补。
+
+### 待办（走查后）
+
+- owner 在 1440/390 宽度走查 9 页面 + 登录/登出/导入导出。
+- 归档本任务目录 → `.trellis/tasks/archive/2026-11/`，CHANGES 补归档行。
