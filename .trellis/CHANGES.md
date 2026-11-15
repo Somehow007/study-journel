@@ -12,3 +12,4 @@
 - 2026-11-15 | owner 决策定稿：D1=Go(chi+sqlc+modernc sqlite 纯Go驱动) D2=SQLite D3=独立账号(argon2id+Cookie) D4=/journal/子路径 D5=B格纸先行(A/C上线后做扩展主题)；architecture/roadmap/data-model/separation-plan/AGENTS 已同步 | → `docs/architecture.md` §7 `docs/roadmap.md`
 - 2026-11-15 | M1 完成：仓库平移 pnpm workspace（apps/web）+ Go 后端骨架（health/auth/migrate，:8090，go1.27.4）；verify.sh 升级全绿；⚠️ mysite server-deploy.sh 手帐段与新布局不兼容，M4 前勿跑 | → `.trellis/tasks/archive/2026-11/11-15-m1-go-backend/prd.md`
 - 2026-11-15 | M2 完成：0002_v3 九表迁移 + internal/domain 纯函数（domain-cases.json 双端用例）+ sqlc 全资源查询 + /api/v1 业务 API（days/entries/subjects/states/goals/tasks/checkins/search/stats/streak/export/import v1-v3）+ settings 默认值与首登种子 | → `.trellis/tasks/archive/2026-11/11-15-m2-data-api/prd.md`
+- 2026-11-15 | M2 走查修复：complete 空 body 双写响应等 7 处（commit 84b616f） | → `.trellis/tasks/archive/2026-11/11-15-m2-data-api/prd.md` Resolution

@@ -98,4 +98,5 @@ GET                  /export（v3 全量）   POST /import（v3 原生 + 兼容 
 - M2-4：`/api/v1` 全资源路由（journal.go 注册 + meta/days/goals/tasks/checkins/misc/import 七个 handler 文件）；patch 三态语义用泛型 `optional[T]`；进度/打卡/streak/日聚合读时算；carry-over 平移未完成任务；export 为裸 JSON 文件，import 单事务兼容 v3/v2/v1。
 - M2-5：settings GET/PATCH + 列默认兜底 + requireAuth 后 ensureBootstrap 种子（6 内置状态 polarity ±1/0、4 科目）。
 - 已知取舍：goal period 不可 PATCH（用 carry-over）；DELETE /goals 与 /archive 均为软删（status=ARCHIVED）；archive 目前单向；export 不含 focus_session/score（无 API，M7/M8）；stats/search 为 v3 新形状，M3 前端适配。
+- 走查修复（84b616f）：`completeTask` 空 body EOF 路径双写响应（400+200 拼接）、`putCheckin` 建 entry 日期应落打卡日、statsMonth/computeSummary N+1、dayMark stateId 类型统一 null、import entry 主键碰撞兜底。
 - 验证：`./scripts/verify.sh` 全绿（verify.sh 新增 sqlc generate 一致性校验）。
