@@ -1,0 +1,21 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>手帐 v6 概念稿</title>
+<script src="data.js"></script>
+<style>body{margin:0;background:#111;color:#ddd;font:14px -apple-system,"PingFang SC",sans-serif;padding:28px 44px}
+h1{font-size:22px;margin:0 0 6px}p{color:#999;margin:0 0 14px;line-height:1.7;max-width:1100px}a{color:#7AA2FF;text-decoration:none}
+.tabs{display:flex;gap:10px;margin:18px 0 24px;position:sticky;top:0;background:#111;padding:10px 0;z-index:2}.tabs a{padding:8px 16px;border:1px solid #333;border-radius:8px;color:#bbb}.tabs a.on{border-color:#7AA2FF;color:#fff;background:#7AA2FF22}
+.pg{margin-bottom:40px}.pg h3{font-size:15px;margin:0 0 4px;display:flex;gap:12px;align-items:baseline}.pg h3 small{color:#777;font-weight:400;font-family:ui-monospace,monospace;font-size:12px}
+.r{display:flex;gap:18px;align-items:flex-start}.r img{border-radius:8px;border:1px solid #222}.r .d{width:calc(100% - 290px)}.r .m{width:270px}
+section{display:none}section.on{display:block}</style></head><body>
+<h1>学习手帐 v6 · 考研向 UI 概念稿</h1>
+<p>三版各 12 页（C 版多一个「专注」页，共 13 页）+ 6 张手机稿。开发前先读 <a href="README.md">README.md</a>，再读对应的 SPEC。点击截图可打开能交互的原型。</p>
+<div class="tabs" id="tabs"></div><div id="secs"></div>
+<script>
+const C=[['a-graphite','A · 石墨 Graphite','SPEC-A.md','深色仪表盘 + 信号橙，等宽数字，信息密度最高'],['b-notebook','B · 格纸 Notebook','SPEC-B.md','方格本对开页，墨蓝 + 红笔，宋体标题，印章与「正」字'],['c-midnight','C · 夜读 Midnight','SPEC-C.md','深海夜空玻璃拟态 + 冷青辉光，以专注计时为核心']];
+const P=[['focus','专注（仅 C）','新建 pages/Focus.tsx'],...PAGES];
+const MOB=['today','calendar','plan','goal','stats','learn-form','focus'];
+const cur=location.hash.slice(1)||'a-graphite';
+window.onhashchange=()=>location.reload();
+tabs.innerHTML=C.map(([id,n])=>`<a href="#${id}" class="${id===cur?'on':''}">${n}</a>`).join('');
+secs.innerHTML=C.filter(c=>c[0]===cur).map(([id,n,spec,desc])=>`<section class="on"><p><b style="color:#fff">${n}</b> — ${desc} · <a href="${spec}">${spec}</a></p>
+${P.filter(([p])=>p!=='focus'||id==='c-midnight').map(([p,l,src])=>`<div class="pg"><h3>${l}<small>?page=${p} · ${src}</small></h3><div class="r"><a class="d" href="${id}.html?page=${p}"><img class="d" style="width:100%" src="shots/${id}/${p}-desktop.png"></a>${MOB.includes(p)?`<img class="m" src="shots/${id}/${p}-mobile.png" onerror="this.remove()">`:''}</div></div>`).join('')}</section>`).join('');
+</script></body></html>

@@ -1,0 +1,226 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>B · Notebook</title>
+<script src="data.js"></script>
+<style>
+/* ===== Tokens（实现映射见 SPEC-B.md）===== */
+:root{--paper:#F3F1EA;--sheet:#FBFAF6;--grid:#E4E1D6;--rule:#CFCABB;--dash:#BDB8A9;--ink:#1B2433;--soft:#4A5363;--faint:#8D919A;--red:#D23B22;--blue:#1E4FA3;--cover:#1F2B44;
+--math:#1E4FA3;--cs:#2F6B4F;--eng:#B07A12;--pol:#D23B22;
+--serif:"Songti SC","Noto Serif SC","STSong",serif;--mono:"SF Mono",Menlo,monospace;--sans:-apple-system,"PingFang SC",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}body{background:#DCD8CC;font-family:var(--sans);color:var(--ink);padding:40px;display:flex;gap:40px;align-items:flex-start}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}.serif{font-family:var(--serif)}
+.gridbg{background-color:var(--sheet);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px;background-position:-1px -1px}
+#desk{width:1440px;min-height:960px;background:var(--paper);border-radius:6px;box-shadow:0 30px 60px #0002;display:flex;flex-direction:column;position:relative}
+.nav{display:flex;align-items:center;gap:30px;padding:18px 36px;border-bottom:1.5px solid var(--ink)}
+.brand{font:700 20px var(--serif);display:flex;align-items:baseline;gap:10px}.brand small{font:500 11px var(--mono);color:var(--faint);letter-spacing:.1em}
+.nav a{font-size:14px;color:var(--soft);padding:4px 0}.nav a.on{color:var(--ink);font-weight:600;border-bottom:2px solid var(--red)}
+.stamp{border:2px solid var(--red);color:var(--red);padding:4px 12px;font:700 15px var(--mono);transform:rotate(-2deg);letter-spacing:.04em;white-space:nowrap}.stamp small{font:500 11px var(--sans);margin-left:6px}
+.spread{display:grid;grid-template-columns:1fr 1fr;margin:28px 36px 36px;box-shadow:0 12px 30px #0000000f;border:1px solid #D9D5C8;flex:1}
+.single{margin:28px 36px 36px;border:1px solid #D9D5C8;box-shadow:0 12px 30px #0000000f;flex:1;padding:36px 48px;position:relative}
+.page{padding:36px 40px;position:relative;min-height:760px}
+.page.l{border-right:1px solid var(--rule);box-shadow:inset -18px 0 24px -20px #0002}.page.r{box-shadow:inset 18px 0 24px -20px #0002}
+.date{display:flex;align-items:flex-end;gap:16px;border-bottom:1.5px solid var(--ink);padding-bottom:12px}
+.date .d{font:700 64px/0.9 var(--serif);letter-spacing:-.02em}.date .w{font:500 13px var(--mono);color:var(--soft);padding-bottom:6px;line-height:1.5}
+.sec{font:700 15px var(--serif);margin:26px 0 10px;display:flex;align-items:center;gap:10px}.sec:before{content:"";width:8px;height:8px;background:var(--ink);flex:none}
+.sec i{margin-left:auto;font:500 12px var(--sans);font-style:normal;color:var(--faint)}.sec i.r{color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px 6px;border-bottom:1px dashed var(--dash);vertical-align:top;text-align:left}
+th{font:600 12px var(--serif);color:var(--soft);border-bottom:1.5px solid var(--ink)}
+td.k{width:66px;font:600 12px var(--serif);padding-top:12px}td.m{width:80px;text-align:right;font:500 13px var(--mono);color:var(--soft);padding-top:12px}
+td b{font-weight:600}td small{display:block;color:var(--faint);font-size:12px;margin-top:3px}
+.sum{display:flex;justify-content:flex-end;gap:10px;align-items:baseline;margin-top:8px;font-size:13px;color:var(--soft)}
+.hl{position:relative;z-index:0}.hl:after{content:"";position:absolute;left:-6px;right:-6px;bottom:-2px;height:9px;background:#D23B2233;z-index:-1;border-radius:2px}
+.todo{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px}
+.box{width:15px;height:15px;border:1.5px solid var(--ink);flex:none;position:relative}
+.box.on:after{content:"";position:absolute;left:3px;top:-4px;width:6px;height:12px;border:2.5px solid var(--red);border-top:0;border-left:0;transform:rotate(40deg)}
+.todo.on span{color:var(--faint);text-decoration:line-through;text-decoration-color:var(--red)}.todo em{font-style:normal;margin-left:auto;font:12px var(--serif);color:var(--faint)}
+.note{font:15px/30px var(--serif);color:var(--soft);background:repeating-linear-gradient(transparent 0 29px,var(--rule) 29px 30px);padding:0 2px}
+.states{display:flex;gap:16px;font:14px var(--serif);color:var(--faint)}.states .on{color:var(--red);font-weight:700;border:1.5px solid var(--red);border-radius:50%;padding:2px 9px;margin:-4px -11px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);border-top:1.5px solid var(--ink);border-left:1px solid var(--rule)}
+.cal>div{height:86px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:6px 8px;position:relative;font:12px var(--mono);color:var(--soft)}
+.cal .wk{height:30px;font:600 12px var(--serif);color:var(--ink);text-align:center;padding-top:8px;background:#EEEBE2}
+.cal .t{background:#fff;outline:2px solid var(--red);outline-offset:-2px}
+.cal .h{position:absolute;left:8px;right:8px;bottom:8px;font:600 15px var(--mono);color:var(--ink)}.cal .s{position:absolute;right:7px;top:6px;font:11px var(--serif)}
+.cal .bar{position:absolute;left:8px;bottom:4px;height:2px;background:var(--ink)}
+.goal{display:grid;grid-template-columns:1fr 110px;gap:4px 14px;padding:10px 0;border-bottom:1px dashed var(--dash);font-size:14px}.goal .mono{text-align:right;font-size:13px;color:var(--soft)}
+.meter{grid-column:1/3;display:flex;gap:2px}.meter span{flex:1;height:8px;border:1px solid var(--ink)}.meter span.f{background:var(--ink)}.goal small{grid-column:1/3;color:var(--faint);font-size:12px}
+.btn{font:600 13px var(--serif);padding:6px 14px;border:1.5px solid var(--ink);display:inline-flex;gap:6px;align-items:center;white-space:nowrap;background:var(--sheet)}
+.btn.p{background:var(--ink);color:var(--sheet)}.btn.r{border-color:var(--red);color:var(--red)}
+.field{border-bottom:1.5px solid var(--ink);padding:8px 2px;font-size:15px;min-height:38px}.field.f{border-color:var(--red)}.ph{color:var(--faint)}
+.flab{font:600 12px var(--serif);color:var(--soft);margin:18px 0 2px}
+.chip{font:13px var(--serif);padding:4px 12px;border:1.5px solid var(--dash);color:var(--soft);white-space:nowrap}.chip.on{border-color:var(--red);color:var(--red);font-weight:700}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}.kv>div{padding:14px 16px;border-right:1px dashed var(--dash)}.kv>div:last-child{border:0}
+.kv small{font:12px var(--serif);color:var(--faint)}.kv b{display:block;font:600 26px var(--mono);margin-top:4px}
+.zheng{font:700 18px var(--serif);color:var(--red);letter-spacing:2px}
+mark{background:none;color:var(--red);font-weight:700;border-bottom:2px solid var(--red)}
+.scrim{position:absolute;inset:0;background:#1b243355;display:grid;place-items:center;z-index:5}
+.card{width:540px;background:var(--sheet);border:1.5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:26px 30px}
+.card h3{font:700 20px var(--serif);display:flex;justify-content:space-between;border-bottom:1.5px solid var(--ink);padding-bottom:10px}.card h3 i{font-style:normal;color:var(--faint)}
+.phone{width:390px;height:844px;border-radius:44px;border:10px solid #22252b;overflow:hidden;position:relative;flex:none}
+.pin{padding:56px 22px 96px}
+.tab{position:absolute;bottom:0;left:0;right:0;height:76px;background:var(--paper);border-top:1.5px solid var(--ink);display:flex;justify-content:space-around;padding-top:14px;font:14px var(--serif);color:var(--faint);z-index:3}
+.tab .on{color:var(--ink);font-weight:700;border-bottom:2px solid var(--red);height:24px}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--sheet);border-top:1.5px solid var(--ink);padding:16px 22px 34px}
+.sheet h3{font:700 18px var(--serif);display:flex;justify-content:space-between;border-bottom:1.5px solid var(--ink);padding-bottom:8px}
+</style></head><body>
+<div id="desk"></div><div class="phone gridbg" id="mobile"></div>
+<script>
+const HX={math:'var(--math)',cs:'var(--cs)',eng:'var(--eng)',pol:'var(--pol)'};
+const NAVS=[['today','今日'],['plan','计划'],['calendar','日历'],['memory','时光'],['stats','统计']];
+const activeNav={goal:'plan','learn-form':'today','goal-form':'plan',annual:'stats'};
+const subj=k=>`<span class="serif" style="font-weight:600;font-size:12px;color:${HX[k]}">${SUBJECTS[k]}</span>`;
+const zheng=n=>'正'.repeat(Math.floor(n/5))+['','一','丅','下','止'][n%5];
+const learnTable=(small=true)=>`<table>${TODAY.learnings.map(l=>`<tr><td class="k" style="color:${HX[l.k]}">${SUBJECTS[l.k]}</td><td><b>${l.t}</b>${small?`<small>${l.n}</small>`:''}</td><td class="m">${fmt(l.m)}</td></tr>`).join('')}</table>`;
+const todos=TODAY.tasks.map(t=>`<div class="todo ${t.done?'on':''}"><i class="box ${t.done?'on':''}"></i><span>${t.t}</span><em>${SUBJECTS[t.k]}</em></div>`).join('');
+const states=(cur=TODAY.state)=>Object.entries(STATES).map(([k,v])=>`<span class="${k===cur?'on':''}">${v.label}</span>`).join('');
+const meter=(v,t,n=20)=>{const f=Math.round(v/t*n);return `<div class="meter">${Array.from({length:n},(_,i)=>`<span class="${i<f?'f':''}"></span>`).join('')}</div>`};
+const goals=GOALS.map(g=>`<div class="goal"><span>${g.t}</span><span class="mono">${g.v}/${g.total} ${g.u}</span>${meter(g.v,g.total)}<small>${g.hint}</small></div>`).join('');
+const calGrid=(h=86,fn)=>`<div class="cal">${['一','二','三','四','五','六','日'].map(w=>`<div class="wk">${w}</div>`).join('')}${Array(MONTH_OFFSET).fill(`<div style="height:${h}px"></div>`).join('')}${MONTH.map(d=>fn(d)).join('')}</div>`;
+const dayCell=h=>d=>d.future?`<div style="height:${h}px;color:var(--dash)">${d.d}</div>`:`<div class="${d.today?'t':''}" style="height:${h}px">${d.d}<span class="s" style="color:${['anxious','sad','tired'].includes(d.state)?'var(--faint)':'var(--red)'}">${STATES[d.state].label}</span><span class="h">${(d.min/60).toFixed(1)}<small style="font-size:10px;color:var(--faint)">h</small></span><span class="bar" style="width:${Math.min(1,d.min/480)*80}%"></span></div>`;
+const pager=l=>`<span class="serif" style="font-size:14px;color:var(--soft)">‹ <b style="color:var(--ink);margin:0 10px">${l}</b> ›</span>`;
+
+const D={};
+D.today=()=>`<div class="spread">
+ <div class="page l gridbg">
+  <div class="date"><span class="d">${TODAY.date}</span><span class="w">${TODAY.weekCn} · 2026<br>第 23 天连续</span><span style="margin-left:auto" class="states">${states()}</span></div>
+  <div class="sec">今日学习<i class="r">+ 补一条</i></div>${learnTable()}
+  <div class="sum">合计<span class="mono hl" style="font-size:22px;color:var(--ink);font-weight:600">${fmt(totalMin)}</span>/ 目标 6h</div>
+  <div class="sec">待办<i>来自月计划 · 2 / 4</i></div>${todos}
+  <div class="sec">今日小结<i>Markdown</i></div><div class="note">${TODAY.diary}</div>
+ </div>
+ <div class="page r gridbg">
+  <div class="date"><span class="d">十一月</span><span class="w">NOV · 2026<br>本月 15 天 · 85.3 h</span></div>
+  <div style="margin-top:20px">${calGrid(78,dayCell(78))}</div>
+  <div class="sec">本月目标<i>查看计划 →</i></div>${goals}
+ </div></div>`;
+
+D.calendar=()=>`<div class="spread" style="grid-template-columns:1fr 300px">
+ <div class="page l gridbg"><div class="date"><span class="d">十一月</span><span class="w">NOV · 2026</span><span style="margin-left:auto;display:flex;gap:16px;align-items:center">${pager('2026.11')}<span class="btn r">回到今天</span></span></div>
+  <div style="margin-top:22px">${calGrid(112,dayCell(112))}</div>
+  <div style="font:12px var(--serif);color:var(--faint);margin-top:10px">底部横线长度 = 当日时长 / 8h · 右上角为当日状态 · 点格子进入当天</div></div>
+ <div class="page r gridbg" style="padding:36px 28px">
+  <div class="sec" style="margin-top:6px">本月小计</div>
+  <table>${[['记录天数','15 天'],['学习时长','85h 20m'],['日均','5h 41m'],['达标天数','8 / 15'],['最长单日','8h 00m · 11.11']].map(([k,v])=>`<tr><td style="font-family:var(--serif);color:var(--soft)">${k}</td><td class="m" style="width:auto">${v}</td></tr>`).join('')}</table>
+  <div class="sec">状态图例</div>${Object.entries(STATES).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;font:14px var(--serif)"><span style="color:${['anxious','sad','tired'].includes(k)?'var(--faint)':'var(--red)'}">${v.label}</span><span class="zheng" style="font-size:14px">${zheng(STATS.states[k]||0)}</span></div>`).join('')}
+  <div class="sec">本月待办</div><div style="font:14px var(--serif);color:var(--soft)">完成 <b class="mono hl">23</b> / 31 项</div></div></div>`;
+
+D.plan=()=>{const count=PLAN.goals.filter(g=>g.type==='COUNT'),list=PLAN.goals.filter(g=>g.type==='CHECKLIST');
+ const cg=g=>`<div style="padding:16px 0;border-bottom:1px dashed var(--dash)"><div style="display:flex;align-items:baseline;gap:10px">${subj(g.k)}<b class="serif" style="font-size:17px">${g.t}</b><span class="mono" style="margin-left:auto;font-size:13px;color:var(--soft)">${g.v} / ${g.total} ${g.u}</span></div>
+  <div style="margin:10px 0">${meter(g.v,g.total,25)}</div><div style="display:flex;gap:24px;font:13px var(--serif);color:var(--soft)"><span>建议每日 <b class="mono" style="color:var(--ink)">${g.daily??'—'}</b></span><span>建议每周 <b class="mono" style="color:var(--ink)">${g.weekly??g.daily*7}</b></span><span>剩 <b class="mono" style="color:var(--ink)">${g.remainDays}</b> 天</span><span style="margin-left:auto;color:${g.status.includes('落后')?'var(--red)':'var(--cs)'}">${g.status}</span></div></div>`;
+ const lg=g=>`<div style="padding:16px 0;border-bottom:1px dashed var(--dash)"><div style="display:flex;align-items:baseline;gap:10px">${subj(g.k)}<b class="serif" style="font-size:17px">${g.t}</b><span class="mono" style="margin-left:auto;font-size:13px;color:var(--soft)">${g.v} / ${g.total} ${g.u}</span></div>
+  <div style="margin-top:8px">${g.tasks.map(t=>`<div class="todo ${t.done?'on':''}"><i class="box ${t.done?'on':''}"></i><span>${t.t}</span><em class="mono" style="font-size:11px">${t.due||t.week}</em></div>`).join('')}</div><div style="font:13px var(--serif);color:var(--red);margin-top:4px">+ 加一条子任务</div></div>`;
+ return `<div class="spread"><div class="page l gridbg"><div class="date"><span class="d">月计划</span><span class="w">2026-11<br>剩余 15 天</span><span style="margin-left:auto">${pager('11 月')}</span></div>
+  <div style="display:flex;align-items:center;gap:24px;margin-top:22px;padding:14px 18px;border:1.5px solid var(--ink);background:var(--sheet)"><div><div class="serif" style="font-size:13px;color:var(--soft)">本月完成度</div><div class="mono" style="font-size:40px;font-weight:700">63<small style="font-size:18px">%</small></div></div><div style="flex:1">${meter(63,100,25)}<div style="font:12px var(--serif);color:var(--faint);margin-top:6px">进度按各目标百分比平均</div></div></div>
+  <div class="sec">数量型 · 刷题 / 套卷<i class="r">+ 新目标</i></div>${count.map(cg).join('')}
+  <div style="margin-top:24px;padding:12px 16px;border:1.5px dashed var(--red);color:var(--red);font:14px var(--serif)">上月未完成「汤家凤 1800 题 · 线代」1 项 → 结转到本月</div></div>
+ <div class="page r gridbg"><div class="sec" style="margin-top:4px">清单型 · 章节 / 知识点<i class="r">+ 新目标</i></div>${list.map(lg).join('')}</div></div>`};
+
+D.goal=()=>{const g=GOAL;return `<div class="spread"><div class="page l gridbg">
+  <div style="font:13px var(--serif);color:var(--faint)">‹ 计划 / 数量型</div>
+  <div class="date" style="margin-top:10px"><span class="d" style="font-size:40px">${g.t}</span></div>
+  <div style="display:flex;align-items:flex-end;gap:12px;margin-top:22px"><span class="mono" style="font-size:72px;font-weight:700;line-height:.9">${g.v}</span><span class="mono" style="font-size:20px;color:var(--soft)">/ ${g.total} ${g.u}</span><span class="stamp" style="margin-left:auto;font-size:22px">61%</span></div>
+  <div style="margin-top:14px">${meter(g.v,g.total,40)}</div>
+  <div class="kv" style="margin-top:24px">${[['剩余',g.remaining+' '+g.u],['剩余天数',g.remainDays+' 天'],['计划日均',g.plannedDaily],['按剩余追赶',g.suggestedDaily+'/天']].map(([k,v],i)=>`<div><small>${k}</small><b style="font-size:22px;${i===3?'color:var(--red)':''}">${v}</b></div>`).join('')}</div>
+  <div class="sec">每周进度<i>实际 / 计划</i></div><table>${g.weeks.map(w=>`<tr><td class="mono" style="width:120px;font-size:12px;color:var(--soft)">${w.w}</td><td>${meter(w.a,w.p,15)}</td><td class="m" style="width:110px;white-space:nowrap">${w.a} / ${w.p}${w.a>=w.p?' <span style="color:var(--red)">✓</span>':''}</td></tr>`).join('')}</table>
+  <div class="sec">备注</div><div class="note">${g.note}</div>
+  <div style="display:flex;gap:10px;margin-top:20px"><span class="btn">编辑</span><span class="btn">结转下月</span><span class="btn r" style="margin-left:auto">删除</span></div></div>
+ <div class="page r gridbg"><div class="sec" style="margin-top:4px">打卡日历<i>点日期打卡，点已打卡的日子可取消</i></div>
+  ${calGrid(84,d=>{const q=g.checkins[d.d];return d.future?`<div style="height:84px;color:var(--dash)">${d.d}</div>`:`<div class="${d.today?'t':''}" style="height:84px">${d.d}${q?`<span style="position:absolute;inset:22px 8px 8px;display:grid;place-items:center;font:700 20px var(--mono);color:var(--blue);border:2px solid var(--blue);border-radius:50%;transform:rotate(${(d.d*37)%20-10}deg)">${q}</span>`:'<span class="h" style="color:var(--dash)">—</span>'}</div>`})}
+  <div style="display:flex;gap:10px;margin-top:22px;align-items:center"><span class="serif" style="font-size:14px">今日 11.15 打卡</span><div class="field f mono" style="width:90px">30</div><span class="serif">题</span><span class="btn p" style="margin-left:auto">盖章</span></div></div></div>`};
+
+D.memory=()=>`<div class="single gridbg" style="padding-left:0">
+ <div style="position:absolute;left:150px;top:0;bottom:0;width:1.5px;background:#E8A090"></div>
+ <div style="padding-left:180px" class="date"><span class="d">时光</span><span class="w">按时间线回顾每一天</span><span style="margin-left:auto;display:flex;gap:18px;align-items:center"><span class="chip">只看有想法</span>${pager('2026')}</span></div>
+ ${MEMORY.map(m=>`<div style="display:grid;grid-template-columns:150px 1fr;padding:18px 0;border-bottom:1px dashed var(--dash)">
+  <div style="text-align:right;padding-right:22px"><div class="serif" style="font-size:26px;font-weight:700">${m.date}</div><div class="serif" style="font-size:12px;color:var(--faint)">${m.w}</div></div>
+  <div style="padding:0 30px"><div style="display:flex;gap:14px;align-items:baseline"><span class="serif" style="font-weight:700;color:${['anxious','sad','tired'].includes(m.state)?'var(--faint)':'var(--red)'}">${STATES[m.state].label}</span><span class="mono" style="font-size:13px;color:var(--soft)">${fmt(m.min)}</span><span style="display:flex;gap:10px">${m.subs.map(subj).join('')}</span></div>
+  ${m.diary?`<div class="note" style="margin-top:6px">${m.diary}</div>`:'<div style="font:13px var(--serif);color:var(--dash);margin-top:6px">（这天没写想法）</div>'}</div></div>`).join('')}</div>`;
+
+D.stats=()=>{const S=STATS,tot=sumMin(S.subjects);return `<div class="spread"><div class="page l gridbg">
+  <div class="date"><span class="d">统计</span><span class="w">本月 · 按学习时长</span><span style="margin-left:auto;display:flex;gap:16px;align-items:center"><span class="chip on">月</span><span class="chip">年度</span>${pager('11 月')}</span></div>
+  <div class="kv" style="margin-top:22px">${[['总时长',fmt(S.totalMin)],['学习天数',S.days+' 天'],['日均',fmt(S.avgMin)],['最长连续',S.longest+' 天']].map(([k,v])=>`<div><small>${k}</small><b style="font-size:22px">${v}</b></div>`).join('')}</div>
+  <div class="sec">每日学习时长<i>红线 = 每日目标 6h · 点柱进入当天</i></div>
+  <div style="position:relative;height:260px;display:flex;align-items:flex-end;gap:4px;border-bottom:1.5px solid var(--ink)"><div style="position:absolute;left:0;right:0;bottom:${360/480*240}px;border-top:1.5px dashed var(--red)"></div>
+   ${MONTH.map(d=>`<div style="flex:1;height:${d.future?0:d.min/480*240}px;background:${d.today?'var(--red)':'var(--ink)'};${d.future?'':''}"></div>`).join('')}</div>
+  <div style="display:flex;gap:4px;margin-top:4px">${MONTH.map(d=>`<span class="mono" style="flex:1;text-align:center;font-size:9px;color:var(--faint)">${d.d%5===0||d.d===1?d.d:''}</span>`).join('')}</div></div>
+ <div class="page r gridbg"><div class="sec" style="margin-top:4px">学科分布<i class="mono">${fmt(tot)}</i></div>
+  <table><tr><th>科目</th><th>占比</th><th style="text-align:right">时长</th></tr>${S.subjects.map(s=>`<tr><td class="k" style="color:${HX[s.k]}">${SUBJECTS[s.k]}</td><td>${meter(s.m,tot,20)}<small>${Math.round(s.m/tot*100)}%</small></td><td class="m">${fmt(s.m)}</td></tr>`).join('')}</table>
+  <div class="sec">状态记数<i>15 天 · 画「正」字</i></div><table>${Object.entries(S.states).map(([k,n])=>`<tr><td class="serif" style="width:80px;color:${['anxious','sad','tired'].includes(k)?'var(--faint)':'var(--red)'};font-weight:700">${STATES[k].label}</td><td class="zheng">${zheng(n)}</td><td class="m">${n} 天</td></tr>`).join('')}</table></div></div>`};
+
+D.annual=()=>{const A=ANNUAL,mx=Math.max(...A.months.map(m=>m.h)),tot=sumMin(A.subjects);
+ const mini=m=>{const days=new Date(2026,m,0).getDate(),off=(new Date(2026,m-1,1).getDay()+6)%7;return `<div><div class="serif" style="font-size:13px;font-weight:700;margin-bottom:4px">${m} 月 <span class="mono" style="font-weight:400;color:var(--faint);font-size:11px">${A.months[m-1].h||''}${A.months[m-1].h?'h':''}</span></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">${Array(off).fill('<i></i>').join('')}${Array.from({length:days},(_,i)=>{const v=HEAT[(m*31+i)%HEAT.length],fut=m>11||(m===11&&i>14);return `<i style="height:9px;background:${fut?'transparent':v===0?'transparent':v<200?'#1B243333':v<340?'#1B243388':'var(--ink)'};border:1px solid ${fut?'var(--grid)':'transparent'}"></i>`}).join('')}</div></div>`};
+ return `<div class="spread"><div class="page l gridbg"><div class="date"><span class="d">二〇二六</span><span class="w">年度回顾<br>ANNUAL REVIEW</span><span style="margin-left:auto">${pager('2026')}</span></div>
+  <div class="kv" style="margin-top:22px">${[['总时长',A.totalH+' h'],['学习天数',A.days+' 天'],['最长连续',A.longest+' 天'],['最常状态',STATES[A.topState].label]].map(([k,v])=>`<div><small>${k}</small><b style="font-size:24px">${v}</b></div>`).join('')}</div>
+  <div class="sec">月度学习时长</div><div style="display:flex;align-items:flex-end;gap:10px;height:220px;border-bottom:1.5px solid var(--ink)">${A.months.map(m=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><span class="mono" style="font-size:11px;color:var(--soft)">${m.h||''}</span><div style="width:100%;height:${m.h/mx*180}px;background:${m.h===mx?'var(--red)':'var(--ink)'}"></div></div>`).join('')}</div>
+  <div style="display:flex;gap:10px;margin-top:4px">${A.months.map(m=>`<span class="serif" style="flex:1;text-align:center;font-size:11px;color:var(--faint)">${m.m}</span>`).join('')}</div>
+  <div class="sec">年度学科分布</div><table>${A.subjects.map(s=>`<tr><td class="k" style="color:${HX[s.k]}">${SUBJECTS[s.k]}</td><td>${meter(s.h,tot,20)}</td><td class="m">${s.h} h</td></tr>`).join('')}</table></div>
+ <div class="page r gridbg"><div class="sec" style="margin-top:4px">全年 12 个月<i>格子越深学得越久</i></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px 28px;margin-top:14px">${Array.from({length:12},(_,i)=>mini(i+1)).join('')}</div></div></div>`};
+
+D.search=()=>`<div class="single gridbg"><div class="date"><span class="d">搜索</span><span class="w">日记、学科、备注</span></div>
+ <div style="display:flex;align-items:center;gap:14px;margin-top:28px"><span class="serif" style="font-size:16px;color:var(--soft)">查：</span><div class="field f" style="flex:1;font-size:22px;font-family:var(--serif)">${SEARCH.q}<span style="color:var(--red)">|</span></div><span class="serif" style="color:var(--faint);font-size:13px">共 3 处</span></div>
+ <div style="display:flex;gap:10px;margin-top:18px">${['全部','学科','日记','备注'].map((t,i)=>`<span class="chip ${i===0?'on':''}">${t}</span>`).join('')}</div>
+ <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;margin-top:28px">${SEARCH.results.map((r,i)=>`<div style="background:var(--sheet);border:1.5px solid var(--ink);padding:18px 20px;transform:rotate(${[-0.6,0.4,-0.3][i]}deg);box-shadow:4px 4px 0 #1B243322"><div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--ink);padding-bottom:8px"><span class="mono" style="font-size:13px">${r.date}</span><span class="serif" style="font-size:12px;color:var(--faint)">${{subject:'学科',diary:'日记',note:'备注'}[r.hit]}${r.k?' · '+SUBJECTS[r.k]:''}</span></div><div class="note" style="margin-top:6px;font-size:14px">${r.text}</div></div>`).join('')}</div>
+ <div style="font:13px var(--serif);color:var(--faint);margin-top:28px">会同时匹配日记、学科名称和备注。</div></div>`;
+
+D.settings=()=>{const row=(t,d,b)=>`<div style="display:grid;grid-template-columns:260px 1fr;gap:30px;padding:22px 0;border-bottom:1px dashed var(--dash)"><div><div class="serif" style="font-size:17px;font-weight:700">${t}</div><div class="serif" style="font-size:12px;color:var(--faint);margin-top:4px">${d}</div></div><div>${b}</div></div>`;
+ return `<div class="single gridbg"><div class="date"><span class="d">设置</span><span class="w">考研目标、外观与数据</span></div>
+ ${row('考研目标','首页 D-xxx 印章据此计算',`<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px"><div><div class="flab" style="margin-top:0">名称</div><div class="field">${SETTINGS.examName}</div></div><div><div class="flab" style="margin-top:0">初试日期</div><div class="field mono">${SETTINGS.examDate}</div></div></div>`)}
+ ${row('每日学习目标','日历横线与合计以此为满格',`<div style="display:flex;gap:10px">${['4h','5h','6h','8h','10h'].map(t=>`<span class="chip ${t==='6h'?'on':''}">${t}</span>`).join('')}<span class="serif" style="color:var(--faint);margin-left:10px">或自定义 <span class="field mono" style="display:inline-block;min-height:0;padding:2px 6px">360</span> 分钟</span></div>`)}
+ ${row('科目预设','记一条时作为快捷选项',`<div style="display:flex;gap:12px">${SUBJECT_KEYS.map(k=>`<span class="chip" style="border-color:${HX[k]};color:${HX[k]}">${SUBJECTS[k]}</span>`).join('')}<span class="chip" style="border-style:dashed">+ 添加</span></div>`)}
+ ${row('外观','格纸为本版默认',`<div style="display:flex;gap:10px"><span class="chip on">格纸 · 米白</span><span class="chip">横线 · 纯白</span><span class="chip">夜间 · 墨蓝</span></div>`)}
+ ${row('自定义状态','会以文字标注在日历上',`<div style="display:flex;gap:10px">${Object.values(STATES).map(s=>`<span class="chip">${s.label}</span>`).join('')}${SETTINGS.customStates.map(s=>`<span class="chip on">${s.label} ×</span>`).join('')}<span class="chip" style="border-style:dashed">+</span></div>`)}
+ ${row('数据管理','JSON 兼容 v1 数组 / v2 含自定义心情',`<div style="display:flex;gap:10px"><span class="btn">导出 JSON</span><span class="btn">导入 JSON</span><span class="btn">IndexedDB → 服务器</span></div>`)}</div>`};
+
+D.login=()=>`<div style="position:absolute;inset:0;background:#DCD8CC;display:grid;place-items:center;border-radius:6px">
+ <div style="width:520px;height:700px;background:var(--cover);border-radius:4px 14px 14px 4px;box-shadow:inset 18px 0 0 #172036,20px 30px 60px #0004;position:relative;display:grid;place-items:center">
+  <div style="position:absolute;left:30px;top:0;bottom:0;width:2px;background:#ffffff14"></div>
+  <div style="width:340px;background:var(--sheet);padding:28px 30px;border:1.5px solid var(--ink)">
+   <div style="text-align:center;border-bottom:1.5px solid var(--ink);padding-bottom:14px"><div class="serif" style="font-size:30px;font-weight:700;letter-spacing:.2em">考研手记</div><div class="mono" style="font-size:11px;color:var(--faint);margin-top:6px;letter-spacing:.2em">STUDY LOG · 2026—2027</div></div>
+   <div class="flab">姓名</div><div class="field f">somehow</div><div class="flab">口令</div><div class="field ph">••••••••</div>
+   <div class="btn p" style="width:100%;justify-content:center;margin-top:24px;padding:10px">翻开</div>
+   <div class="serif" style="font-size:12px;color:var(--faint);text-align:center;margin-top:12px">与博客共用账号 · 仅 ADMIN</div></div>
+  <div class="stamp" style="position:absolute;right:40px;bottom:46px;background:#fff1;color:#FF8A70;border-color:#FF8A70">D-${EXAM.left}</div></div></div>`;
+
+const formLearn=()=>`<h3>补一条学习<i>×</i></h3>
+ <div class="flab">科目</div><div style="display:flex;gap:10px;margin-top:6px">${SUBJECT_KEYS.map((k,i)=>`<span class="chip ${i===1?'on':''}">${SUBJECTS[k]}</span>`).join('')}<span class="chip" style="border-style:dashed">其他…</span></div>
+ <div class="flab">内容</div><div class="field f">王道 7.4 课后选择题</div>
+ <div class="flab">时长</div><div style="display:flex;align-items:center;gap:10px"><div class="field mono" style="width:60px">1</div>h<div class="field mono" style="width:60px">15</div>m<span style="margin-left:12px;display:flex;gap:8px">${['25m','45m','1h'].map(t=>`<span class="chip">${t}</span>`).join('')}</span></div>
+ <div class="flab">备注</div><div class="note" style="height:60px"><span class="ph">错题、卡点、明天要补的…</span></div>
+ <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px"><span class="btn">取消</span><span class="btn p">记下</span></div>`;
+D['learn-form']=()=>D.today()+`<div class="scrim"><div class="card">${formLearn()}</div></div>`;
+D['goal-form']=()=>D.plan()+`<div class="scrim"><div class="card"><h3>立一个 11 月目标<i>×</i></h3>
+ <div class="flab">类型</div><div style="display:flex;gap:10px;margin-top:6px"><span class="chip on">数量型 · 刷题 / 单词 / 套卷</span><span class="chip">清单型 · 章节 / 知识点</span></div>
+ <div class="flab">标题</div><div class="field f">张宇 1000 题 · 基础篇</div>
+ <div style="display:grid;grid-template-columns:1fr 120px;gap:20px"><div><div class="flab">目标数量</div><div class="field mono">1000</div></div><div><div class="flab">单位</div><div class="field">题</div></div></div>
+ <div class="flab">科目</div><div style="display:flex;gap:10px;margin-top:6px">${SUBJECT_KEYS.map((k,i)=>`<span class="chip ${i===0?'on':''}">${SUBJECTS[k]}</span>`).join('')}</div>
+ <div style="margin-top:18px;padding:10px 14px;border:1.5px dashed var(--ink);font:14px var(--serif);color:var(--soft)">拆分：日均 <b class="mono hl" style="color:var(--ink)">34</b> 题 · 每周 <b class="mono" style="color:var(--ink)">234</b> 题 · 共 30 天</div>
+ <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px"><span class="btn">取消</span><span class="btn p">立下</span></div></div></div>`;
+
+const M={};
+const mTop=t=>`<div style="display:flex;justify-content:space-between;align-items:center"><div class="brand" style="font-size:17px">${t}</div><div class="stamp" style="font-size:13px">D-${EXAM.left}</div></div>`;
+M.today=()=>`${mTop('考研手记')}<div class="date" style="margin-top:18px"><span class="d" style="font-size:52px">${TODAY.date}</span><span class="w">${TODAY.weekCn}<br>连续 23 天</span></div>
+ <div class="states" style="margin:16px 0 0 10px;gap:20px">${states()}</div><div class="sec">今日学习<i class="r">+ 补一条</i></div>${learnTable(false)}
+ <div class="sum">合计<span class="mono hl" style="font-size:22px;color:var(--ink);font-weight:600">${fmt(totalMin)}</span></div><div class="sec">待办<i>2 / 4</i></div>${todos}`;
+M.calendar=()=>`${mTop('十一月')}<div style="display:flex;justify-content:space-between;margin:14px 0 10px">${pager('2026.11')}<span class="serif" style="font-size:13px;color:var(--soft)">15 天 · 85.3h</span></div>
+ ${calGrid(60,d=>d.future?`<div style="height:60px;color:var(--dash);padding:4px">${d.d}</div>`:`<div class="${d.today?'t':''}" style="height:60px;padding:4px 5px">${d.d}<span class="h" style="font-size:12px;left:5px;bottom:6px">${(d.min/60).toFixed(1)}</span><span class="bar" style="left:5px;width:${Math.min(1,d.min/480)*80}%"></span></div>`)}
+ <div class="sec">11.15 · 今天<i class="mono">${fmt(totalMin)}</i></div><div style="display:flex;gap:14px">${SUBJECT_KEYS.map(subj).join('')}</div>`;
+M.plan=()=>`${mTop('月计划')}<div style="display:flex;align-items:center;gap:14px;margin-top:16px;padding:10px 14px;border:1.5px solid var(--ink);background:var(--sheet)"><span class="mono" style="font-size:28px;font-weight:700">63%</span><div style="flex:1">${meter(63,100,15)}</div></div>
+ ${PLAN.goals.map(g=>`<div style="padding:12px 0;border-bottom:1px dashed var(--dash)"><div style="display:flex;gap:8px;align-items:baseline">${subj(g.k)}<b class="serif" style="font-size:15px">${g.t}</b><span class="mono" style="margin-left:auto;font-size:12px;color:var(--soft)">${g.v}/${g.total}</span></div><div style="margin-top:8px">${meter(g.v,g.total,20)}</div><div class="serif" style="font-size:12px;color:var(--faint);margin-top:4px">${g.status}</div></div>`).join('')}
+ <div class="btn r" style="width:100%;justify-content:center;margin-top:16px">+ 立一个新目标</div>`;
+M.goal=()=>{const g=GOAL;return `<div class="serif" style="font-size:13px;color:var(--faint)">‹ 计划</div><div class="date" style="margin-top:6px"><span class="d" style="font-size:26px">${g.t}</span></div>
+ <div style="display:flex;align-items:flex-end;gap:8px;margin-top:14px"><span class="mono" style="font-size:48px;font-weight:700;line-height:.9">${g.v}</span><span class="mono" style="color:var(--soft)">/ ${g.total}</span><span class="stamp" style="margin-left:auto">61%</span></div>
+ <div style="margin-top:10px">${meter(g.v,g.total,25)}</div><div class="serif" style="font-size:13px;margin-top:8px;color:var(--red)">按剩余追赶 26 题 / 天</div>
+ <div class="sec">打卡日历</div>${calGrid(48,d=>{const q=g.checkins[d.d];return d.future?`<div style="height:48px;color:var(--dash);padding:3px">${d.d}</div>`:`<div class="${d.today?'t':''}" style="height:48px;padding:3px 4px;font-size:10px">${d.d}${q?`<span style="position:absolute;inset:14px 4px 3px;display:grid;place-items:center;font:700 12px var(--mono);color:var(--blue);border:1.5px solid var(--blue);border-radius:50%">${q}</span>`:''}</div>`})}
+ <div class="btn p" style="width:100%;justify-content:center;margin-top:16px;padding:10px">今日盖章 +30</div>`};
+M.stats=()=>`${mTop('统计 · 11 月')}<div class="kv" style="grid-template-columns:1fr 1fr;margin-top:16px">${[['总时长','85h 20m'],['天数','15 天']].map(([k,v])=>`<div><small>${k}</small><b style="font-size:20px">${v}</b></div>`).join('')}</div>
+ <div class="sec">每日时长</div><div style="position:relative;height:130px;display:flex;align-items:flex-end;gap:2px;border-bottom:1.5px solid var(--ink)"><div style="position:absolute;left:0;right:0;bottom:${360/480*120}px;border-top:1.5px dashed var(--red)"></div>${MONTH.map(d=>`<div style="flex:1;height:${d.future?0:d.min/480*120}px;background:${d.today?'var(--red)':'var(--ink)'}"></div>`).join('')}</div>
+ <div class="sec">学科分布</div><table>${STATS.subjects.map(s=>`<tr><td class="k" style="color:${HX[s.k]}">${SUBJECTS[s.k]}</td><td>${meter(s.m,5120,12)}</td><td class="m">${fmt(s.m)}</td></tr>`).join('')}</table>
+ <div class="sec">状态记数</div>${Object.entries(STATS.states).slice(0,3).map(([k,n])=>`<div style="display:flex;justify-content:space-between;font:14px var(--serif);padding:3px 0"><span>${STATES[k].label}</span><span class="zheng" style="font-size:15px">${zheng(n)}</span></div>`).join('')}`;
+M['learn-form']=()=>M.today()+`<div style="position:absolute;inset:0;background:#1b243355;z-index:5"></div><div class="sheet">${formLearn().replace(/<span style="margin-left:12px.*?<\/span><\/span>/,'')}</div>`;
+
+const page=getPage(), nav=activeNav[page]||page; if(!D[page]) document.body.dataset.skip='1';
+const body=(D[page]||D.today)();
+document.getElementById('desk').innerHTML= page==='login'?body:`<div class="nav"><div class="brand">考研手记<small>STUDY LOG · VOL.2026</small></div>${NAVS.map(([p,n])=>`<a class="${p===nav?'on':''}">${n}</a>`).join('')}
+ <span style="margin-left:auto;display:flex;gap:22px;align-items:center"><a class="${page==='search'?'on':''}">搜索</a><a class="${page==='settings'?'on':''}">设置</a><div class="stamp">D-${EXAM.left}<small>${EXAM.name}</small></div></span></div>${body}`;
+const mob=document.getElementById('mobile');
+if(M[page]){mob.innerHTML=`<div class="pin">${M[page]()}</div><div class="tab">${NAVS.map(([p,n])=>`<span class="${p===nav?'on':''}">${n}</span>`).join('')}</div>`;
+ if(page==='learn-form'){[...mob.querySelectorAll('.pin > div[style*="z-index:5"], .pin > .sheet')].forEach(e=>mob.appendChild(e));}}
+else mob.remove();
+</script></body></html>

@@ -1,0 +1,219 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>C · Midnight</title>
+<script src="data.js"></script>
+<style>
+/* ===== Tokens（实现映射见 SPEC-C.md）===== */
+:root{--bg:#070B14;--ink:#E6ECF5;--soft:#9AA7BB;--faint:#5C6880;--line:#1B2436;--glass:rgba(255,255,255,.035);--glass-b:rgba(255,255,255,.07);--acc:#5EEAD4;--acc2:#7AA2FF;--warn:#F2C66D;
+--math:#7AA2FF;--cs:#5EEAD4;--eng:#F2C66D;--pol:#F08AA0;--mono:"SF Mono",Menlo,monospace;--sans:-apple-system,"SF Pro Display","PingFang SC",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}body{background:#03050A;font-family:var(--sans);color:var(--ink);padding:40px;display:flex;gap:40px;align-items:flex-start}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sky{background:radial-gradient(900px 500px at 20% -10%,#14305a 0%,transparent 60%),radial-gradient(700px 500px at 100% 100%,#0d3b44 0%,transparent 60%),var(--bg)}
+#desk{width:1440px;min-height:960px;border-radius:18px;overflow:hidden;position:relative;border:1px solid var(--line);display:flex;flex-direction:column}
+.stars{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}
+.glass{background:var(--glass);border:1px solid var(--glass-b);border-radius:20px;backdrop-filter:blur(20px);position:relative}
+.top{display:flex;align-items:center;gap:28px;font-size:14px;color:var(--faint);padding:24px 40px 0;position:relative;z-index:1}
+.top b{color:var(--ink);font-weight:600;font-size:16px;margin-right:10px;display:flex;align-items:center;gap:8px}
+.top b i{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}.top .on{color:var(--ink);position:relative}
+.top .on:after{content:"";position:absolute;left:0;right:0;bottom:-8px;height:2px;border-radius:1px;background:var(--acc);box-shadow:0 0 8px var(--acc)}
+.body{flex:1;padding:24px 40px 32px;position:relative;z-index:1;display:flex;flex-direction:column;gap:18px}
+.title{display:flex;align-items:flex-end;justify-content:space-between}.title h1{font-size:30px;font-weight:600;letter-spacing:-.01em}.title h1 small{font-size:14px;color:var(--faint);font-weight:400;margin-left:12px}
+.chip{font-size:13px;color:var(--acc);border:1px solid #5EEAD455;padding:6px 14px;border-radius:999px;background:#5EEAD412;display:inline-flex;gap:8px;align-items:center;white-space:nowrap}
+.chip i{width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc)}
+.pill{font-size:13px;padding:6px 14px;border-radius:999px;border:1px solid var(--glass-b);color:var(--soft);white-space:nowrap}.pill.on{border-color:#5EEAD488;color:var(--acc);background:#5EEAD414}
+.btn{padding:10px 20px;border-radius:12px;font-size:14px;border:1px solid rgba(255,255,255,.12);color:var(--soft);white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+.btn.p{background:var(--acc);color:#04201c;border:0;font-weight:600;box-shadow:0 0 24px #5EEAD455}.btn.s{padding:7px 14px;font-size:13px;border-radius:10px}
+.orb{position:relative;display:grid;place-items:center}.orb svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.timer{font:200 84px var(--mono);letter-spacing:-.02em}
+.lbl{font-size:12px;color:var(--faint);margin-bottom:6px}.val{font:500 24px var(--mono)}
+.h{font-size:13px;color:var(--soft);display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-weight:500}.h i{font-style:normal;color:var(--faint);font-weight:400}
+.tl{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px}
+.lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--soft)}.lg span{display:flex;align-items:center;gap:6px}.lg i{width:8px;height:8px;border-radius:2px}
+.li{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:13.5px}.li:first-of-type{border:0}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}.li .m{margin-left:auto;font:13px var(--mono);color:var(--soft);white-space:nowrap}
+.ck{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--faint);flex:none}.ck.on{background:var(--acc);border-color:var(--acc);box-shadow:0 0 10px #5EEAD466}
+.off{color:var(--faint);text-decoration:line-through}
+.g{margin-bottom:13px;font-size:13px}.g .r{display:flex;justify-content:space-between;margin-bottom:6px}.g .r .mono{color:var(--faint);font-size:12px}
+.track{height:4px;border-radius:2px;background:#ffffff10}.track div{height:100%;border-radius:2px}
+.sub{font-size:12px;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.in{background:rgba(255,255,255,.04);border:1px solid var(--glass-b);border-radius:12px;padding:11px 14px;font-size:14px;display:flex;gap:8px;align-items:center}
+.in.f{border-color:#5EEAD488;box-shadow:0 0 0 3px #5EEAD418}.ph{color:var(--faint)}.flab{font-size:12px;color:var(--soft);margin:16px 0 7px}
+mark{background:none;color:var(--acc);text-shadow:0 0 10px #5EEAD488}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.cal .wk{font-size:12px;color:var(--faint);text-align:center}
+.cell{border-radius:14px;border:1px solid var(--glass-b);background:var(--glass);padding:10px 12px;position:relative;display:flex;flex-direction:column}
+.cell.f{background:transparent;border-color:#ffffff08;color:var(--faint)}.cell.e{border:0;background:none}
+.cell.t{border-color:#5EEAD4aa;box-shadow:0 0 0 1px #5EEAD455,0 0 24px #5EEAD422}
+.scrim{position:absolute;inset:0;background:#02040acc;backdrop-filter:blur(6px);display:grid;place-items:center;z-index:5}
+.modal{width:520px;padding:26px 28px;background:rgba(14,20,34,.92);border:1px solid var(--glass-b);border-radius:24px;box-shadow:0 30px 80px #000}
+.modal h3,.sheet h3{font-size:18px;font-weight:600;display:flex;justify-content:space-between}.modal h3 i,.sheet h3 i{font-style:normal;color:var(--faint);font-weight:400}
+.phone{width:390px;height:844px;border-radius:44px;border:10px solid #151a24;overflow:hidden;position:relative;flex:none}
+.pin{padding:56px 20px 96px;position:relative;display:flex;flex-direction:column;gap:14px}
+.tab{position:absolute;bottom:0;left:0;right:0;height:78px;background:#070B14e8;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding-top:14px;font-size:11px;color:var(--faint);z-index:3}
+.tab span{display:flex;flex-direction:column;align-items:center;gap:5px}.tab span:before{content:"";width:18px;height:18px;border-radius:6px;border:1.5px solid currentColor}
+.tab .on{color:var(--acc)}.tab .on:before{box-shadow:0 0 10px #5EEAD488;background:#5EEAD422}
+.tab .fab:before{width:44px;height:44px;border-radius:50%;background:var(--acc);border:0;box-shadow:0 0 20px #5EEAD488;margin-top:-22px}.tab .fab{color:var(--acc)}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:6;background:rgba(14,20,34,.97);border-top:1px solid var(--glass-b);border-radius:24px 24px 0 0;padding:14px 20px 34px}
+.grab{width:36px;height:4px;border-radius:2px;background:#ffffff22;margin:0 auto 14px}
+</style></head><body>
+<div id="desk" class="sky"></div><div class="phone sky" id="mobile"></div>
+<script>
+const HX={math:'#7AA2FF',cs:'#5EEAD4',eng:'#F2C66D',pol:'#F08AA0'};
+const SC={inspired:'#5EEAD4',happy:'#9BE15D',calm:'#7AA2FF',tired:'#8892A6',anxious:'#F2C66D',sad:'#B39DFF'};
+const NAV=[['focus','专注'],['today','今日'],['plan','计划'],['calendar','日历'],['memory','时光'],['stats','统计']];
+const activeNav={goal:'plan','learn-form':'today','goal-form':'plan',annual:'stats'};
+const sub=k=>`<span class="sub" style="color:${HX[k]};background:${HX[k]}1a">${SUBJECTS[k]}</span>`;
+const stp=k=>`<span class="sub" style="color:${SC[k]};border:1px solid ${SC[k]}55">${STATES[k].label}</span>`;
+const stars=n=>`<svg class="stars">${Array.from({length:n},(_,i)=>{const x=(Math.sin(i*12.9898)*43758.5453%1+1)%1*100,y=(Math.sin(i*78.233)*12543.17%1+1)%1*75;return `<circle cx="${x}%" cy="${y}%" r="${i%7?0.6:1.1}" fill="#fff" opacity="${0.15+(i%5)*0.08}"/>`}).join('')}</svg>`;
+const orb=(s,r,w,p,id='g')=>{const l=2*Math.PI*r;return `<svg width="${s}" height="${s}"><defs><linearGradient id="${id}${s}"><stop offset="0" stop-color="#7AA2FF"/><stop offset="1" stop-color="#5EEAD4"/></linearGradient></defs><circle cx="${s/2}" cy="${s/2}" r="${r}" stroke="#ffffff0d" stroke-width="${w}" fill="none"/><circle cx="${s/2}" cy="${s/2}" r="${r}" stroke="url(#${id}${s})" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-dasharray="${l*p} ${l}" style="filter:drop-shadow(0 0 8px #5EEAD488)"/></svg>`};
+const tl=()=>TODAY.learnings.map(l=>`<div style="flex:${l.m};background:${HX[l.k]}"></div>`).join('')+`<div style="flex:${TODAY.goalMin-totalMin+20};background:#ffffff12"></div>`;
+const lg=()=>TODAY.learnings.map(l=>`<span><i style="background:${HX[l.k]}"></i>${SUBJECTS[l.k]} ${fmt(l.m)}</span>`).join('');
+const tasks=()=>TODAY.tasks.map(t=>`<div class="li"><span class="ck ${t.done?'on':''}"></span><span class="${t.done?'off':''}">${t.t}</span><span class="m" style="color:${HX[t.k]}">${SUBJECTS[t.k]}</span></div>`).join('');
+const goalBars=()=>GOALS.map(g=>`<div class="g"><div class="r"><span>${g.t}</span><span class="mono">${g.v}/${g.total}</span></div><div class="track"><div style="width:${g.v/g.total*100}%;background:${HX[g.k]};box-shadow:0 0 8px ${HX[g.k]}88"></div></div></div>`).join('');
+const pager=l=>`<span style="display:flex;gap:10px;align-items:center;color:var(--soft);font-size:14px"><span class="pill" style="padding:6px 10px">‹</span><span class="mono" style="color:var(--ink);min-width:70px;text-align:center">${l}</span><span class="pill" style="padding:6px 10px">›</span></span>`;
+const countdown=()=>`<div class="glass" style="padding:20px"><div class="h" style="margin-bottom:6px">${EXAM.name}<i class="mono">${EXAM.date}</i></div><div><span class="mono" style="font:600 56px/1 var(--mono);background:linear-gradient(120deg,#E6ECF5,#5EEAD4);-webkit-background-clip:text;color:transparent">${EXAM.left}</span><span style="color:var(--soft);margin-left:8px">天</span></div><div style="font-size:12px;color:var(--faint);margin-top:8px">「把每一天过成可以复盘的一天」</div></div>`;
+const kpi=(l,v,c)=>`<div class="glass" style="padding:16px 18px"><div class="lbl">${l}</div><div class="val" style="${c?`color:${c}`:''}">${v}</div></div>`;
+
+const D={};
+D.focus=()=>`<div style="display:grid;grid-template-columns:1fr 400px;gap:28px;flex:1">
+ <div style="display:flex;flex-direction:column;gap:18px">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+   <div class="chip"><i></i>专注中 · 第 3 个番茄 · 50 分钟</div>
+   <div class="orb" style="width:380px;height:380px">${orb(380,170,6,.62)}<div style="text-align:center"><div class="timer">38:12</div><div style="font-size:15px;color:var(--soft);margin-top:6px"><span style="color:${HX.cs}">● 408</span>　王道 7.4 课后选择题</div></div></div>
+   <div style="display:flex;gap:14px"><span class="btn">暂停</span><span class="btn p">完成并记录</span><span class="btn">放弃</span></div>
+   <div style="font-size:12px;color:var(--faint)">结束后自动写入今日学习，时长按实际计时 · 今日已完成 2 个番茄</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">${kpi('今日已学',fmt(totalMin))}${kpi('连续',TODAY.streak+' 天')}${kpi('本周','36h 55m')}${kpi('状态','专注','var(--acc)')}</div>
+ </div>
+ <div style="display:flex;flex-direction:column;gap:16px">${countdown()}
+  <div class="glass" style="padding:18px 20px"><div class="h">今日分布<i class="mono">${fmt(totalMin)} / ${fmt(TODAY.goalMin)}</i></div><div class="tl" style="margin-bottom:10px">${tl()}</div><div class="lg">${lg()}</div></div>
+  <div class="glass" style="padding:18px 20px"><div class="h">接下来专注<i>从待办选一项</i></div>${tasks()}</div>
+ </div></div>`;
+D.today=()=>`<div class="title"><h1>11 月 15 日<small>周日 · 连续 ${TODAY.streak} 天</small></h1><div style="display:flex;gap:10px"><span class="btn s">‹ 前一天</span><span class="btn s">后一天 ›</span><span class="btn p s">＋ 记一条</span></div></div>
+ <div style="display:grid;grid-template-columns:1fr 400px;gap:20px">
+  <div style="display:flex;flex-direction:column;gap:18px">
+   <div class="glass" style="padding:22px 24px;display:flex;gap:28px;align-items:center"><div class="orb" style="width:120px;height:120px">${orb(120,52,6,Math.min(1,totalMin/360),'t')}<div class="mono" style="font-size:22px">96%</div></div>
+    <div style="flex:1"><div class="lbl">今日学习</div><div class="val" style="font-size:34px">${fmt(totalMin)} <small style="font-size:14px;color:var(--faint)">/ 6h</small></div><div class="tl" style="margin:12px 0 10px">${tl()}</div><div class="lg">${lg()}</div></div></div>
+   <div class="glass" style="padding:18px 22px"><div class="h">学习记录<i>4 条 · 点击编辑</i></div>${TODAY.learnings.map(l=>`<div class="li" style="padding:14px 0">${sub(l.k)}<div style="flex:1;min-width:0"><div style="font-size:14.5px">${l.t}</div><div style="font-size:12px;color:var(--faint);margin-top:3px">${l.n}</div></div><span class="m">${fmt(l.m)}</span></div>`).join('')}</div>
+   <div class="glass" style="padding:18px 22px"><div class="h">今日想法<i>Markdown · 自动保存</i></div><div style="font-size:14px;line-height:1.8;color:var(--soft)">${TODAY.diary}</div></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px">
+   <div class="glass" style="padding:18px 20px"><div class="h">今天感觉怎么样</div><div style="display:flex;flex-wrap:wrap;gap:8px">${Object.entries(STATES).map(([k,v])=>`<span class="pill ${k===TODAY.state?'on':''}">${v.label}</span>`).join('')}</div></div>
+   <div class="glass" style="padding:18px 20px"><div class="h">待办 · 月计划<i>2 / 4</i></div>${tasks()}</div>
+   <div class="glass" style="padding:18px 20px"><div class="h">11 月目标<i>›</i></div>${goalBars()}</div>
+  </div></div>`;
+D.calendar=()=>`<div class="title"><h1>日历<small>2026 · 11</small></h1><div style="display:flex;gap:12px;align-items:center">${pager('2026.11')}<span class="btn p s">回到今天</span></div></div>
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">${kpi('本月记录','15 天')}${kpi('本月时长','85h 20m')}${kpi('日均','5h 41m')}${kpi('达标天数','8 / 15','var(--acc)')}</div>
+ <div class="glass" style="padding:20px 22px"><div class="cal">${['周一','周二','周三','周四','周五','周六','周日'].map(w=>`<div class="wk">${w}</div>`).join('')}${Array(MONTH_OFFSET).fill('<div class="cell e"></div>').join('')}
+ ${MONTH.map(d=>d.future?`<div class="cell f" style="height:96px"><span class="mono" style="font-size:13px">${d.d}</span></div>`:`<div class="cell ${d.today?'t':''}" style="height:96px;background:radial-gradient(80px 60px at 50% 120%,${SC[d.state]}${Math.round(16+d.min/480*40).toString(16)},transparent),var(--glass)"><div style="display:flex;justify-content:space-between"><span class="mono" style="font-size:13px;${d.today?'color:var(--acc)':''}">${d.d}</span><i class="dot" style="background:${SC[d.state]};box-shadow:0 0 8px ${SC[d.state]}"></i></div><span class="mono" style="margin-top:auto;font-size:18px">${fmt(d.min).replace(' ','')}</span><span style="font-size:11px;color:var(--faint)">${STATES[d.state].label}</span></div>`).join('')}</div>
+ <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:12px;color:var(--faint)"><div style="display:flex;gap:14px">${Object.keys(STATES).map(k=>`<span style="display:flex;gap:6px;align-items:center"><i class="dot" style="background:${SC[k]}"></i>${STATES[k].label}</span>`).join('')}</div><span>格子底部辉光 = 状态色，亮度 = 时长</span></div></div>`;
+D.plan=()=>`<div class="title"><h1>月计划<small>2026-11 · 剩余 15 天</small></h1><div style="display:flex;gap:12px;align-items:center">${pager('11 月')}<span class="btn p s">＋ 新建目标</span></div></div>
+ <div class="glass" style="padding:20px 24px;display:flex;align-items:center;gap:26px"><div class="orb" style="width:90px;height:90px">${orb(90,38,6,.63,'p')}<div class="mono" style="font-size:18px">63%</div></div><div><div style="font-size:16px;font-weight:600">本月完成度</div><div style="font-size:12px;color:var(--faint);margin-top:4px">进度按各目标百分比平均</div></div>
+  <div style="margin-left:auto;display:flex;gap:12px">${PLAN.goals.map(g=>`<div style="text-align:center;width:90px"><div class="orb" style="width:56px;height:56px;margin:0 auto">${orb(56,23,4,g.v/g.total,'q'+g.id)}<span class="mono" style="font-size:12px">${Math.round(g.v/g.total*100)}</span></div><div style="font-size:11px;color:var(--faint);margin-top:6px">${SUBJECTS[g.k]}</div></div>`).join('')}</div></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">${PLAN.goals.map(g=>`<div class="glass" style="padding:20px 22px"><div style="display:flex;align-items:center;gap:10px">${sub(g.k)}<b style="font-weight:600;font-size:15px;flex:1">${g.t}</b><span style="font-size:11px;color:var(--faint)">${g.type==='COUNT'?'数量型':'清单型'}</span></div>
+  <div style="display:flex;align-items:baseline;gap:8px;margin:14px 0 10px"><span class="mono" style="font-size:32px">${g.v}</span><span class="mono" style="color:var(--faint)">/ ${g.total} ${g.u}</span><span style="margin-left:auto;font-size:12px;color:${g.status.includes('落后')?'var(--warn)':'var(--acc)'}">${g.status}</span></div>
+  <div class="track" style="height:6px"><div style="width:${g.v/g.total*100}%;background:${HX[g.k]};box-shadow:0 0 10px ${HX[g.k]}88"></div></div>
+  ${g.type==='COUNT'?`<div style="display:flex;gap:10px;margin-top:16px">${[['建议每日',g.daily??'—'],['建议每周',g.weekly??g.daily*7],['剩余',g.remainDays+' 天']].map(([l,v])=>`<div style="flex:1;background:#ffffff06;border-radius:12px;padding:10px 12px"><div class="lbl" style="margin-bottom:2px">${l}</div><div class="mono">${v}</div></div>`).join('')}</div>`
+  :`<div style="margin-top:10px">${g.tasks.map(t=>`<div class="li" style="padding:8px 0"><span class="ck ${t.done?'on':''}"></span><span class="${t.done?'off':''}">${t.t}</span><span class="m" style="font-size:11px;color:var(--faint)">${t.due||t.week}</span></div>`).join('')}</div>`}</div>`).join('')}</div>`;
+D.goal=()=>{const g=GOAL;return `<div style="font-size:13px;color:var(--faint)">‹ 计划 / 数量型</div>
+ <div class="title"><h1>${g.t}</h1><div style="display:flex;gap:10px"><span class="btn s">编辑</span><span class="btn s">结转下月</span><span class="btn p s">＋ 今日打卡</span></div></div>
+ <div style="display:grid;grid-template-columns:340px 1fr;gap:20px">
+  <div style="display:flex;flex-direction:column;gap:16px"><div class="glass" style="padding:24px;display:grid;place-items:center"><div class="orb" style="width:240px;height:240px">${orb(240,104,7,.612,'d')}<div style="text-align:center"><div class="mono" style="font-size:48px;font-weight:300">${g.v}</div><div class="mono" style="color:var(--faint)">/ ${g.total} 题</div></div></div></div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${kpi('剩余',g.remaining+' 题')}${kpi('剩余天数',g.remainDays+' 天')}${kpi('计划日均',g.plannedDaily+' 题')}${kpi('按剩余追赶',g.suggestedDaily+' 题','var(--acc)')}</div>
+   <div class="glass" style="padding:16px 18px"><div class="h">备注</div><div style="font-size:13px;color:var(--soft);line-height:1.7">${g.note}</div></div></div>
+  <div style="display:flex;flex-direction:column;gap:16px">
+   <div class="glass" style="padding:20px 22px"><div class="h">打卡日历<i>点日期打卡，点已打卡的日子可取消</i></div><div class="cal" style="gap:6px">${['一','二','三','四','五','六','日'].map(w=>`<div class="wk">${w}</div>`).join('')}${Array(MONTH_OFFSET).fill('<div></div>').join('')}${MONTH.map(d=>{const q=g.checkins[d.d];return `<div class="cell ${d.future?'f':''} ${d.today?'t':''}" style="height:62px;padding:7px 10px;${q?`background:rgba(122,162,255,${0.08+q/55*0.3})`:''}"><span class="mono" style="font-size:11px;color:var(--faint)">${d.d}</span>${q?`<span class="mono" style="margin-top:auto;font-size:16px">+${q}</span>`:''}</div>`}).join('')}</div></div>
+   <div class="glass" style="padding:20px 22px"><div class="h">每周进度<i>实际 / 计划</i></div><div style="display:flex;align-items:flex-end;gap:22px;height:150px">${g.weeks.map(w=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="display:flex;gap:4px;align-items:flex-end;height:110px"><div style="width:18px;height:${w.p/260*110}px;border-radius:6px;border:1px dashed #ffffff33"></div><div style="width:18px;height:${w.a/260*110}px;border-radius:6px;background:${w.a>=w.p?'var(--acc)':'var(--acc2)'};box-shadow:0 0 10px #7AA2FF66"></div></div><span class="mono" style="font-size:11px;color:var(--faint)">${w.w.split('–')[0]}</span></div>`).join('')}</div></div>
+  </div></div>`};
+D.memory=()=>`<div class="title"><h1>时光<small>按时间线回顾每一天</small></h1><div style="display:flex;gap:12px;align-items:center"><span class="pill">只看有想法</span>${pager('2026')}</div></div>
+ <div style="position:relative;max-width:900px;margin:0 auto;width:100%"><div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(#5EEAD455,#7AA2FF22)"></div>
+ ${MEMORY.map((m,i)=>`<div style="display:grid;grid-template-columns:1fr 40px 1fr;align-items:center;margin-bottom:12px">
+  ${i%2?'<div></div>':''}<div style="${i%2?'grid-column:3':''}"><div class="glass" style="padding:16px 20px"><div style="display:flex;gap:10px;align-items:center"><span class="mono" style="font-size:18px">${m.date}</span><span style="font-size:12px;color:var(--faint)">${m.w}</span>${stp(m.state)}<span class="mono" style="margin-left:auto;color:var(--soft);font-size:13px">${fmt(m.min)}</span></div>
+  <div style="display:flex;gap:6px;margin-top:10px">${m.subs.map(sub).join('')}</div>${m.diary?`<div style="font-size:13.5px;color:var(--soft);line-height:1.7;margin-top:10px">${m.diary}</div>`:''}</div></div>
+  <div style="grid-column:2;grid-row:1;display:grid;place-items:center"><i style="width:12px;height:12px;border-radius:50%;background:${SC[m.state]};box-shadow:0 0 12px ${SC[m.state]}"></i></div></div>`).join('')}</div>`;
+D.stats=()=>{const S=STATS,tot=sumMin(S.subjects),maxS=Math.max(...Object.values(S.states));
+ const donut=(()=>{let a=0;const r=70,l=2*Math.PI*r;return `<svg width="180" height="180" style="transform:rotate(-90deg)">${S.subjects.map(s=>{const p=s.m/tot,seg=`<circle cx="90" cy="90" r="${r}" fill="none" stroke="${HX[s.k]}" stroke-width="16" stroke-dasharray="${l*p-3} ${l}" stroke-dashoffset="${-l*a}"/>`;a+=p;return seg}).join('')}</svg>`})();
+ return `<div class="title"><h1>统计<small>本月 · 按学习时长</small></h1><div style="display:flex;gap:12px;align-items:center"><span class="pill on">月</span><span class="pill">年度回顾</span>${pager('2026.11')}</div></div>
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">${kpi('总学习时长',fmt(S.totalMin))}${kpi('学习天数',S.days+' 天')}${kpi('日均',fmt(S.avgMin))}${kpi('最常状态','专注','var(--acc)')}</div>
+ <div class="glass" style="padding:20px 22px"><div class="h">每日学习时长<i>点击进入当天 · 虚线 = 每日目标 6h</i></div>
+  <svg width="100%" height="200" viewBox="0 0 1000 200" preserveAspectRatio="none"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5EEAD4" stop-opacity=".35"/><stop offset="1" stop-color="#5EEAD4" stop-opacity="0"/></linearGradient></defs>
+  <line x1="0" x2="1000" y1="${200-360/480*190}" y2="${200-360/480*190}" stroke="#F2C66D66" stroke-dasharray="6 6"/>
+  ${(()=>{const pts=MONTH.filter(d=>!d.future).map((d,i)=>[i*(1000/29),200-d.min/480*190]);const p=pts.map(q=>q.join(',')).join(' ');return `<polygon points="0,200 ${p} ${pts.at(-1)[0]},200" fill="url(#ar)"/><polyline points="${p}" fill="none" stroke="#5EEAD4" stroke-width="2.5" style="filter:drop-shadow(0 0 6px #5EEAD4)"/>${pts.map((q,i)=>`<circle cx="${q[0]}" cy="${q[1]}" r="${i===14?6:3}" fill="${i===14?'#5EEAD4':'#0b1220'}" stroke="#5EEAD4" stroke-width="2"/>`).join('')}`})()}</svg>
+  <div style="display:flex;justify-content:space-between;font:11px var(--mono);color:var(--faint);margin-top:6px">${[1,5,10,15,20,25,30].map(d=>`<span>11.${String(d).padStart(2,'0')}</span>`).join('')}</div></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+  <div class="glass" style="padding:20px 22px;display:flex;gap:28px;align-items:center"><div style="position:relative;width:180px;height:180px">${donut}<div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center"><div><div class="mono" style="font-size:22px">85.3h</div><div style="font-size:11px;color:var(--faint)">学科分布</div></div></div></div>
+   <div style="flex:1">${S.subjects.map(s=>`<div class="li">${sub(s.k)}<span class="m">${fmt(s.m)}</span><span class="mono" style="width:40px;text-align:right;color:var(--faint);font-size:12px">${Math.round(s.m/tot*100)}%</span></div>`).join('')}</div></div>
+  <div class="glass" style="padding:20px 22px"><div class="h">状态分布<i>15 天</i></div>${Object.entries(S.states).map(([k,n])=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:11px"><span style="width:40px;font-size:13px">${STATES[k].label}</span><div class="track" style="flex:1;height:8px;border-radius:4px"><div style="width:${n/maxS*100}%;background:${SC[k]};box-shadow:0 0 8px ${SC[k]}88;border-radius:4px"></div></div><span class="mono" style="font-size:12px;color:var(--soft);width:34px;text-align:right">${n} 天</span></div>`).join('')}</div>
+ </div>`};
+D.annual=()=>{const A=ANNUAL,mx=Math.max(...A.months.map(m=>m.h)),tot=sumMin(A.subjects);
+ return `<div class="title"><h1>年度回顾<small>2026 · 第 268 个学习日</small></h1><div style="display:flex;gap:12px;align-items:center"><span class="pill">月</span><span class="pill on">年度回顾</span>${pager('2026')}</div></div>
+ <div class="glass" style="padding:30px 34px;display:flex;align-items:center;gap:40px;overflow:hidden"><div><div class="lbl">今年你一共学了</div><div class="mono" style="font:300 96px/1 var(--mono);background:linear-gradient(120deg,#E6ECF5,#5EEAD4 60%,#7AA2FF);-webkit-background-clip:text;color:transparent">${A.totalH}<span style="font-size:32px">h</span></div></div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-left:auto">${[['学习天数',A.days+' 天'],['最长连续',A.longest+' 天'],['最常状态',STATES[A.topState].label]].map(([l,v])=>`<div><div class="lbl">${l}</div><div class="val" style="font-size:30px">${v}</div></div>`).join('')}</div></div>
+ <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px">
+  <div class="glass" style="padding:20px 22px"><div class="h">月度学习时长<i>点击进入该月</i></div><div style="display:flex;align-items:flex-end;gap:14px;height:230px">${A.months.map(m=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><span class="mono" style="font-size:11px;color:var(--soft)">${m.h||''}</span><div style="width:100%;height:${m.h/mx*180}px;min-height:3px;border-radius:8px;background:${m.future?'#ffffff10':`linear-gradient(#5EEAD4,#7AA2FF${m.h===mx?'':'88'})`};${m.h===mx?'box-shadow:0 0 18px #5EEAD488':''}"></div><span style="font-size:11px;color:var(--faint)">${m.m}月</span></div>`).join('')}</div></div>
+  <div class="glass" style="padding:20px 22px"><div class="h">年度学科分布</div>${A.subjects.map(s=>`<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px"><span style="color:${HX[s.k]}">${SUBJECTS[s.k]}</span><span class="mono" style="color:var(--soft)">${s.h}h · ${Math.round(s.h/tot*100)}%</span></div><div class="track" style="height:8px;border-radius:4px"><div style="width:${s.h/A.subjects[0].h*100}%;background:${HX[s.k]};box-shadow:0 0 10px ${HX[s.k]}88;border-radius:4px"></div></div></div>`).join('')}</div>
+ </div>`};
+D.search=()=>`<div style="max-width:880px;margin:30px auto 0;width:100%;display:flex;flex-direction:column;gap:18px">
+ <div class="in f" style="font-size:20px;padding:18px 22px;border-radius:18px"><span style="color:var(--acc)">⌕</span><span>${SEARCH.q}</span><span class="ph" style="margin-left:auto;font-size:13px">3 条结果 · ESC</span></div>
+ <div style="display:flex;gap:8px">${['全部 3','学科 1','日记 1','备注 1'].map((t,i)=>`<span class="pill ${i===0?'on':''}">${t}</span>`).join('')}</div>
+ ${SEARCH.results.map(r=>`<div class="glass" style="padding:18px 22px"><div style="display:flex;gap:10px;align-items:center"><span class="mono" style="font-size:13px;color:var(--soft)">${r.date}</span>${r.k?sub(r.k):''}<span class="sub" style="color:var(--faint);background:#ffffff08">${{subject:'学科',diary:'日记',note:'备注'}[r.hit]}</span><span style="margin-left:auto">${stp(r.state)}</span></div><div style="font-size:15px;line-height:1.7;margin-top:10px">${r.text}</div></div>`).join('')}
+ <div style="text-align:center;font-size:12px;color:var(--faint)">会同时匹配日记、学科名称和备注 · ⌘K 随时唤起</div></div>`;
+D.settings=()=>{const sec=(t,d,b)=>`<div class="glass" style="padding:20px 24px;display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:center"><div><div style="font-size:15px;font-weight:600">${t}</div><div style="font-size:12px;color:var(--faint);margin-top:5px">${d}</div></div><div>${b}</div></div>`;
+ return `<div class="title"><h1>设置<small>考研目标、专注、外观与数据</small></h1></div>
+ ${sec('考研目标','倒计时据此计算',`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="in">${SETTINGS.examName}</div><div class="in mono">${SETTINGS.examDate}</div></div>`)}
+ ${sec('每日学习目标','今日环与日历亮度以此为满',`<div style="display:flex;gap:8px">${['4h','5h','6h','8h','10h'].map(t=>`<span class="pill ${t==='6h'?'on':''}">${t}</span>`).join('')}</div>`)}
+ ${sec('专注时长','番茄钟默认时长与休息',`<div style="display:flex;gap:8px;align-items:center">${['25','45','50','90'].map(t=>`<span class="pill ${t==='50'?'on':''}">${t} 分钟</span>`).join('')}<span style="color:var(--faint);font-size:13px;margin-left:10px">休息 10 分钟 · 结束提示音 开</span></div>`)}
+ ${sec('科目预设','记一条 / 专注时的快捷选项',`<div style="display:flex;gap:8px">${SUBJECT_KEYS.map(sub).join('')}<span class="sub" style="color:var(--faint);border:1px dashed #ffffff22">+ 添加</span></div>`)}
+ ${sec('外观','夜读为本版默认',`<div style="display:flex;gap:8px"><span class="pill on">夜读 · 深海</span><span class="pill">晨读 · 浅色</span><span class="pill">跟随系统</span><span class="pill">星空背景 开</span></div>`)}
+ ${sec('自定义状态','会以色点显示在日历上',`<div style="display:flex;gap:8px">${Object.keys(STATES).map(stp).join('')}<span class="sub" style="color:#8A8F98;border:1px solid #8A8F9855">摆烂 ×</span><span class="sub" style="color:var(--faint);border:1px dashed #ffffff22">+</span></div>`)}
+ ${sec('数据管理','JSON 兼容 v1 / v2',`<div style="display:flex;gap:10px"><span class="btn s">导出 JSON</span><span class="btn s">导入 JSON</span><span class="btn s">IndexedDB → 服务器</span></div>`)}`};
+D.login=()=>`<div style="flex:1;display:grid;place-items:center"><div style="text-align:center;width:380px">
+ <div class="orb" style="width:200px;height:200px;margin:0 auto 26px">${orb(200,86,4,.75,'l')}<div><div class="mono" style="font:300 44px var(--mono)">${EXAM.left}</div><div style="font-size:12px;color:var(--faint)">days to go</div></div></div>
+ <div style="font-size:24px;font-weight:600">夜读</div><div style="font-size:13px;color:var(--faint);margin:6px 0 24px">考研手帐 · 把每一天过成可以复盘的一天</div>
+ <div class="glass" style="padding:22px;text-align:left"><div class="in f">somehow</div><div class="in" style="margin-top:12px"><span class="ph">密码</span></div><div class="btn p" style="width:100%;justify-content:center;margin-top:18px">进入</div></div>
+ <div style="font-size:12px;color:var(--faint);margin-top:14px">与博客共用账号 · 仅 ADMIN</div></div></div>`;
+const formLearn=()=>`<h3>记一条学习<i>×</i></h3>
+ <div class="flab">科目</div><div style="display:flex;gap:8px">${SUBJECT_KEYS.map((k,i)=>`<span class="sub" style="padding:7px 14px;font-size:13px;color:${HX[k]};background:${HX[k]}${i===1?'33':'12'};${i===1?`box-shadow:0 0 0 1px ${HX[k]},0 0 12px ${HX[k]}55`:''}">${SUBJECTS[k]}</span>`).join('')}<span class="sub" style="padding:7px 14px;color:var(--faint);border:1px dashed #ffffff22">其他</span></div>
+ <div class="flab">内容</div><div class="in f">王道 7.4 课后选择题</div>
+ <div class="flab">时长</div><div style="display:flex;gap:10px;align-items:center"><div class="in mono" style="width:120px;justify-content:space-between"><span>1h 15m</span></div>${['25m','45m','1h','2h'].map(t=>`<span class="pill">${t}</span>`).join('')}</div>
+ <div class="flab">备注</div><div class="in" style="height:64px;align-items:flex-start"><span class="ph">错题、卡点、明天要补的…</span></div>
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px"><span style="font-size:12px;color:var(--faint)">也可以 <span style="color:var(--acc)">开始专注</span> 自动计时</span><span style="display:flex;gap:10px"><span class="btn s">取消</span><span class="btn p s">保存</span></span></div>`;
+D['learn-form']=()=>D.today()+`<div class="scrim"><div class="modal">${formLearn()}</div></div>`;
+D['goal-form']=()=>D.plan()+`<div class="scrim"><div class="modal"><h3>新建 11 月目标<i>×</i></h3>
+ <div class="flab">类型</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="in f" style="flex-direction:column;align-items:flex-start;gap:2px"><b style="font-weight:600">数量型</b><span style="font-size:12px;color:var(--faint)">刷题 / 单词 / 套卷，按数字打卡</span></div><div class="in" style="flex-direction:column;align-items:flex-start;gap:2px"><b style="font-weight:600">清单型</b><span style="font-size:12px;color:var(--faint)">章节 / 知识点，逐项勾选</span></div></div>
+ <div class="flab">标题</div><div class="in">张宇 1000 题 · 基础篇</div>
+ <div style="display:grid;grid-template-columns:1fr 110px;gap:10px"><div><div class="flab">目标数量</div><div class="in mono">1000</div></div><div><div class="flab">单位</div><div class="in">题</div></div></div>
+ <div class="flab">科目</div><div style="display:flex;gap:8px">${SUBJECT_KEYS.map((k,i)=>`<span class="sub" style="padding:6px 12px;color:${HX[k]};background:${HX[k]}${i===0?'33':'12'}">${SUBJECTS[k]}</span>`).join('')}</div>
+ <div style="margin-top:16px;padding:12px 14px;border-radius:12px;background:#5EEAD40d;border:1px solid #5EEAD433;font-size:13px;color:var(--soft)">拆分预览：日均 <b class="mono" style="color:var(--acc)">34 题</b> · 每周 <b class="mono" style="color:var(--acc)">234 题</b> · 共 30 天</div>
+ <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px"><span class="btn s">取消</span><span class="btn p s">创建</span></div></div></div>`;
+
+const M={};
+const mTop=(t,r=`<span class="mono" style="color:var(--soft);font-size:13px">D-${EXAM.left}</span>`)=>`<div class="top" style="padding:0;gap:0"><b><i></i>${t}</b><span style="margin-left:auto">${r}</span></div>`;
+M.focus=()=>`${mTop('夜读')}<div style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:10px"><div class="chip"><i></i>专注中 · 第 3 个番茄</div>
+ <div class="orb" style="width:270px;height:270px">${orb(270,120,5,.62,'m')}<div style="text-align:center"><div class="timer" style="font-size:58px">38:12</div><div style="font-size:13px;color:var(--soft)"><span style="color:${HX.cs}">● 408</span> 王道 7.4 课后题</div></div></div>
+ <div style="display:flex;gap:12px"><span class="btn">暂停</span><span class="btn p">完成并记录</span></div></div>
+ <div class="glass" style="padding:16px"><div class="h">今日分布<i class="mono">${fmt(totalMin)}</i></div><div class="tl" style="margin-bottom:10px">${tl()}</div><div class="lg">${lg()}</div></div>
+ <div class="glass" style="padding:14px 16px 6px"><div class="h" style="margin-bottom:4px">接下来<i>2 / 4</i></div>${tasks().split('</div>').slice(2).join('</div>')}</div>`;
+M.today=()=>`${mTop('11.15 周日')}${countdown()}
+ <div class="glass" style="padding:16px;display:flex;gap:16px;align-items:center"><div class="orb" style="width:76px;height:76px">${orb(76,32,5,.96,'mt')}<span class="mono" style="font-size:14px">96%</span></div><div style="flex:1"><div class="val">${fmt(totalMin)}</div><div class="tl" style="margin-top:8px">${tl()}</div></div></div>
+ <div class="glass" style="padding:6px 16px">${TODAY.learnings.map(l=>`<div class="li">${sub(l.k)}<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.t}</span><span class="m">${fmt(l.m)}</span></div>`).join('')}</div>
+ <div style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(STATES).map(([k,v])=>`<span class="pill ${k===TODAY.state?'on':''}" style="padding:5px 11px;font-size:12px">${v.label}</span>`).join('')}</div>`;
+M.calendar=()=>`${mTop('日历',pager('11'))}<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${[['记录','15 天'],['时长','85.3h'],['达标','8 天']].map(([l,v])=>`<div class="glass" style="padding:10px 12px;border-radius:14px"><div class="lbl">${l}</div><div class="mono">${v}</div></div>`).join('')}</div>
+ <div class="glass" style="padding:12px"><div class="cal" style="gap:4px">${['一','二','三','四','五','六','日'].map(w=>`<div class="wk" style="font-size:11px">${w}</div>`).join('')}${Array(MONTH_OFFSET).fill('<div></div>').join('')}${MONTH.map(d=>d.future?`<div class="cell f" style="height:50px;padding:5px;border-radius:9px"><span class="mono" style="font-size:10px">${d.d}</span></div>`:`<div class="cell ${d.today?'t':''}" style="height:50px;padding:5px;border-radius:9px;background:radial-gradient(30px 24px at 50% 120%,${SC[d.state]}55,transparent),var(--glass)"><span class="mono" style="font-size:10px">${d.d}</span><span class="mono" style="font-size:11px;margin-top:auto">${(d.min/60).toFixed(1)}</span></div>`).join('')}</div></div>
+ <div class="glass" style="padding:14px 16px"><div class="h" style="margin-bottom:8px">11.15 · 今天<i class="mono">${fmt(totalMin)}</i></div><div style="display:flex;gap:6px">${SUBJECT_KEYS.map(sub).join('')}</div></div>`;
+M.plan=()=>`${mTop('月计划','<span class="btn p s" style="padding:5px 12px">＋</span>')}<div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:14px"><div class="orb" style="width:64px;height:64px">${orb(64,27,5,.63,'mp')}<span class="mono" style="font-size:13px">63%</span></div><div><div style="font-weight:600">本月完成度</div><div style="font-size:12px;color:var(--faint)">4 个目标 · 剩余 15 天</div></div></div>
+ ${PLAN.goals.map(g=>`<div class="glass" style="padding:14px 16px"><div style="display:flex;gap:8px;align-items:center">${sub(g.k)}<b style="font-weight:600;font-size:14px;flex:1">${g.t}</b><span class="mono" style="font-size:12px;color:var(--soft)">${g.v}/${g.total}</span></div><div class="track" style="margin:10px 0 6px;height:5px"><div style="width:${g.v/g.total*100}%;background:${HX[g.k]};box-shadow:0 0 8px ${HX[g.k]}88"></div></div><div style="font-size:12px;color:var(--faint)">${g.status}</div></div>`).join('')}`;
+M.goal=()=>{const g=GOAL;return `<div style="font-size:13px;color:var(--faint)">‹ 计划</div><div style="font-size:20px;font-weight:600">${g.t}</div>
+ <div class="glass" style="padding:18px;display:grid;place-items:center"><div class="orb" style="width:170px;height:170px">${orb(170,74,6,.612,'mg')}<div style="text-align:center"><div class="mono" style="font-size:34px;font-weight:300">${g.v}</div><div class="mono" style="color:var(--faint);font-size:12px">/ 1000 题</div></div></div><div style="font-size:13px;color:var(--acc);margin-top:10px">按剩余追赶 26 题 / 天</div></div>
+ <div class="glass" style="padding:12px"><div class="cal" style="gap:4px">${Array(MONTH_OFFSET).fill('<div></div>').join('')}${MONTH.map(d=>{const q=g.checkins[d.d];return `<div class="cell ${d.future?'f':''} ${d.today?'t':''}" style="height:42px;padding:4px 5px;border-radius:8px;${q?`background:rgba(122,162,255,${0.08+q/55*0.3})`:''}"><span class="mono" style="font-size:9px;color:var(--faint)">${d.d}</span>${q?`<span class="mono" style="font-size:11px;margin-top:auto">+${q}</span>`:''}</div>`}).join('')}</div></div>
+ <div class="btn p" style="justify-content:center">＋ 今日打卡</div>`};
+M.stats=()=>`${mTop('统计 · 11 月')}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${kpi('总时长','85h 20m')}${kpi('日均','5h 41m')}</div>
+ <div class="glass" style="padding:14px 16px"><div class="h">每日时长</div><svg width="100%" height="120" viewBox="0 0 300 120" preserveAspectRatio="none">${(()=>{const pts=MONTH.filter(d=>!d.future).map((d,i)=>[i*(300/29),120-d.min/480*112]);const p=pts.map(q=>q.join(',')).join(' ');return `<polygon points="0,120 ${p} ${pts.at(-1)[0]},120" fill="#5EEAD422"/><polyline points="${p}" fill="none" stroke="#5EEAD4" stroke-width="2"/>`})()}</svg></div>
+ <div class="glass" style="padding:14px 16px"><div class="h">学科分布</div><div class="tl" style="height:10px;margin-bottom:10px">${STATS.subjects.map(s=>`<div style="flex:${s.m};background:${HX[s.k]}"></div>`).join('')}</div>${STATS.subjects.map(s=>`<div class="li" style="padding:8px 0">${sub(s.k)}<span class="m">${fmt(s.m)}</span></div>`).join('')}</div>`;
+M['learn-form']=()=>M.today()+`<div style="position:absolute;inset:0;background:#02040acc;z-index:5" data-float></div><div class="sheet" data-float><div class="grab"></div>${formLearn().replace(/<span class="pill">2h<\/span>/,'')}</div>`;
+
+const page=getPage(), nav=activeNav[page]||page; if(!D[page]) document.body.dataset.skip='1';
+const body=(D[page]||D.focus)();
+document.getElementById('desk').innerHTML=stars(90)+(page==='login'?`<div class="body">${body}</div>`:`<div class="top"><b><i></i>夜读</b>${NAV.map(([p,n])=>`<span class="${p===nav?'on':''}">${n}</span>`).join('')}<span style="margin-left:auto;display:flex;gap:22px;align-items:center"><span class="${page==='search'?'on':''}">⌕ 搜索</span><span class="${page==='settings'?'on':''}">设置</span><span class="mono">23:41 · D-${EXAM.left}</span></span></div><div class="body">${body}</div>`);
+const mob=document.getElementById('mobile');
+if(M[page]){mob.innerHTML=stars(40)+`<div class="pin">${M[page]()}</div><div class="tab">${[['today','今日'],['plan','计划'],['focus','专注'],['calendar','日历'],['stats','统计']].map(([p,n])=>`<span class="${p===nav?'on':''} ${p==='focus'?'fab':''}">${n}</span>`).join('')}</div>`;
+ mob.querySelectorAll('[data-float]').forEach(e=>mob.appendChild(e));}
+else mob.remove();
+</script></body></html>
