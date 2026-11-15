@@ -268,6 +268,34 @@ func TestApplyRefusesNonEmpty(t *testing.T) {
 	}
 }
 
+func TestForceWipeScopesToUser(t *testing.T) {
+	sqlDB := testDB(t)
+	uid := testUser(t, sqlDB)
+	other, err := auth.CreateUser(context.Background(), sqlDB, "other", "pw-123456")
+	if err != nil {
+		t.Fatalf("create other: %v", err)
+	}
+	// other user owns one business row; a -force reimport for uid must not touch it
+	if _, err := sqlDB.Exec(
+		`INSERT INTO subject (id,user_id,name,color,sort,created_at,updated_at)
+		 VALUES ('sub-other', ?, 'other-科目', '#000000', 0, 1, 1)`, other.ID); err != nil {
+		t.Fatalf("seed other: %v", err)
+	}
+	src := fixtureSource()
+	if _, err := Apply(context.Background(), sqlDB, src, uid, false, "", nil); err != nil {
+		t.Fatalf("first apply: %v", err)
+	}
+	if _, err := Apply(context.Background(), sqlDB, src, uid, true,
+		filepath.Join(t.TempDir(), "pre.db"), nil); err != nil {
+		t.Fatalf("force apply: %v", err)
+	}
+	var n int64
+	sqlDB.QueryRow(`SELECT COUNT(*) FROM subject WHERE user_id=?`, other.ID).Scan(&n)
+	if n != 1 {
+		t.Fatalf("other user's subject was wiped: %d", n)
+	}
+}
+
 func TestFilterUser(t *testing.T) {
 	src := fixtureSource()
 	// inject a second user's rows

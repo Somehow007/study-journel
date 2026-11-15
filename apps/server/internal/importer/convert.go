@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"journal/internal/bootstrap"
 	"journal/internal/db"
 	"journal/internal/domain"
 	"journal/internal/id"
@@ -70,9 +71,11 @@ func Convert(src *Source, builtinIDs map[string]string, userID string, now int64
 		if created <= 0 {
 			created = now
 		}
+		// custom states sort after the builtins, matching NextStateSort.
 		c.States = append(c.States, db.CreateStateParams{
 			ID: m.ID, UserID: userID, Label: label, Color: color,
-			Polarity: 0, Sort: int64(i), CreatedAt: created, UpdatedAt: created,
+			Polarity: 0, Sort: int64(len(bootstrap.States)) + int64(i),
+			CreatedAt: created, UpdatedAt: created,
 		})
 		validMoodIDs[m.ID] = true
 	}

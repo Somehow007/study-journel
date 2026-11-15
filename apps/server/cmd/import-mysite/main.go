@@ -124,7 +124,12 @@ func run(args []string) int {
 		}
 		log.Info("目标用户", "username", *username, "id", userID, "db", *dbPath)
 
-		conv, err := importer.Apply(ctx, sqlDB, src, userID, *force, *backup, log)
+		// default force-backup next to the db file (not the cwd)
+		backupPath := *backup
+		if *force && backupPath == "" {
+			backupPath = fmt.Sprintf("%s.bak-%s", *dbPath, time.Now().Format("20060102-150405"))
+		}
+		conv, err := importer.Apply(ctx, sqlDB, src, userID, *force, backupPath, log)
 		if err != nil {
 			log.Error("写入失败", "err", err)
 			return 1

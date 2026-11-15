@@ -15,17 +15,26 @@ import (
 	"journal/internal/db"
 )
 
-// businessTables lists every v3 business table in FK-safe delete order
-// (children before parents). user/session/setting are never touched.
-var businessTables = []string{
-	"focus_session", "goal_checkin", "goal_task", "goal", "score",
-	"entry", "day", "subject", "state",
+// businessDeletes clears one user's business rows in FK-safe order
+// (children before parents). user/session/setting are never touched; other
+// users' rows are left alone.
+var businessDeletes = []string{
+	`DELETE FROM focus_session WHERE user_id = ?`,
+	`DELETE FROM goal_checkin WHERE goal_id IN (SELECT id FROM goal WHERE user_id = ?)`,
+	`DELETE FROM goal_task WHERE goal_id IN (SELECT id FROM goal WHERE user_id = ?)`,
+	`DELETE FROM goal WHERE user_id = ?`,
+	`DELETE FROM score WHERE user_id = ?`,
+	`DELETE FROM entry WHERE user_id = ?`,
+	`DELETE FROM day WHERE user_id = ?`,
+	`DELETE FROM subject WHERE user_id = ?`,
+	`DELETE FROM state WHERE user_id = ?`,
 }
 
 // Apply writes src into target for userID inside one transaction. The target
 // must be migrated already. A non-empty target is refused unless force is
 // set, in which case the DB is first backed up (VACUUM INTO backupPath) and
-// all business rows are wiped (user/session/setting preserved).
+// the user's business rows are wiped inside the same transaction as the
+// reimport — a failed import leaves the prior data intact.
 func Apply(ctx context.Context, target *sql.DB, src *Source, userID string,
 	force bool, backupPath string, log *slog.Logger) (*Converted, error) {
 
@@ -46,10 +55,7 @@ func Apply(ctx context.Context, target *sql.DB, src *Source, userID string,
 		if err := backupDB(ctx, target, backupPath); err != nil {
 			return nil, fmt.Errorf("备份失败: %w", err)
 		}
-		log.Info("force 模式：已备份并清空业务表", "backup", backupPath)
-		if err := wipeBusiness(ctx, target); err != nil {
-			return nil, fmt.Errorf("清空业务表失败: %w", err)
-		}
+		log.Info("force 模式：已备份，将在事务内清空并重建", "backup", backupPath)
 	}
 
 	now := time.Now().UnixMilli()
@@ -59,7 +65,17 @@ func Apply(ctx context.Context, target *sql.DB, src *Source, userID string,
 		return nil, err
 	}
 	defer tx.Rollback()
+	// self-FK (goal.carried_from) and cross-row refs are checked at commit.
+	if _, err := tx.ExecContext(ctx, "PRAGMA defer_foreign_keys=ON"); err != nil {
+		return nil, err
+	}
 	qt := q.WithTx(tx)
+
+	if !empty {
+		if err := wipeUserBusiness(ctx, tx, userID); err != nil {
+			return nil, fmt.Errorf("清空业务表失败: %w", err)
+		}
+	}
 
 	builtinIDs, err := bootstrap.EnsureStates(ctx, qt, userID, now)
 	if err != nil {
@@ -150,21 +166,13 @@ func backupDB(ctx context.Context, target *sql.DB, path string) error {
 	return err
 }
 
-// wipeBusiness deletes all business rows in FK-safe order. Runs in one tx.
-func wipeBusiness(ctx context.Context, target *sql.DB) error {
-	tx, err := target.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	// self-FK (goal.carried_from) and cross-row refs are checked at commit.
-	if _, err := tx.ExecContext(ctx, "PRAGMA defer_foreign_keys=ON"); err != nil {
-		return err
-	}
-	for _, table := range businessTables {
-		if _, err := tx.ExecContext(ctx, "DELETE FROM "+table); err != nil {
-			return fmt.Errorf("delete %s: %w", table, err)
+// wipeUserBusiness deletes all of one user's business rows. Runs inside the
+// caller's transaction so a failed import rolls back the wipe too.
+func wipeUserBusiness(ctx context.Context, tx *sql.Tx, userID string) error {
+	for _, stmt := range businessDeletes {
+		if _, err := tx.ExecContext(ctx, stmt, userID); err != nil {
+			return fmt.Errorf("wipe: %w (stmt: %s)", err, stmt)
 		}
 	}
-	return tx.Commit()
+	return nil
 }
