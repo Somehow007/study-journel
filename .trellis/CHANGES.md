@@ -10,3 +10,4 @@
 - 2026-11-15 | 任务归档：11-15-journal-v6-design | → `.trellis/tasks/archive/2026-11/11-15-journal-v6-design/prd.md`
 - 2026-11-15 | 仓库搬迁：study-journey 从 mysite 工作目录移出，与 mysite 平级（../study-journey）；git/remote/未跟踪文件完整；预览服务已在新路径重启 | → 本 commit
 - 2026-11-15 | owner 决策定稿：D1=Go(chi+sqlc+modernc sqlite 纯Go驱动) D2=SQLite D3=独立账号(argon2id+Cookie) D4=/journal/子路径 D5=B格纸先行(A/C上线后做扩展主题)；architecture/roadmap/data-model/separation-plan/AGENTS 已同步 | → `docs/architecture.md` §7 `docs/roadmap.md`
+- 2026-11-15 | M1 完成：仓库平移 pnpm workspace（apps/web）+ Go 后端骨架（health/auth/migrate，:8090，go1.27.4）；verify.sh 升级全绿；⚠️ mysite server-deploy.sh 手帐段与新布局不兼容，M4 前勿跑 | → `.trellis/tasks/archive/2026-11/11-15-m1-go-backend/prd.md`
