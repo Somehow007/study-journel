@@ -7,7 +7,8 @@ export interface GoalCompleteValues {
   quantity?: number;
   durationMin?: number;
   note?: string;
-  syncLearning: boolean;
+  /** 勾选后服务端同步生成一条关联学习条目（entry.source='goal'） */
+  createEntry: boolean;
 }
 
 interface GoalCompleteSheetProps {
@@ -49,7 +50,7 @@ export default function GoalCompleteSheet({
   const [hours, setHours] = useState(defaultDurationMin ? Math.floor(defaultDurationMin / 60) : 0);
   const [minutes, setMinutes] = useState(defaultDurationMin ? defaultDurationMin % 60 : 0);
   const [note, setNote] = useState(defaultNote);
-  const [syncLearning, setSyncLearning] = useState(false);
+  const [createEntry, setCreateEntry] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -60,7 +61,7 @@ export default function GoalCompleteSheet({
       setError('完成数量至少为 1');
       return;
     }
-    if (syncLearning && durationMin < 1) {
+    if (createEntry && durationMin < 1) {
       setError('同步到今日学习需要填写时长');
       return;
     }
@@ -71,7 +72,7 @@ export default function GoalCompleteSheet({
         quantity: mode === 'count' ? quantity : undefined,
         durationMin: durationMin >= 1 ? durationMin : undefined,
         note: note.trim() || undefined,
-        syncLearning,
+        createEntry,
       });
     } finally {
       setSubmitting(false);
@@ -127,7 +128,7 @@ export default function GoalCompleteSheet({
           </div>
         </div>
 
-        <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">感想（可选）</label>
+        <label className="mb-4 block font-sans text-small text-[var(--ink-soft)]">感想（可选）</label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -140,11 +141,11 @@ export default function GoalCompleteSheet({
         <label className="mb-4 flex items-center gap-2 font-sans text-small text-[var(--ink-soft)]">
           <input
             type="checkbox"
-            checked={syncLearning}
-            onChange={(e) => setSyncLearning(e.target.checked)}
+            checked={createEntry}
+            onChange={(e) => setCreateEntry(e.target.checked)}
             className="h-4 w-4 accent-[var(--brand)]"
           />
-          同步时长到今日学习
+          同时记为今日学习时长
         </label>
 
         {error && <p className="mb-3 font-sans text-caption text-[var(--danger)]">{error}</p>}

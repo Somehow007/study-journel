@@ -2,12 +2,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
-import { getRecordsByMonth } from '../lib/api';
-import { formatPeriod, getGoalsByPeriod } from '../lib/goalApi';
-import { useApiQuery } from '../lib/useApiQuery';
-import { getCalendarDays, isToday, formatDate, totalDuration, parseDate, formatDuration } from '../lib/dateUtils';
+import { useDayMarks, useGoalsByPeriod } from '../lib/queries';
+import { useStateConfigs } from '../lib/stateUtils';
+import { formatPeriod } from '../lib/goalApi';
+import { monthBounds } from '../lib/domain';
+import { getCalendarDays, isToday, formatDate, parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
-import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useIsDark } from '../lib/useIsDark';
 import DateCard from '../components/DateCard';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
@@ -19,26 +19,16 @@ export default function MonthView() {
   const { currentMonth, setCurrentMonth, dailyGoalMin } = useApp();
   const { year, month } = currentMonth;
 
-  const { data: records, loading, error, refresh } = useApiQuery(
-    () => getRecordsByMonth(year, month),
-    [year, month],
-  );
   const period = formatPeriod(year, month);
-  const { data: goalMonth } = useApiQuery(() => getGoalsByPeriod(period), [period]);
+  const [from, to] = monthBounds(period);
+  const { data: marks, isPending, error, refetch } = useDayMarks(from, to);
+  const { data: goalMonth } = useGoalsByPeriod(period);
+  const allStates = useStateConfigs();
 
-  const recordMap = useMemo(() => {
-    const map = new Map<string, { mood: string | null; totalMin: number; diary: string }>();
-    if (records) {
-      for (const r of records) {
-        map.set(r.date, {
-          mood: r.mood,
-          totalMin: totalDuration(r.learnings),
-          diary: r.diary,
-        });
-      }
-    }
+  const markMap = useMemo(() => {
+    const map = new Map((marks ?? []).map((m) => [m.date, m]));
     return map;
-  }, [records]);
+  }, [marks]);
 
   const days = getCalendarDays(year, month);
   const todayStr = formatDate(new Date());
@@ -60,11 +50,13 @@ export default function MonthView() {
   };
 
   const summary = useMemo(() => {
-    if (!records) return { count: 0, totalMin: 0 };
-    const count = records.filter((r) => r.mood || r.learnings.length > 0 || r.diary).length;
-    const totalMin = records.reduce((sum, r) => sum + totalDuration(r.learnings), 0);
+    const list = marks ?? [];
+    const count = list.filter(
+      (m) => m.stateId || m.totalMin > 0 || m.entryCount > 0 || m.diaryPreview,
+    ).length;
+    const totalMin = list.reduce((sum, m) => sum + m.totalMin, 0);
     return { count, totalMin };
-  }, [records]);
+  }, [marks]);
 
   const formatHM = (min: number) => {
     const h = Math.floor(min / 60);
@@ -72,10 +64,8 @@ export default function MonthView() {
     return `${h}h ${String(m).padStart(2, '0')}m`;
   };
 
-  const allMoods = useAllMoodConfigs();
-
-  if (loading && !records) return <QueryLoading />;
-  if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
+  if (isPending && !marks) return <QueryLoading />;
+  if (error && !marks) return <QueryError message={error.message} onRetry={() => void refetch()} />;
 
   return (
     <div>
@@ -122,8 +112,8 @@ export default function MonthView() {
 
         <div className="grid grid-cols-7 gap-1 md:gap-2">
           {days.map((day) => {
-            const record = recordMap.get(day.dateStr);
-            const mark = goalMonth?.dayMarks?.[day.dateStr];
+            const mark = markMap.get(day.dateStr);
+            const goalMark = goalMonth?.dayMarks?.[day.dateStr];
             const d = parseDate(day.dateStr);
             const isFuture = d > now;
             return (
@@ -134,12 +124,12 @@ export default function MonthView() {
                 isCurrentMonth={day.isCurrentMonth}
                 isToday={isToday(day.dateStr)}
                 isFuture={isFuture}
-                mood={record?.mood ?? null}
-                totalMin={record?.totalMin ?? 0}
-                diary={record?.diary ?? ''}
+                stateId={mark?.stateId ?? null}
+                totalMin={mark?.totalMin ?? 0}
+                diary={mark?.diaryPreview ?? ''}
                 goalMin={dailyGoalMin}
-                taskTotal={mark?.total ?? 0}
-                taskDone={mark?.done ?? 0}
+                taskTotal={goalMark?.total ?? mark?.taskTotal ?? 0}
+                taskDone={goalMark?.done ?? mark?.taskDone ?? 0}
                 onClick={() => navigate(`/day/${day.dateStr}`)}
               />
             );
@@ -148,11 +138,11 @@ export default function MonthView() {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline)] pt-3">
           <div className="flex flex-wrap items-center gap-3 font-sans text-caption text-[var(--ink-faint)]">
-            {allMoods.map((config) => (
-              <span key={config.type} className="flex items-center gap-1.5">
+            {allStates.map((config) => (
+              <span key={config.id} className="flex items-center gap-1.5">
                 <span
                   className="h-2 w-2 rounded-full"
-                  style={{ background: isDark ? config.dark.solid : config.solid }}
+                  style={{ background: isDark ? config.dark.solid : config.color }}
                 />
                 <span>{config.label}</span>
               </span>
@@ -164,7 +154,7 @@ export default function MonthView() {
         </div>
       </div>
 
-      {(records?.length ?? 0) === 0 && (
+      {(marks?.length ?? 0) === 0 && (
         <QueryEmpty
           title="这个月还没有记录"
           hint="点击今天的格子，开始写第一条"

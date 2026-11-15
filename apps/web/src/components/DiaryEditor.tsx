@@ -11,10 +11,9 @@ marked.setOptions({
 interface DiaryEditorProps {
   value: string;
   onSave: (text: string) => Promise<void>;
-  mood: string | null;
 }
 
-export default function DiaryEditor({ value, onSave, mood: _mood }: DiaryEditorProps) {
+export default function DiaryEditor({ value, onSave }: DiaryEditorProps) {
   const [displayValue, setDisplayValue] = useState(value);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedTime, setLastSavedTime] = useState<string>('');

@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getRecordsByYear } from '../lib/api';
-import { useApiQuery } from '../lib/useApiQuery';
-import { parseDate, formatDuration, totalDuration } from '../lib/dateUtils';
+import { useExportData, useStates } from '../lib/queries';
+import { findStateConfig, type StateConfig } from '../lib/stateUtils';
+import { parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
-import { useAllMoodConfigs } from '../lib/moodUtils';
 import { useIsDark } from '../lib/useIsDark';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import { Pressable } from '../components/ui/Pressable';
-import type { DayRecord } from '../types';
+import type { ExportData, JournalState } from '../lib/types/api';
 
 const DIARY_ONLY_KEY = 'study-journal-memory-diary-only';
 
@@ -30,9 +29,62 @@ function stripMarkdown(text: string): string {
     .trim();
 }
 
-function groupByMonth(records: DayRecord[]): { key: string; label: string; items: DayRecord[] }[] {
-  const map = new Map<string, DayRecord[]>();
-  for (const r of records) {
+interface MemEntry {
+  id: string;
+  subjectName: string;
+  subjectColor: string;
+  durationMin: number;
+}
+
+interface MemItem {
+  date: string;
+  stateId: string | null;
+  diary: string;
+  entries: MemEntry[];
+  totalMin: number;
+}
+
+/** 由 v3 导出数据派生「按日」视图：day 行（state/diary）+ 当日 entries */
+function buildMemItems(data: ExportData): MemItem[] {
+  const subjectById = new Map(data.subjects.map((s) => [s.id, s]));
+  const dayByDate = new Map(data.days.map((d) => [d.date, d]));
+  const entriesByDate = new Map<string, MemEntry[]>();
+  for (const e of data.entries) {
+    const subj = subjectById.get(e.subjectId);
+    const list = entriesByDate.get(e.date) ?? [];
+    list.push({
+      id: e.id,
+      subjectName: subj?.name ?? '—',
+      subjectColor: subj?.color ?? 'var(--keyline)',
+      durationMin: e.durationMin,
+    });
+    entriesByDate.set(e.date, list);
+  }
+
+  const dates = new Set<string>();
+  for (const d of data.days) {
+    if (d.stateId || d.diary.trim()) dates.add(d.date);
+  }
+  for (const e of data.entries) dates.add(e.date);
+
+  const items: MemItem[] = [];
+  for (const date of dates) {
+    const day = dayByDate.get(date);
+    const entries = entriesByDate.get(date) ?? [];
+    items.push({
+      date,
+      stateId: day?.stateId ?? null,
+      diary: day?.diary ?? '',
+      entries,
+      totalMin: entries.reduce((sum, e) => sum + e.durationMin, 0),
+    });
+  }
+  return items.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function groupByMonth(items: MemItem[]): { key: string; label: string; items: MemItem[] }[] {
+  const map = new Map<string, MemItem[]>();
+  for (const r of items) {
     const key = r.date.slice(0, 7);
     const list = map.get(key) ?? [];
     list.push(r);
@@ -40,9 +92,9 @@ function groupByMonth(records: DayRecord[]): { key: string; label: string; items
   }
   return Array.from(map.entries())
     .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([key, items]) => {
+    .map(([key, groupItems]) => {
       const monthIdx = parseInt(key.slice(5, 7), 10) - 1;
-      return { key, label: MONTH_LABELS[monthIdx] ?? key, items };
+      return { key, label: MONTH_LABELS[monthIdx] ?? key, items: groupItems };
     });
 }
 
@@ -53,21 +105,29 @@ export default function Memory() {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [diaryOnly, setDiaryOnly] = useState(readDiaryOnly);
 
-  const { data: records, loading, error, refresh } = useApiQuery(
-    async () => (await getRecordsByYear(viewYear)).slice().reverse(),
-    [viewYear],
-  );
-  const allMoods = useAllMoodConfigs();
-  const moodCfgMap = useMemo(() => {
-    const map = new Map<string, (typeof allMoods)[0]>();
-    for (const cfg of allMoods) map.set(cfg.type, cfg);
+  const { data: exportData, isPending, error, refetch } = useExportData();
+  const { data: states } = useStates();
+
+  const items = useMemo(() => {
+    if (!exportData) return [] as MemItem[];
+    const all = buildMemItems(exportData);
+    return all.filter((r) => r.date.startsWith(`${viewYear}-`));
+  }, [exportData, viewYear]);
+
+  const stateCfgMap = useMemo(() => {
+    const map = new Map<string, StateConfig>();
+    const list: JournalState[] = states ?? exportData?.states ?? [];
+    for (const s of list) {
+      const cfg = findStateConfig(list, s.id);
+      if (cfg) map.set(s.id, cfg);
+    }
     return map;
-  }, [allMoods]);
+  }, [states, exportData]);
 
   const groups = useMemo(() => {
-    const source = (records ?? []).filter((r) => (diaryOnly ? Boolean(r.diary?.trim()) : true));
+    const source = diaryOnly ? items.filter((r) => r.diary.trim()) : items;
     return groupByMonth(source);
-  }, [records, diaryOnly]);
+  }, [items, diaryOnly]);
 
   const toggleDiaryOnly = () => {
     setDiaryOnly((prev) => {
@@ -81,8 +141,8 @@ export default function Memory() {
     });
   };
 
-  if (loading && !records) return <QueryLoading />;
-  if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
+  if (isPending && !exportData) return <QueryLoading />;
+  if (error && !exportData) return <QueryError message={error.message} onRetry={() => void refetch()} />;
 
   return (
     <div>
@@ -143,18 +203,17 @@ export default function Memory() {
                   aria-hidden="true"
                 />
                 {group.items.map((record) => {
-                  const cfg = record.mood ? moodCfgMap.get(record.mood) : undefined;
+                  const cfg = record.stateId ? stateCfgMap.get(record.stateId) : undefined;
                   const date = parseDate(record.date);
                   const month = date.getMonth() + 1;
                   const day = date.getDate();
                   const weekdayIndex = (date.getDay() + 6) % 7;
                   const weekday = `周${WEEKDAY_LABELS[weekdayIndex]}`;
                   const dayLabel = `${month}/${day}`;
-                  const solid = cfg ? (isDark ? cfg.dark.solid : cfg.solid) : 'var(--keyline)';
+                  const solid = cfg ? (isDark ? cfg.dark.solid : cfg.color) : 'var(--keyline)';
                   const tint = cfg ? (isDark ? cfg.dark.tint : cfg.tint) : 'transparent';
-                  const totalMin = totalDuration(record.learnings);
-                  const extraLearnings = Math.max(0, record.learnings.length - 3);
-                  const visibleLearnings = record.learnings.slice(0, 3);
+                  const extraEntries = Math.max(0, record.entries.length - 3);
+                  const visibleEntries = record.entries.slice(0, 3);
                   const diaryText = record.diary ? stripMarkdown(record.diary) : '';
 
                   return (
@@ -191,9 +250,9 @@ export default function Memory() {
                               {cfg.label}
                             </span>
                           )}
-                          {totalMin > 0 && (
+                          {record.totalMin > 0 && (
                             <span className="ml-auto shrink-0 font-mono text-caption text-[var(--ink-faint)]">
-                              {formatDuration(totalMin)}
+                              {formatDuration(record.totalMin)}
                             </span>
                           )}
                         </div>
@@ -202,22 +261,22 @@ export default function Memory() {
                             {diaryText}
                           </p>
                         )}
-                        {visibleLearnings.length > 0 && (
+                        {visibleEntries.length > 0 && (
                           <div className="mt-3 flex flex-wrap items-center gap-2">
-                            {visibleLearnings.map((l) => (
+                            {visibleEntries.map((l) => (
                               <span
                                 key={l.id}
                                 className="inline-flex items-center gap-1.5 rounded-full border border-[var(--keyline)] bg-[var(--card)] px-2.5 py-1 font-sans text-caption text-[var(--ink-soft)]"
                               >
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: l.color }} />
-                                <span className="max-w-[9rem] truncate">{l.subject}</span>
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: l.subjectColor }} />
+                                <span className="max-w-[9rem] truncate">{l.subjectName}</span>
                                 <span className="font-mono text-caption text-[var(--ink-faint)]">
                                   {formatDuration(l.durationMin)}
                                 </span>
                               </span>
                             ))}
-                            {extraLearnings > 0 && (
-                              <span className="font-sans text-caption text-[var(--ink-faint)]">+{extraLearnings}</span>
+                            {extraEntries > 0 && (
+                              <span className="font-sans text-caption text-[var(--ink-faint)]">+{extraEntries}</span>
                             )}
                           </div>
                         )}
@@ -232,7 +291,7 @@ export default function Memory() {
       ) : (
         <QueryEmpty
           title={diaryOnly ? '这一年还没有写过今日想法' : '这一年还没有记录'}
-          hint={diaryOnly ? '关掉「只看有想法」，可以回顾心情和学习记录' : '从今天开始写，这里会按月份排成时间线'}
+          hint={diaryOnly ? '关掉「只看有想法」，可以回顾状态和学习记录' : '从今天开始写，这里会按月份排成时间线'}
         />
       )}
     </div>

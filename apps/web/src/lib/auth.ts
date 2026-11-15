@@ -1,35 +1,54 @@
-import { getToken, readJsonStorage } from './http';
+/**
+ * 手帐会话 —— Go /api/v1/auth/*，HttpOnly Cookie（sj_session）。
+ * 前端不持有 token；登录态 = /auth/me 能否解析出 user。
+ */
+import { apiFetch, ApiError } from './http';
+import type { User } from './types/api';
 
-export interface JwtPayload {
-  username?: string;
-  role?: string;
-  userId?: number | string;
-}
+let cachedUser: User | null = null;
 
-export function decodeAccessToken(): JwtPayload | null {
-  const token = getToken();
-  if (!token) return null;
+/** GET /auth/me；401 → null（未登录/会话过期），其他错误抛出 */
+export async function fetchMe(): Promise<User | null> {
   try {
-    const part = token.split('.')[1];
-    if (!part) return null;
-    const padded = part.replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(padded)) as JwtPayload;
-  } catch {
-    return null;
+    const user = await apiFetch<User>('/auth/me');
+    cachedUser = user;
+    return user;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      cachedUser = null;
+      return null;
+    }
+    throw err;
   }
 }
 
-function storedRole(): string | null {
-  return readJsonStorage<string>('mysite_user_role');
+/** POST /auth/login {username,password} → user；成功后由调用方刷新页面/查询 */
+export async function login(username: string, password: string): Promise<User> {
+  const user = await apiFetch<User>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+  cachedUser = user;
+  return user;
 }
 
-/** ADMIN（含旧 DEVELOPER）可进手帐；未知角色返回 null，交给接口 403 判定 */
-export function isJournalAdmin(): boolean | null {
-  const role = decodeAccessToken()?.role ?? storedRole();
-  if (!role) return null;
-  return role === 'ADMIN' || role === 'DEVELOPER';
+/** POST /auth/logout 清服务端 session，然后回手帐入口（App 重新判定登录态） */
+export async function logout(): Promise<void> {
+  try {
+    await apiFetch<unknown>('/auth/logout', { method: 'POST' });
+  } catch {
+    // 服务端清理失败也照常回登录页——Cookie 可能已失效
+  } finally {
+    cachedUser = null;
+    window.location.assign(import.meta.env.BASE_URL || '/journal/');
+  }
+}
+
+/** 当前会话用户（fetchMe/login 成功后有值）；SiteTopBar 等同步场景用 */
+export function getSessionUser(): User | null {
+  return cachedUser;
 }
 
 export function getDisplayName(): string | null {
-  return decodeAccessToken()?.username ?? null;
+  return cachedUser?.username ?? null;
 }

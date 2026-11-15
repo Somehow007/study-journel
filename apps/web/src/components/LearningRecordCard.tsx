@@ -1,9 +1,9 @@
-import type { LearningItem } from '../types';
+import type { Entry } from '../lib/types/api';
 import { X } from 'lucide-react';
 import { Pressable } from './ui/Pressable';
 
 interface LearningRecordCardProps {
-  item: LearningItem;
+  item: Entry;
   onEdit: () => void;
   onDelete: () => void;
 }
@@ -16,15 +16,22 @@ export function formatDurationHM(min: number): string {
 }
 
 export default function LearningRecordCard({ item, onEdit, onDelete }: LearningRecordCardProps) {
+  const title = item.title || item.subjectName;
+  const showSubject = item.subjectName && item.subjectName !== title;
   return (
     <div className="group flex w-full items-center gap-2 px-1 py-1">
       <Pressable
         onClick={onEdit}
         className="flex min-w-0 flex-1 items-center gap-3.5 rounded-lg px-1 py-3 text-left sm:py-[15px]"
       >
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: item.color }} />
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: item.subjectColor }} />
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          <span className="font-sans text-title text-[var(--ink)]">{item.subject}</span>
+          {showSubject && (
+            <span className="shrink-0 font-sans text-caption text-[var(--ink-faint)]">
+              {item.subjectName}
+            </span>
+          )}
+          <span className="truncate font-sans text-title text-[var(--ink)]">{title}</span>
           {item.note && (
             <span className="hidden truncate font-sans text-small text-[var(--ink-soft)] sm:block">
               {item.note}
@@ -36,7 +43,7 @@ export default function LearningRecordCard({ item, onEdit, onDelete }: LearningR
       <Pressable
         variant="icon"
         onClick={onDelete}
-        aria-label={`删除 ${item.subject}`}
+        aria-label={`删除 ${title}`}
         className="flex shrink-0 items-center justify-center rounded-full text-[var(--ink-faint)] opacity-0 hover:bg-[var(--danger-subtle)] hover:text-[var(--danger)] group-hover:opacity-100 touch-visible"
       >
         <X size={16} strokeWidth={1.75} />

@@ -1,6 +1,7 @@
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import GoalCompleteSheet, { type GoalCompleteValues } from '../components/GoalCompleteSheet';
 import GoalProgressBar from '../components/GoalProgressBar';
 import { QueryError, QueryLoading } from '../components/QueryState';
@@ -12,13 +13,16 @@ import {
   deleteGoal,
   deleteGoalTask,
   getGoal,
+  uncompleteGoalTask,
   upsertCheckIn,
 } from '../lib/goalApi';
+import { useGoal, invalidateAll } from '../lib/queries';
+import { weekStartOf } from '../lib/domain';
+import { useApp } from '../context/AppContext';
 import { formatDate } from '../lib/dateUtils';
 import { showToast } from '../lib/toast';
 import { askConfirm } from '../lib/confirm';
-import { useApiQuery } from '../lib/useApiQuery';
-import type { GoalCheckIn, GoalTask } from '../types/goal';
+import type { GoalCheckin, GoalTask } from '../lib/types/api';
 
 function daysInPeriod(period: string): string[] {
   const [y, m] = period.split('-').map(Number);
@@ -41,40 +45,49 @@ function taskWhen(task: GoalTask): string {
 export default function GoalDetail() {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
-  const { data: goal, loading, error, refresh } = useApiQuery(
-    () => (goalId ? getGoal(goalId) : Promise.reject(new Error('missing id'))),
-    [goalId],
-  );
+  const qc = useQueryClient();
+  const { settings } = useApp();
+  const weekStartsOn = settings?.weekStartsOn ?? 1;
+  const { data: goal, isPending, error, refetch } = useGoal(goalId ?? '', !!goalId);
 
   const [taskTitle, setTaskTitle] = useState('');
   const [taskBind, setTaskBind] = useState<'none' | 'date' | 'week'>('none');
   const [taskDate, setTaskDate] = useState(formatDate(new Date()));
   const [sheet, setSheet] = useState<
-    | { mode: 'count'; date: string; checkin?: GoalCheckIn | null; suggested: number }
+    | { mode: 'count'; date: string; checkin?: GoalCheckin | null; suggested: number }
     | { mode: 'task'; task: GoalTask }
     | null
   >(null);
   const [busy, setBusy] = useState(false);
 
   const checkinMap = useMemo(() => {
-    const map = new Map<string, GoalCheckIn>();
+    const map = new Map<string, GoalCheckin>();
     goal?.checkins.forEach((c) => map.set(c.date, c));
     return map;
   }, [goal]);
 
   if (!goalId) return null;
-  if (loading && !goal) return <QueryLoading />;
-  if (error && !goal) return <QueryError message={error.message} onRetry={refresh} />;
+  if (isPending && !goal) return <QueryLoading />;
+  if (error && !goal) return <QueryError message={error.message} onRetry={() => void refetch()} />;
   if (!goal) return null;
 
   const unit = goal.unit || '';
   const days = daysInPeriod(goal.period);
   const today = formatDate(new Date());
 
-  const toastIfReached = (before: number, after: number) => {
-    if (before < 100 && after >= 100) {
-      showToast('这颗开了', 'success');
+  const refresh = () => invalidateAll(qc);
+
+  /** 写操作后取回最新 percent，跨过 100 时提示「这颗开了」 */
+  const toastIfReached = async (goalId: string, before: number) => {
+    try {
+      const detail = await getGoal(goalId);
+      if (before < 100 && detail.percent >= 100) {
+        showToast('这颗开了', 'success');
+      }
+    } catch {
+      /* percent 只是锦上添花 */
     }
+    refresh();
   };
 
   const handleAddTask = async () => {
@@ -83,11 +96,13 @@ export default function GoalDetail() {
     try {
       await addGoalTask(goal.id, {
         title,
-        dueDate: taskBind === 'date' ? taskDate : null,
-        weekStart: taskBind === 'week' ? taskDate : null,
+        dueDate: taskBind === 'date' ? taskDate : undefined,
+        // 服务端按「weekStart 当天所在周」匹配，需归一化为周起始日
+        weekStart: taskBind === 'week' ? weekStartOf(taskDate, weekStartsOn) : undefined,
       });
       setTaskTitle('');
       setTaskBind('none');
+      refresh();
     } catch (err) {
       showToast(err instanceof Error ? err.message : '添加失败');
     }
@@ -126,28 +141,56 @@ export default function GoalDetail() {
     const before = goal.percent;
     try {
       if (sheet?.mode === 'count') {
-        const updated = await upsertCheckIn(goal.id, sheet.date, {
-          id: sheet.checkin?.id,
+        await upsertCheckIn(goal.id, sheet.date, {
           quantity: values.quantity ?? 1,
-          durationMin: values.durationMin,
           note: values.note,
-          syncLearning: values.syncLearning,
+          durationMin: values.durationMin,
+          createEntry: values.createEntry,
+          date: sheet.date,
         });
-        toastIfReached(before, updated.percent);
       } else if (sheet?.mode === 'task') {
-        const updated = await completeGoalTask(goal.id, sheet.task.id, {
-          done: true,
+        await completeGoalTask(sheet.task.id, {
           durationMin: values.durationMin,
           reflection: values.note,
-          syncLearning: values.syncLearning,
+          createEntry: values.createEntry,
           date: today,
         });
-        toastIfReached(before, updated.percent);
       }
       setSheet(null);
+      await toastIfReached(goal.id, before);
     } catch (err) {
       showToast(err instanceof Error ? err.message : '保存失败');
     }
+  };
+
+  const handleUncheckTask = (task: GoalTask) => {
+    void uncompleteGoalTask(task.id)
+      .then(refresh)
+      .catch((err) => showToast(err instanceof Error ? err.message : '更新失败'));
+  };
+
+  const handleDeleteTask = (task: GoalTask) => {
+    void deleteGoalTask(task.id)
+      .then(refresh)
+      .catch((err) => showToast(err instanceof Error ? err.message : '删除失败'));
+  };
+
+  const handleDeleteCheckin = (date: string) => {
+    void (async () => {
+      const ok = await askConfirm({
+        title: '取消打卡',
+        message: `取消 ${date.slice(8)} 日的打卡？`,
+        confirmLabel: '取消打卡',
+        danger: true,
+      });
+      if (!ok) return;
+      try {
+        await deleteCheckIn(goal.id, date);
+        refresh();
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : '取消失败');
+      }
+    })();
   };
 
   return (
@@ -192,8 +235,8 @@ export default function GoalDetail() {
               本周建议 {goal.suggestedWeekly ?? 0} {unit}
             </p>
             <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">
-              计划节奏 {goal.plannedDaily}
-              {unit}/天 · {goal.plannedWeekly} {unit}/周
+              计划节奏 {goal.plannedDaily ?? 0}
+              {unit}/天 · {goal.plannedWeekly ?? 0} {unit}/周
             </p>
           </section>
 
@@ -231,18 +274,7 @@ export default function GoalDetail() {
                     type="button"
                     onClick={() => {
                       if (checkin) {
-                        void (async () => {
-                          const ok = await askConfirm({
-                            title: '取消打卡',
-                            message: `取消 ${date.slice(8)} 日的打卡？`,
-                            confirmLabel: '取消打卡',
-                            danger: true,
-                          });
-                          if (!ok) return;
-                          void deleteCheckIn(goal.id, date).catch((err) =>
-                            showToast(err instanceof Error ? err.message : '取消失败'),
-                          );
-                        })();
+                        handleDeleteCheckin(date);
                         return;
                       }
                       setSheet({
@@ -332,9 +364,7 @@ export default function GoalDetail() {
                     aria-label={task.done ? '取消完成' : '标记完成'}
                     onClick={() => {
                       if (task.done) {
-                        void completeGoalTask(goal.id, task.id, { done: false }).catch((err) =>
-                          showToast(err instanceof Error ? err.message : '更新失败'),
-                        );
+                        handleUncheckTask(task);
                         return;
                       }
                       setSheet({ mode: 'task', task });
@@ -358,7 +388,7 @@ export default function GoalDetail() {
                     </p>
                     <p className="mt-0.5 font-sans text-caption text-[var(--ink-faint)]">
                       {taskWhen(task)}
-                      {task.durationMin ? ` · ${task.durationMin} 分钟` : ''}
+                      {task.doneAt ? ` · 完成于 ${formatDate(new Date(task.doneAt))}` : ''}
                     </p>
                     {task.reflection && (
                       <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">{task.reflection}</p>
@@ -366,11 +396,7 @@ export default function GoalDetail() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      void deleteGoalTask(goal.id, task.id).catch((err) =>
-                        showToast(err instanceof Error ? err.message : '删除失败'),
-                      );
-                    }}
+                    onClick={() => handleDeleteTask(task)}
                     className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-faint)] hover:bg-red-500/10 hover:text-red-400"
                   >
                     <Trash2 size={14} />
@@ -406,9 +432,7 @@ export default function GoalDetail() {
           title={sheet.mode === 'count' ? `${goal.title} · ${sheet.date}` : sheet.task.title}
           unit={goal.unit}
           defaultQuantity={sheet.mode === 'count' ? (sheet.checkin?.quantity ?? sheet.suggested) : undefined}
-          defaultDurationMin={
-            sheet.mode === 'count' ? sheet.checkin?.durationMin ?? 0 : sheet.task.durationMin ?? 0
-          }
+          defaultDurationMin={0}
           defaultNote={sheet.mode === 'count' ? sheet.checkin?.note ?? '' : sheet.task.reflection ?? ''}
           onConfirm={handleCompleteConfirm}
           onClose={() => setSheet(null)}

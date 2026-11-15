@@ -1,21 +1,26 @@
 import { useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { useState, useCallback, useMemo, useRef } from 'react';
-import { getRecordByDate, getRecordsByYear, getStreak, upsertRecord } from '../lib/api';
-import { useApiQuery } from '../lib/useApiQuery';
-import { useMoodConfig } from '../lib/moodUtils';
+import { useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  createEntry,
+  createSubject,
+  deleteEntry,
+  patchDay,
+  updateEntry,
+} from '../lib/api';
+import { useDay, useStreak, useSubjects, qk, invalidateAll } from '../lib/queries';
+import { useStateConfig, useStateConfigs } from '../lib/stateUtils';
 import { showToast } from '../lib/toast';
-import { computeStreak } from '../lib/streak';
 import MoodSelector from '../components/MoodSelector';
 import LearningRecordCard, { formatDurationHM } from '../components/LearningRecordCard';
-import LearningFormModal from '../components/LearningFormModal';
+import LearningFormModal, { type EntryDraft } from '../components/LearningFormModal';
 import DiaryEditor from '../components/DiaryEditor';
 import SproutBadge from '../components/SproutBadge';
 import TodayGoalsSection from '../components/TodayGoalsSection';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import { Pressable } from '../components/ui/Pressable';
-import { totalDuration } from '../lib/dateUtils';
-import type { DayRecord, LearningItem } from '../types';
+import type { DayDetail, Entry } from '../lib/types/api';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -36,58 +41,28 @@ function dailyQuote(dateStr: string): string {
   return QUOTES[hash % QUOTES.length];
 }
 
-async function loadStreak(): Promise<number> {
-  try {
-    const res = await getStreak();
-    if (typeof res?.days === 'number') return res.days;
-  } catch {
-    /* 主路径失败时回退：当年 + 跨年时上年记录，规则与后端一致（今天无记录 = 0） */
-  }
-  const year = new Date().getFullYear();
-  const current = await getRecordsByYear(year);
-  const needPrev = new Date().getMonth() === 0;
-  const prev = needPrev ? await getRecordsByYear(year - 1) : [];
-  return computeStreak([...current, ...prev].map((r) => r.date));
-}
-
-function mergeRecord(
-  cur: DayRecord | undefined,
-  date: string,
-  patch: { mood?: string; learnings?: LearningItem[]; diary?: string },
-): DayRecord {
-  const now = Date.now();
-  return {
-    date,
-    mood: patch.mood !== undefined ? patch.mood : cur?.mood ?? null,
-    learnings: patch.learnings ?? cur?.learnings ?? [],
-    diary: patch.diary !== undefined ? patch.diary : cur?.diary ?? '',
-    createdAt: cur?.createdAt ?? now,
-    updatedAt: now,
-    id: cur?.id,
-  };
-}
-
 export default function TodayDetail() {
   const { date } = useParams<{ date: string }>();
+  const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<LearningItem | null>(null);
+  const [editingItem, setEditingItem] = useState<Entry | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
 
-  const { data: record, loading, error, refresh, setData } = useApiQuery(
-    () => (date ? getRecordByDate(date) : Promise.resolve(undefined)),
-    [date],
+  const { data: day, isPending, error, refetch } = useDay(date ?? '', !!date);
+  const { data: streakResult } = useStreak();
+  const { data: subjects } = useSubjects();
+  const activeSubjects = useMemo(
+    () => (subjects ?? []).filter((s) => s.archivedAt == null),
+    [subjects],
   );
-  const { data: streakDays } = useApiQuery(loadStreak, []);
 
-  const mood = record?.mood ?? null;
-  const learnings = record?.learnings ?? [];
-  const diary = record?.diary ?? '';
-  const recordRef = useRef(record);
-  const learningsRef = useRef(learnings);
-  recordRef.current = record;
-  learningsRef.current = learnings;
+  const stateId = day?.stateId ?? null;
+  const entries = day?.entries ?? [];
+  const diary = day?.diary ?? '';
+  const totalMin = day?.totalMin ?? 0;
 
-  const moodConfig = useMoodConfig(mood);
+  const stateConfig = useStateConfig(stateId);
+  const allStates = useStateConfigs();
 
   const dateObj = useMemo(() => {
     if (!date) return null;
@@ -100,78 +75,118 @@ export default function TodayDetail() {
     : date || '';
   const weekday = dateObj ? `星期${WEEKDAYS[dateObj.getDay()]}` : '';
   const quote = date ? dailyQuote(date) : '';
-  const totalMin = totalDuration(learnings);
-  const streak = streakDays ?? 0;
+  const streak = streakResult?.streak ?? 0;
 
-  const savePatch = useCallback(
-    async (patch: { mood?: string; learnings?: LearningItem[]; diary?: string }) => {
+  /** day 相关局部失效：明细 + 月历 marks + 统计 + 搜索（不动 goals/today-goals） */
+  const refreshDayRelated = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: ['day'] });
+    void qc.invalidateQueries({ queryKey: ['days'] });
+    void qc.invalidateQueries({ queryKey: ['stats'] });
+    void qc.invalidateQueries({ queryKey: ['search'] });
+  }, [qc]);
+
+  const saveDayPatch = useCallback(
+    async (patch: { stateId?: string | null; diary?: string }) => {
       if (!date) return;
-      const prev = recordRef.current;
-      const next = mergeRecord(prev, date, patch);
-      recordRef.current = next;
-      if (patch.learnings) learningsRef.current = patch.learnings;
-      setData(next);
+      const key = qk.day(date);
+      const prev = qc.getQueryData<DayDetail>(key);
+      qc.setQueryData<DayDetail>(key, (cur) => (cur ? { ...cur, ...patch } : cur));
       try {
-        await upsertRecord(date, patch);
+        await patchDay(date, patch);
         setWriteError(null);
+        refreshDayRelated();
       } catch (err) {
-        recordRef.current = prev;
-        learningsRef.current = prev?.learnings ?? [];
-        setData(prev);
+        qc.setQueryData(key, prev);
         const message = err instanceof Error ? err.message : '保存失败';
         setWriteError(message);
-        showToast(message, 'error', { onRetry: () => void savePatch(patch) });
+        showToast(message, 'error', { onRetry: () => void saveDayPatch(patch) });
         throw err;
       }
     },
-    [date, setData],
+    [date, qc, refreshDayRelated],
   );
 
-  const handleMoodSelect = useCallback(
-    async (moodType: string) => {
+  const handleStateSelect = useCallback(
+    async (id: string | null) => {
       try {
-        await savePatch({ mood: moodType });
+        await saveDayPatch({ stateId: id });
       } catch {
         /* toast already shown */
       }
     },
-    [savePatch],
+    [saveDayPatch],
   );
 
-  const handleAddLearning = useCallback(
-    async (item: LearningItem) => {
-      await savePatch({ learnings: [...learningsRef.current, item] });
-      setShowForm(false);
-      setEditingItem(null);
-    },
-    [savePatch],
-  );
-
-  const handleUpdateLearning = useCallback(
-    async (item: LearningItem) => {
-      await savePatch({
-        learnings: learningsRef.current.map((l) => (l.id === item.id ? item : l)),
+  const resolveSubjectId = useCallback(
+    async (draft: EntryDraft): Promise<string> => {
+      if (draft.subjectId) return draft.subjectId;
+      const created = await createSubject({
+        name: draft.newSubjectName ?? '',
+        color: draft.newSubjectColor,
       });
+      return created.id;
+    },
+    [],
+  );
+
+  const handleAddEntry = useCallback(
+    async (draft: EntryDraft) => {
+      if (!date) return;
+      const subjectId = await resolveSubjectId(draft);
+      await createEntry({
+        date,
+        subjectId,
+        title: draft.title || undefined,
+        note: draft.note,
+        durationMin: draft.durationMin,
+      });
+      invalidateAll(qc);
+      setShowForm(false);
+      setEditingItem(null);
+    },
+    [date, qc, resolveSubjectId],
+  );
+
+  const handleUpdateEntry = useCallback(
+    async (draft: EntryDraft) => {
+      if (!editingItem) return;
+      const subjectId = await resolveSubjectId(draft);
+      await updateEntry(editingItem.id, {
+        subjectId,
+        title: draft.title,
+        note: draft.note,
+        durationMin: draft.durationMin,
+      });
+      invalidateAll(qc);
       setEditingItem(null);
       setShowForm(false);
     },
-    [savePatch],
+    [editingItem, qc, resolveSubjectId],
   );
 
-  const handleDeleteLearning = useCallback(
+  const handleDeleteEntry = useCallback(
     async (id: string) => {
       try {
-        await savePatch({ learnings: learningsRef.current.filter((l) => l.id !== id) });
-      } catch {
-        /* toast already shown */
+        // 乐观移除；失败时失效该日查询回滚
+        if (date) {
+          qc.setQueryData<DayDetail>(qk.day(date), (cur) =>
+            cur ? { ...cur, entries: cur.entries.filter((e) => e.id !== id) } : cur,
+          );
+        }
+        await deleteEntry(id);
+        invalidateAll(qc);
+      } catch (err) {
+        if (date) qc.invalidateQueries({ queryKey: qk.day(date) });
+        const message = err instanceof Error ? err.message : '删除失败';
+        showToast(message, 'error');
       }
     },
-    [savePatch],
+    [date, qc],
   );
 
   const handleDiarySave = useCallback(
-    (text: string) => savePatch({ diary: text }),
-    [savePatch],
+    (text: string) => saveDayPatch({ diary: text }),
+    [saveDayPatch],
   );
 
   const openAdd = useCallback(() => {
@@ -180,9 +195,9 @@ export default function TodayDetail() {
   }, []);
 
   if (!date) return null;
-  if (loading && !record) return <QueryLoading />;
-  if (error && !record) {
-    return <QueryError message={error.message} onRetry={refresh} />;
+  if (isPending && !day) return <QueryLoading />;
+  if (error && !day) {
+    return <QueryError message={error.message} onRetry={() => void refetch()} />;
   }
 
   return (
@@ -212,10 +227,10 @@ export default function TodayDetail() {
       )}
 
       <section className="card mb-6 rounded-xl p-6 sm:p-8">
-        <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">今天是什么心情？</h2>
-        <MoodSelector selected={mood} onSelect={handleMoodSelect} />
+        <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">今天是什么状态？</h2>
+        <MoodSelector selected={stateId} onSelect={handleStateSelect} />
         <p className="mt-4 font-sans text-caption text-[var(--ink-faint)]">
-          {moodConfig ? `已记：${moodConfig.label}` : '点选心情，记下今天'}
+          {stateConfig ? `已记：${stateConfig.label}` : allStates.length > 0 ? '点选状态，记下今天' : '还没有可选状态'}
         </p>
       </section>
 
@@ -234,7 +249,7 @@ export default function TodayDetail() {
           </Pressable>
         </div>
 
-        {learnings.length === 0 ? (
+        {entries.length === 0 ? (
           <Pressable
             onClick={openAdd}
             className="w-full rounded-lg border border-dashed border-[var(--hairline)] py-8 text-center"
@@ -243,10 +258,10 @@ export default function TodayDetail() {
           </Pressable>
         ) : (
           <div>
-            {learnings.map((item, idx) => (
+            {entries.map((item, idx) => (
               <div
                 key={item.id}
-                className={idx < learnings.length - 1 ? 'border-b border-[var(--hairline)]' : ''}
+                className={idx < entries.length - 1 ? 'border-b border-[var(--hairline)]' : ''}
               >
                 <LearningRecordCard
                   item={item}
@@ -255,7 +270,7 @@ export default function TodayDetail() {
                     setShowForm(true);
                   }}
                   onDelete={() => {
-                    void handleDeleteLearning(item.id);
+                    void handleDeleteEntry(item.id);
                   }}
                 />
               </div>
@@ -270,13 +285,14 @@ export default function TodayDetail() {
 
       <section>
         <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">今日想法</h2>
-        <DiaryEditor value={diary} onSave={handleDiarySave} mood={mood} />
+        <DiaryEditor value={diary} onSave={handleDiarySave} />
       </section>
 
       {showForm && (
         <LearningFormModal
           item={editingItem}
-          onConfirm={editingItem ? handleUpdateLearning : handleAddLearning}
+          subjects={activeSubjects}
+          onConfirm={editingItem ? handleUpdateEntry : handleAddEntry}
           onClose={() => {
             setShowForm(false);
             setEditingItem(null);

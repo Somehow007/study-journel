@@ -1,16 +1,18 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
-import { getRecordsByMonth } from '../lib/api';
-import { useApiQuery } from '../lib/useApiQuery';
+import { useDayMarks, useStatsMonth, useStates } from '../lib/queries';
+import { findStateConfig, type StateConfig } from '../lib/stateUtils';
+import { formatPeriod } from '../lib/goalApi';
+import { monthBounds } from '../lib/domain';
+import { formatDuration, formatDate } from '../lib/dateUtils';
 import { MONTH_LABELS } from '../lib/constants';
-import { totalDuration, formatDuration, formatDate } from '../lib/dateUtils';
-import { useAllMoodConfigs } from '../lib/moodUtils';
-import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import { useIsDark } from '../lib/useIsDark';
+import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid,
 } from 'recharts';
+import type { JournalState } from '../lib/types/api';
 
 export default function Stats() {
   const isDark = useIsDark();
@@ -19,16 +21,28 @@ export default function Stats() {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
 
-  const { data: records, loading, error, refresh } = useApiQuery(
-    () => getRecordsByMonth(viewYear, viewMonth),
-    [viewYear, viewMonth],
-  );
-  const allMoods = useAllMoodConfigs();
-  const moodCfgMap = useMemo(() => {
-    const map = new Map<string, (typeof allMoods)[0]>();
-    for (const cfg of allMoods) map.set(cfg.type, cfg);
+  const period = formatPeriod(viewYear, viewMonth);
+  const [from, to] = monthBounds(period);
+  const { data: stats, isPending, error, refetch } = useStatsMonth(period);
+  const { data: marks } = useDayMarks(from, to);
+  const { data: states } = useStates();
+
+  // 当月每个有记录日期的 stateId → 供柱状图着色
+  const stateIdByDate = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const m of marks ?? []) map.set(m.date, m.stateId);
     return map;
-  }, [allMoods]);
+  }, [marks]);
+
+  const stateCfgById = useMemo(() => {
+    const list: JournalState[] = states ?? [];
+    const map = new Map<string, StateConfig>();
+    for (const s of list) {
+      const cfg = findStateConfig(list, s.id);
+      if (cfg) map.set(s.id, cfg);
+    }
+    return map;
+  }, [states]);
 
   const prevMonth = () => {
     const d = new Date(viewYear, viewMonth - 1, 1);
@@ -42,65 +56,37 @@ export default function Stats() {
     setViewYear(d.getFullYear());
   };
 
-  const stats = useMemo(() => {
-    if (!records || records.length === 0) {
-      return {
-        totalDays: 0,
-        totalMin: 0,
-        topMood: null as string | null,
-        dailyData: [] as { day: number; dateStr: string; hours: number; mood: string | null }[],
-        subjectData: [] as { name: string; hours: number; color: string; min: number }[],
-      };
-    }
+  const chartData = useMemo(() => {
+    return (stats?.daily ?? []).map((d) => ({
+      day: parseInt(d.date.slice(8), 10),
+      dateStr: d.date,
+      hours: Math.round((d.totalMin / 60) * 10) / 10,
+      stateId: stateIdByDate.get(d.date) ?? null,
+    }));
+  }, [stats, stateIdByDate]);
 
-    const totalDays = records.filter((r) => r.mood || r.learnings.length > 0 || r.diary).length;
-    const totalMin = records.reduce((sum, r) => sum + totalDuration(r.learnings), 0);
+  const subjectData = useMemo(
+    () =>
+      (stats?.subjectBreakdown ?? []).map((s) => ({
+        name: s.name,
+        color: s.color,
+        min: s.minutes,
+        hours: Math.round((s.minutes / 60) * 10) / 10,
+      })),
+    [stats],
+  );
 
-    const moodCount: Record<string, number> = {};
-    for (const r of records) {
-      if (r.mood && moodCfgMap.has(r.mood)) {
-        moodCount[r.mood] = (moodCount[r.mood] || 0) + 1;
-      }
-    }
-    let topMood: string | null = null;
-    let topCount = 0;
-    for (const [mood, count] of Object.entries(moodCount)) {
-      if (count > topCount) {
-        topCount = count;
-        topMood = mood;
-      }
-    }
+  const topState = stats?.stateBreakdown?.[0] ?? null;
+  const topStateCfg = topState ? stateCfgById.get(topState.stateId) : undefined;
 
-    const dailyData = records
-      .map((r) => ({
-        day: parseInt(r.date.split('-')[2], 10),
-        dateStr: r.date,
-        hours: Math.round((totalDuration(r.learnings) / 60) * 10) / 10,
-        mood: r.mood,
-      }))
-      .sort((a, b) => a.day - b.day);
-
-    const subjectMap: Record<string, { min: number; color: string }> = {};
-    for (const r of records) {
-      for (const l of r.learnings) {
-        if (!subjectMap[l.subject]) subjectMap[l.subject] = { min: 0, color: l.color };
-        subjectMap[l.subject].min += l.durationMin;
-      }
-    }
-    const subjectData = Object.entries(subjectMap)
-      .map(([name, { min, color }]) => ({ name, hours: Math.round((min / 60) * 10) / 10, color, min }))
-      .sort((a, b) => b.min - a.min);
-
-    return { totalDays, totalMin, topMood, dailyData, subjectData };
-  }, [records, moodCfgMap]);
-
-  const hasData = stats.totalDays > 0;
+  const totalDays = stats?.daysRecorded ?? 0;
+  const totalMin = stats?.totalMin ?? 0;
+  const hasData = totalDays > 0 || (stats?.entryCount ?? 0) > 0 || totalMin > 0;
   const chartGridColor = 'color-mix(in srgb, var(--hairline) 70%, transparent)';
   const chartTextColor = 'var(--ink-faint)';
-  const topMoodCfg = stats.topMood ? moodCfgMap.get(stats.topMood) : undefined;
 
-  if (loading && !records) return <QueryLoading />;
-  if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
+  if (isPending && !stats) return <QueryLoading />;
+  if (error && !stats) return <QueryError message={error.message} onRetry={() => void refetch()} />;
 
   return (
     <div>
@@ -143,26 +129,32 @@ export default function Stats() {
             <div className="card rounded-xl px-[32px] py-[28px]">
               <div className="mb-3 font-sans text-[14px] text-[var(--ink-soft)]">总学习天数</div>
               <div className="font-mono text-num-lg font-semibold tracking-[-0.01em] text-[var(--ink)]">
-                {stats.totalDays}
+                {totalDays}
                 <small className="ml-1 font-sans text-[14px] font-medium text-[var(--ink-faint)]">天</small>
               </div>
             </div>
             <div className="card rounded-xl px-[32px] py-[28px]">
               <div className="mb-3 font-sans text-[14px] text-[var(--ink-soft)]">总学习时长</div>
               <div className="font-mono text-num-lg font-semibold tracking-[-0.01em] text-[var(--ink)]">
-                {formatDuration(stats.totalMin)}
+                {formatDuration(totalMin)}
               </div>
             </div>
             <div className="card rounded-xl px-[32px] py-[28px]">
-              <div className="mb-3 font-sans text-[14px] text-[var(--ink-soft)]">最常心情</div>
-              {topMoodCfg ? (
+              <div className="mb-3 font-sans text-[14px] text-[var(--ink-soft)]">最常状态</div>
+              {topState ? (
                 <div className="flex items-center gap-3">
                   <span
                     className="h-3.5 w-3.5 rounded-full"
-                    style={{ background: isDark ? topMoodCfg.dark.solid : topMoodCfg.solid }}
+                    style={{
+                      background: topStateCfg
+                        ? isDark
+                          ? topStateCfg.dark.solid
+                          : topStateCfg.color
+                        : topState.color,
+                    }}
                   />
                   <span className="font-sans text-[22px] font-semibold text-[var(--ink)]">
-                    {topMoodCfg.label}
+                    {topState.label}
                   </span>
                 </div>
               ) : (
@@ -178,7 +170,7 @@ export default function Stats() {
                 <p className="font-sans text-caption text-[var(--ink-faint)]">点击柱状图进入当天</p>
               </div>
               <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={stats.dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={chartGridColor} />
                   <XAxis
                     dataKey="day"
@@ -207,8 +199,8 @@ export default function Stats() {
                     dataKey="hours"
                     cursor="pointer"
                     onClick={(data) => {
-                      const item = data as { dateStr?: string; payload?: { dateStr?: string } };
-                      const dateStr = item.payload?.dateStr ?? item.dateStr;
+                      const item = data as { payload?: { dateStr?: string } };
+                      const dateStr = item.payload?.dateStr;
                       if (dateStr) navigate(`/day/${dateStr}`);
                     }}
                     shape={(props: {
@@ -216,7 +208,7 @@ export default function Stats() {
                       y?: number;
                       width?: number;
                       height?: number;
-                      payload?: { mood: string | null; hours: number; dateStr: string };
+                      payload?: { stateId: string | null; hours: number; dateStr: string };
                     }) => {
                       const { x = 0, y = 0, width = 0, height = 0, payload } = props;
                       const go = () => {
@@ -236,11 +228,11 @@ export default function Stats() {
                           />
                         );
                       }
-                      const moodCfg = payload?.mood ? moodCfgMap.get(payload.mood) : undefined;
-                      const barColor = moodCfg
+                      const cfg = payload?.stateId ? stateCfgById.get(payload.stateId) : undefined;
+                      const barColor = cfg
                         ? isDark
-                          ? moodCfg.dark.solid
-                          : moodCfg.solid
+                          ? cfg.dark.solid
+                          : cfg.color
                         : 'var(--brand)';
                       return (
                         <rect
@@ -266,13 +258,13 @@ export default function Stats() {
                 <h2 className="font-sans text-h2 text-[var(--ink)]">学科分布</h2>
                 <p className="font-sans text-caption text-[var(--ink-faint)]">本月 · 按学习时长</p>
               </div>
-              {stats.subjectData.length > 0 ? (
+              {subjectData.length > 0 ? (
                 <div className="flex items-center gap-6">
                   <div className="relative h-[150px] w-[150px] shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={stats.subjectData}
+                          data={subjectData}
                           cx="50%"
                           cy="50%"
                           innerRadius={44}
@@ -281,7 +273,7 @@ export default function Stats() {
                           dataKey="hours"
                           stroke="none"
                         >
-                          {stats.subjectData.map((entry, i) => (
+                          {subjectData.map((entry, i) => (
                             <Cell key={i} fill={entry.color} />
                           ))}
                         </Pie>
@@ -289,13 +281,13 @@ export default function Stats() {
                     </ResponsiveContainer>
                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                       <span className="font-mono text-[17px] font-semibold leading-none text-[var(--ink)]">
-                        {formatDuration(stats.totalMin)}
+                        {formatDuration(totalMin)}
                       </span>
                       <span className="mt-1 font-sans text-[10.5px] leading-none text-[var(--ink-faint)]">总计</span>
                     </div>
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-2.5">
-                    {stats.subjectData.map((entry) => (
+                    {subjectData.map((entry) => (
                       <div key={entry.name} className="flex items-center gap-2">
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: entry.color }} />
                         <span className="min-w-0 flex-1 truncate font-sans text-small text-[var(--ink)]" title={entry.name}>
@@ -319,7 +311,7 @@ export default function Stats() {
       ) : (
         <QueryEmpty
           title="这个月还没有记录"
-          hint="记下第一天后，这里会出现时长与心情统计"
+          hint="记下第一天后，这里会出现时长与状态统计"
           action={
             <button
               type="button"

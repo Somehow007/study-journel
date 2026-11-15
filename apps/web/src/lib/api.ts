@@ -1,145 +1,153 @@
 /**
- * 手帐数据层（HTTP 版）——第二期后端化后的主存储。
- *
- * 函数签名与原 lib/db.ts（IndexedDB 版）保持一致，页面切换 import 来源即可，
- * 对页面代码无感。写操作成功后通过 emitJournalChanged() 通知 useApiQuery 刷新。
- *
- * 后端：Spring Boot journal 模块，前缀 /api/journal，ADMIN 可访问，
- * user_id 由服务端从博客 JWT 解析（前端不传）。
+ * 手帐数据层（v3 /api/v1）—— days/entries/subjects/states/settings/
+ * search/stats/streak/export/import。写操作后由调用方经 TanStack Query
+ * invalidate 刷新（不再走事件总线）。
  */
-import type { CustomMoodConfig, DayRecord } from '../types';
 import { apiFetch } from './http';
-import { emitJournalChanged } from './journalEvents';
+import type {
+  DayDetail,
+  DayMark,
+  Entry,
+  EntryPatch,
+  EntryRequest,
+  ExportData,
+  ImportResult,
+  JournalState,
+  SearchResult,
+  Setting,
+  SettingsPatch,
+  StatePatch,
+  StateRequest,
+  StatsHeatmapCell,
+  StatsMonth,
+  StatsYear,
+  StreakResult,
+  Subject,
+  SubjectPatch,
+  SubjectRequest,
+} from './types/api';
 
-/** 导出/导入数据格式（与 db.ts 的 ExportData 一致，v2） */
-export interface ExportData {
-  version: number;
-  exportedAt: string;
-  records: DayRecord[];
-  customMoods: CustomMoodConfig[];
+const enc = encodeURIComponent;
+
+// ─── 日 ──────────────────────────────────────────────
+
+/** 单日聚合标记（GET /days?from&to，含 taskDone/taskTotal） */
+export async function listDayMarks(from: string, to: string): Promise<DayMark[]> {
+  return apiFetch<DayMark[]>(`/days?from=${enc(from)}&to=${enc(to)}`);
 }
 
-/** 导入结果 */
-export interface ImportResult {
-  recordsImported: number;
-  moodsImported: number;
+/** 单日详情（state/diary/entries/tasks/checkins） */
+export async function getDay(date: string): Promise<DayDetail> {
+  return apiFetch<DayDetail>(`/days/${enc(date)}`);
 }
 
-// ─── 记录操作 ────────────────────────────────────────
-
-/** 按 date 字符串获取单日记录 */
-export async function getRecordByDate(date: string): Promise<DayRecord | undefined> {
-  const data = await apiFetch<DayRecord | null>(`/records/${encodeURIComponent(date)}`);
-  return data ?? undefined;
-}
-
-/** 获取某月所有记录 */
-export async function getRecordsByMonth(year: number, month: number): Promise<DayRecord[]> {
-  const mm = `${year}-${String(month + 1).padStart(2, '0')}`;
-  return apiFetch<DayRecord[]>(`/records?month=${mm}`);
-}
-
-/** 获取某年所有记录 */
-export async function getRecordsByYear(year: number): Promise<DayRecord[]> {
-  return apiFetch<DayRecord[]>(`/records?year=${year}`);
-}
-
-/** 获取全部记录（按 date 升序） */
-export async function getAllRecords(): Promise<DayRecord[]> {
-  return apiFetch<DayRecord[]>('/records');
-}
-
-/**
- * 创建或更新单日记录（patch 语义，与 db.ts 一致）：
- * patch 中出现的字段才更新；learnings 出现即全量替换当日清单。
- */
-export async function upsertRecord(date: string, patch: Partial<DayRecord>): Promise<void> {
-  const body: Record<string, unknown> = {};
-  if ('mood' in patch) body.mood = patch.mood;
-  if ('diary' in patch) body.diary = patch.diary;
-  if ('learnings' in patch && patch.learnings) body.learnings = patch.learnings;
-  await apiFetch<DayRecord>(`/records/${encodeURIComponent(date)}`, {
-    method: 'PUT',
-    body: JSON.stringify(body),
+/** patch 语义：出现的字段才更新；stateId 传 null 清除 */
+export async function patchDay(date: string, patch: { stateId?: string | null; diary?: string }): Promise<DayDetail> {
+  return apiFetch<DayDetail>(`/days/${enc(date)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
   });
-  emitJournalChanged();
 }
 
-/** 删除单日记录 */
-export async function deleteRecord(date: string): Promise<void> {
-  await apiFetch<void>(`/records/${encodeURIComponent(date)}`, { method: 'DELETE' });
-  emitJournalChanged();
+export async function deleteDay(date: string): Promise<void> {
+  await apiFetch<unknown>(`/days/${enc(date)}`, { method: 'DELETE' });
 }
 
-// ─── 自定义心情操作 ──────────────────────────────────
+// ─── 条目（学习记录）─────────────────────────────────
 
-/** 获取所有自定义心情（按创建时间排序） */
-export async function getCustomMoods(): Promise<CustomMoodConfig[]> {
-  return apiFetch<CustomMoodConfig[]>('/moods/custom');
+export async function createEntry(req: EntryRequest): Promise<Entry> {
+  return apiFetch<Entry>('/entries', { method: 'POST', body: JSON.stringify(req) });
 }
 
-/** 添加自定义心情，返回 moodId */
-export async function addCustomMood(config: Omit<CustomMoodConfig, 'createdAt'>): Promise<{ moodId: string }> {
-  await apiFetch<CustomMoodConfig>('/moods/custom', {
+export async function updateEntry(id: string, patch: EntryPatch): Promise<Entry> {
+  return apiFetch<Entry>(`/entries/${enc(id)}`, { method: 'PATCH', body: JSON.stringify(patch) });
+}
+
+export async function deleteEntry(id: string): Promise<void> {
+  await apiFetch<unknown>(`/entries/${enc(id)}`, { method: 'DELETE' });
+}
+
+export async function reorderEntries(date: string, ids: string[]): Promise<void> {
+  await apiFetch<unknown>('/entries/reorder', {
     method: 'POST',
-    body: JSON.stringify(config),
+    body: JSON.stringify({ date, ids }),
   });
-  emitJournalChanged();
-  return { moodId: config.id };
 }
 
-/** 更新自定义心情（保持 db.ts 的部分 patch 语义：先读后合并再整体提交） */
-export async function updateCustomMood(moodId: string, patch: Partial<CustomMoodConfig>): Promise<void> {
-  const moods = await getCustomMoods();
-  const current = moods.find((m) => m.id === moodId);
-  if (!current) return;
-  const merged: Omit<CustomMoodConfig, 'createdAt'> = {
-    id: moodId,
-    label: patch.label ?? current.label,
-    emoji: patch.emoji ?? current.emoji,
-    solid: patch.solid ?? current.solid,
-    ink: patch.ink ?? current.ink,
-    tint: patch.tint ?? current.tint,
-    dark: patch.dark ?? current.dark,
-  };
-  await apiFetch<CustomMoodConfig>(`/moods/custom/${encodeURIComponent(moodId)}`, {
-    method: 'PUT',
-    body: JSON.stringify(merged),
-  });
-  emitJournalChanged();
+// ─── 科目 / 状态字典 ─────────────────────────────────
+
+export async function listSubjects(): Promise<Subject[]> {
+  return apiFetch<Subject[]>('/subjects');
 }
 
-/** 删除自定义心情 */
-export async function deleteCustomMood(moodId: string): Promise<void> {
-  await apiFetch<void>(`/moods/custom/${encodeURIComponent(moodId)}`, { method: 'DELETE' });
-  emitJournalChanged();
+export async function createSubject(req: SubjectRequest): Promise<Subject> {
+  return apiFetch<Subject>('/subjects', { method: 'POST', body: JSON.stringify(req) });
 }
 
-// ─── 导出/导入 ───────────────────────────────────────
+export async function updateSubject(id: string, patch: SubjectPatch): Promise<Subject> {
+  return apiFetch<Subject>(`/subjects/${enc(id)}`, { method: 'PATCH', body: JSON.stringify(patch) });
+}
 
-/** 导出全部数据（服务端数据，保持 v2 JSON 格式） */
+export async function archiveSubject(id: string): Promise<void> {
+  await apiFetch<unknown>(`/subjects/${enc(id)}/archive`, { method: 'POST' });
+}
+
+export async function listStates(): Promise<JournalState[]> {
+  return apiFetch<JournalState[]>('/states');
+}
+
+export async function createState(req: StateRequest): Promise<JournalState> {
+  return apiFetch<JournalState>('/states', { method: 'POST', body: JSON.stringify(req) });
+}
+
+export async function updateState(id: string, patch: StatePatch): Promise<JournalState> {
+  return apiFetch<JournalState>(`/states/${enc(id)}`, { method: 'PATCH', body: JSON.stringify(patch) });
+}
+
+export async function archiveState(id: string): Promise<void> {
+  await apiFetch<unknown>(`/states/${enc(id)}/archive`, { method: 'POST' });
+}
+
+// ─── 设置 ────────────────────────────────────────────
+
+export async function getSettings(): Promise<Setting> {
+  return apiFetch<Setting>('/settings');
+}
+
+export async function patchSettings(patch: SettingsPatch): Promise<Setting> {
+  return apiFetch<Setting>('/settings', { method: 'PATCH', body: JSON.stringify(patch) });
+}
+
+// ─── 搜索 / 统计 / 连续 ──────────────────────────────
+
+export async function searchJournal(keyword: string, type: 'all' | 'entry' | 'diary' = 'all'): Promise<SearchResult> {
+  return apiFetch<SearchResult>(`/search?q=${enc(keyword)}&type=${type}`);
+}
+
+export async function statsMonth(period: string): Promise<StatsMonth> {
+  return apiFetch<StatsMonth>(`/stats/month?period=${enc(period)}`);
+}
+
+export async function statsYear(year: number): Promise<StatsYear> {
+  return apiFetch<StatsYear>(`/stats/year?year=${year}`);
+}
+
+export async function statsHeatmap(from: string, to: string): Promise<StatsHeatmapCell[]> {
+  return apiFetch<StatsHeatmapCell[]>(`/stats/heatmap?from=${enc(from)}&to=${enc(to)}`);
+}
+
+export async function getStreak(): Promise<StreakResult> {
+  return apiFetch<StreakResult>('/streak');
+}
+
+// ─── 导出 / 导入 ─────────────────────────────────────
+
+/** v3 全量导出（裸 JSON 非包络；apiFetch 透传） */
 export async function exportAllData(): Promise<ExportData> {
   return apiFetch<ExportData>('/export');
 }
 
-/** 导入数据（兼容 v1 纯数组 / v2 含 customMoods），服务端按日期幂等 upsert */
-export async function importData(data: ExportData | DayRecord[]): Promise<ImportResult> {
-  const result = await apiFetch<ImportResult>('/import', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-  emitJournalChanged();
-  return result;
-}
-
-// ─── 搜索 ────────────────────────────────────────────
-
-/** 搜索日记 / 学科 / 备注（服务端 LIKE，按 updatedAt 倒序） */
-export async function searchDiary(keyword: string): Promise<DayRecord[]> {
-  return apiFetch<DayRecord[]>(`/search?keyword=${encodeURIComponent(keyword)}`);
-}
-
-/** 连续记录天数。主路径：GET /streak。后端失败时由调用方用 computeStreak 回退。 */
-export async function getStreak(): Promise<{ days: number }> {
-  return apiFetch<{ days: number }>('/streak');
+/** 导入 v3 原生 / v2{records,customMoods} / v1 数组（服务端兼容） */
+export async function importData(data: unknown): Promise<ImportResult> {
+  return apiFetch<ImportResult>('/import', { method: 'POST', body: JSON.stringify(data) });
 }

@@ -1,153 +1,183 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getRecordsByYear } from '../lib/api';
-import { useApiQuery } from '../lib/useApiQuery';
+import { useExportData } from '../lib/queries';
+import { findStateConfig, type StateConfig } from '../lib/stateUtils';
+import { countStreak, todayLocal } from '../lib/domain';
 import { MONTH_LABELS } from '../lib/constants';
-import { totalDuration, formatDuration, formatDate } from '../lib/dateUtils';
-import { useAllMoodConfigs } from '../lib/moodUtils';
+import { formatDuration as fmtMin } from '../lib/dateUtils';
+import { useIsDark } from '../lib/useIsDark';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import { ChevronLeft, ChevronRight, BookOpen, Clock, Flame } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
+import type { ExportData, JournalState } from '../lib/types/api';
+
+interface YearStats {
+  totalDays: number;
+  totalMin: number;
+  topStateId: string | null;
+  mostConsistentMonth: { month: number; ratio: number } | null;
+  longestStreak: number;
+  monthlyData: { month: number; label: string; days: number; hours: number; topStateId: string | null }[];
+  subjectData: { name: string; hours: number; color: string; minutes: number }[];
+}
+
+function buildYearStats(data: ExportData, year: number, isCurrentYear: boolean, now: Date): YearStats {
+  const prefix = `${year}-`;
+  const subjectById = new Map(data.subjects.map((s) => [s.id, s]));
+
+  // 有记录日期 = day 行有 state/diary，或当日有 entries（与服务端 streak 口径一致）
+  const recorded = new Set<string>();
+  const stateIdByDate = new Map<string, string>();
+  for (const d of data.days) {
+    if (!d.date.startsWith(prefix)) continue;
+    if (d.stateId || d.diary.trim()) {
+      recorded.add(d.date);
+      if (d.stateId) stateIdByDate.set(d.date, d.stateId);
+    }
+  }
+
+  const entries = data.entries.filter((e) => e.date.startsWith(prefix));
+  for (const e of entries) recorded.add(e.date);
+  const totalMin = entries.reduce((sum, e) => sum + e.durationMin, 0);
+
+  // 状态计数 → 最常状态
+  const stateCount = new Map<string, number>();
+  for (const [date, sid] of stateIdByDate) {
+    if (recorded.has(date)) stateCount.set(sid, (stateCount.get(sid) ?? 0) + 1);
+  }
+  let topStateId: string | null = null;
+  let topCount = 0;
+  for (const [sid, count] of stateCount) {
+    if (count > topCount) {
+      topCount = count;
+      topStateId = sid;
+    }
+  }
+
+  // 月度桶
+  const buckets: { days: number; min: number; states: Map<string, number> }[] = Array.from(
+    { length: 12 },
+    () => ({ days: 0, min: 0, states: new Map<string, number>() }),
+  );
+  for (const date of recorded) {
+    const m = parseInt(date.slice(5, 7), 10) - 1;
+    buckets[m].days++;
+  }
+  for (const e of entries) {
+    const m = parseInt(e.date.slice(5, 7), 10) - 1;
+    buckets[m].min += e.durationMin;
+  }
+  for (const [date, sid] of stateIdByDate) {
+    const m = parseInt(date.slice(5, 7), 10) - 1;
+    buckets[m].states.set(sid, (buckets[m].states.get(sid) ?? 0) + 1);
+  }
+
+  const monthlyData = buckets.map((b, m) => {
+    let mTop: string | null = null;
+    let mTopCount = 0;
+    for (const [sid, count] of b.states) {
+      if (count > mTopCount) {
+        mTopCount = count;
+        mTop = sid;
+      }
+    }
+    return {
+      month: m,
+      label: MONTH_LABELS[m],
+      days: b.days,
+      hours: Math.round((b.min / 60) * 10) / 10,
+      topStateId: mTop,
+    };
+  });
+
+  let mostConsistentMonth: { month: number; ratio: number } | null = null;
+  for (let m = 0; m < 12; m++) {
+    if (isCurrentYear && m > now.getMonth()) continue;
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+    const ratio = buckets[m].days / daysInMonth;
+    if (!mostConsistentMonth || ratio > mostConsistentMonth.ratio) {
+      mostConsistentMonth = { month: m, ratio };
+    }
+  }
+
+  // 最长连续：年内记录日期 + 游标（当年→今天；往年→12-31）
+  const cursor = isCurrentYear ? todayLocal() : `${year}-12-31`;
+  const longestStreak = countStreak([...recorded].filter((d) => d.startsWith(prefix)), cursor);
+
+  // 学科分布
+  const subjMap = new Map<string, { name: string; color: string; minutes: number }>();
+  for (const e of entries) {
+    const subj = subjectById.get(e.subjectId);
+    const key = e.subjectId;
+    const cur = subjMap.get(key) ?? {
+      name: subj?.name ?? '—',
+      color: subj?.color ?? 'var(--keyline)',
+      minutes: 0,
+    };
+    cur.minutes += e.durationMin;
+    subjMap.set(key, cur);
+  }
+  const subjectData = [...subjMap.values()]
+    .map((s) => ({ ...s, hours: Math.round((s.minutes / 60) * 10) / 10 }))
+    .sort((a, b) => b.minutes - a.minutes);
+
+  return {
+    totalDays: recorded.size,
+    totalMin,
+    topStateId,
+    mostConsistentMonth,
+    longestStreak,
+    monthlyData,
+    subjectData,
+  };
+}
 
 export default function AnnualReview() {
+  const isDark = useIsDark();
   const [searchParams] = useSearchParams();
   const now = new Date();
   const initialYear = parseInt(searchParams.get('year') ?? '') || now.getFullYear();
   const [viewYear, setViewYear] = useState(initialYear);
 
-  const { data: records, loading, error, refresh } = useApiQuery(
-    () => getRecordsByYear(viewYear),
-    [viewYear],
-  );
-  const allMoods = useAllMoodConfigs();
-  const allMoodKeys = useMemo(() => new Set(allMoods.map((m) => m.type)), [allMoods]);
-  const moodCfgMap = useMemo(() => {
-    const map = new Map<string, (typeof allMoods)[0]>();
-    for (const cfg of allMoods) map.set(cfg.type, cfg);
-    return map;
-  }, [allMoods]);
+  const { data: exportData, isPending, error, refetch } = useExportData();
 
   const isCurrentYear = viewYear === now.getFullYear();
   const prevYear = () => setViewYear((v) => v - 1);
   const nextYear = () => setViewYear((v) => v + 1);
 
-  const stats = useMemo(() => {
-    if (!records || records.length === 0) {
-      return {
-        totalDays: 0,
-        totalMin: 0,
-        topMood: null as string | null,
-        mostConsistentMonth: null as { month: number; ratio: number } | null,
-        longestStreak: 0,
-        monthlyData: [] as { month: number; label: string; days: number; hours: number; topMoodType: string | null }[],
-        subjectData: [] as { name: string; hours: number; color: string }[],
-      };
+  const stats = useMemo<YearStats | null>(() => {
+    if (!exportData) return null;
+    return buildYearStats(exportData, viewYear, isCurrentYear, now);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportData, viewYear, isCurrentYear]);
+
+  const stateList: JournalState[] = exportData?.states ?? [];
+  const cfgMap = useMemo(() => {
+    const map = new Map<string, StateConfig>();
+    for (const s of stateList) {
+      const cfg = findStateConfig(stateList, s.id);
+      if (cfg) map.set(s.id, cfg);
     }
+    return map;
+  }, [stateList]);
 
-    const totalDays = records.length;
-    const totalMin = records.reduce((sum, r) => sum + totalDuration(r.learnings), 0);
-
-    const moodCount: Record<string, number> = {};
-    for (const r of records) {
-      if (r.mood && allMoodKeys.has(r.mood)) {
-        moodCount[r.mood] = (moodCount[r.mood] || 0) + 1;
-      }
-    }
-    let topMood: string | null = null;
-    let topMoodCount = 0;
-    for (const [mood, count] of Object.entries(moodCount)) {
-      if (count > topMoodCount) {
-        topMoodCount = count;
-        topMood = mood;
-      }
-    }
-
-    const monthlyBuckets: Record<number, { days: number; min: number; moods: Record<string, number> }> = {};
-    for (let m = 0; m < 12; m++) monthlyBuckets[m] = { days: 0, min: 0, moods: {} };
-
-    for (const r of records) {
-      const month = parseInt(r.date.split('-')[1], 10) - 1;
-      monthlyBuckets[month].days++;
-      monthlyBuckets[month].min += totalDuration(r.learnings);
-      if (r.mood) {
-        monthlyBuckets[month].moods[r.mood] = (monthlyBuckets[month].moods[r.mood] || 0) + 1;
-      }
-    }
-
-    const monthlyData = Object.entries(monthlyBuckets).map(([m, data]) => {
-      let topMoodType: string | null = null;
-      let topCount = 0;
-      for (const [mood, count] of Object.entries(data.moods)) {
-        if (count > topCount) {
-          topCount = count;
-          topMoodType = mood;
-        }
-      }
-      return {
-        month: parseInt(m),
-        label: MONTH_LABELS[parseInt(m)],
-        days: data.days,
-        hours: Math.round((data.min / 60) * 10) / 10,
-        topMoodType,
-      };
-    });
-
-    let mostConsistentMonth: { month: number; ratio: number } | null = null;
-    for (const [m, data] of Object.entries(monthlyBuckets)) {
-      const monthIdx = parseInt(m);
-      const daysInMonth = new Date(viewYear, monthIdx + 1, 0).getDate();
-      if (isCurrentYear && monthIdx > now.getMonth()) continue;
-      const ratio = data.days / daysInMonth;
-      if (!mostConsistentMonth || ratio > mostConsistentMonth.ratio) {
-        mostConsistentMonth = { month: monthIdx, ratio };
-      }
-    }
-
-    const dateSet = new Set(records.map((r) => r.date));
-    let longestStreak = 0;
-    let currentStreak = 0;
-    const yearStart = new Date(viewYear, 0, 1);
-    const yearEnd = isCurrentYear ? new Date() : new Date(viewYear, 11, 31);
-    for (let d = new Date(yearStart); d <= yearEnd; d.setDate(d.getDate() + 1)) {
-      const ds = formatDate(d);
-      if (dateSet.has(ds)) {
-        currentStreak++;
-        longestStreak = Math.max(longestStreak, currentStreak);
-      } else {
-        currentStreak = 0;
-      }
-    }
-
-    const subjectMap: Record<string, { min: number; color: string }> = {};
-    for (const r of records) {
-      for (const l of r.learnings) {
-        if (!subjectMap[l.subject]) subjectMap[l.subject] = { min: 0, color: l.color };
-        subjectMap[l.subject].min += l.durationMin;
-      }
-    }
-    const subjectData = Object.entries(subjectMap)
-      .map(([name, { min, color }]) => ({ name, hours: Math.round((min / 60) * 10) / 10, color }))
-      .sort((a, b) => b.hours - a.hours);
-
-    return { totalDays, totalMin, topMood, mostConsistentMonth, longestStreak, monthlyData, subjectData };
-  }, [records, viewYear, isCurrentYear, allMoodKeys]);
-
-  const topMoodConfig = stats.topMood ? moodCfgMap.get(stats.topMood) ?? null : null;
-  const hasData = stats.totalDays > 0;
+  const topStateCfg = stats?.topStateId ? cfgMap.get(stats.topStateId) : undefined;
+  const hasData = (stats?.totalDays ?? 0) > 0;
   const chartGridColor = 'color-mix(in srgb, var(--hairline) 70%, transparent)';
   const chartTextColor = 'var(--ink-faint)';
 
-  if (loading && !records) return <QueryLoading />;
-  if (error && !records) return <QueryError message={error.message} onRetry={refresh} />;
+  if (isPending && !exportData) return <QueryLoading />;
+  if (error && !exportData) return <QueryError message={error.message} onRetry={() => void refetch()} />;
+  if (!stats) return null;
 
   return (
     <div>
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="font-sans text-display text-[var(--ink)]">年度回顾</h1>
-          <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">{viewYear} 年的学习与心情</p>
+          <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">{viewYear} 年的学习与状态</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -194,26 +224,26 @@ export default function AnnualReview() {
                 <Clock size={20} strokeWidth={1.75} style={{ color: 'var(--pine)' }} />
               </div>
               <div>
-                <div className="font-mono text-num-lg text-[var(--ink)]">{formatDuration(stats.totalMin)}</div>
+                <div className="font-mono text-num-lg text-[var(--ink)]">{fmtMin(stats.totalMin)}</div>
                 <div className="font-sans text-caption text-[var(--ink-soft)]">总学习时长</div>
               </div>
             </div>
             <div className="card flex items-center gap-3 rounded-xl p-5">
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-full"
-                style={{ background: topMoodConfig ? topMoodConfig.tint : 'color-mix(in srgb, var(--brand) 12%, transparent)' }}
+                style={{ background: topStateCfg ? topStateCfg.tint : 'color-mix(in srgb, var(--brand) 12%, transparent)' }}
               >
-                {topMoodConfig ? (
-                  <span className="h-3 w-3 rounded-full" style={{ background: topMoodConfig.solid }} />
+                {topStateCfg ? (
+                  <span className="h-3 w-3 rounded-full" style={{ background: topStateCfg.color }} />
                 ) : (
                   <span className="font-mono text-num text-[var(--ink-faint)]">-</span>
                 )}
               </div>
               <div>
                 <div className="font-sans text-h2 text-[var(--ink)]">
-                  {topMoodConfig ? topMoodConfig.label : '-'}
+                  {topStateCfg ? topStateCfg.label : '-'}
                 </div>
-                <div className="font-sans text-caption text-[var(--ink-soft)]">最常心情</div>
+                <div className="font-sans text-caption text-[var(--ink-soft)]">最常状态</div>
               </div>
             </div>
             <div className="card flex items-center gap-3 rounded-xl p-5">
@@ -289,14 +319,15 @@ export default function AnnualReview() {
             <h2 className="mb-4 font-sans text-h2 text-[var(--ink)]">月度总览</h2>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
               {stats.monthlyData.map((m) => {
-                const cfg = m.topMoodType ? moodCfgMap.get(m.topMoodType) : undefined;
+                const cfg = m.topStateId ? cfgMap.get(m.topStateId) : undefined;
+                const dotColor = cfg ? (isDark ? cfg.dark.solid : cfg.color) : 'var(--keyline)';
                 return (
                   <div key={m.month} className="rounded-xl p-3 transition-all hover:bg-[var(--paper)]">
                     <div className="mb-1 font-sans text-caption text-[var(--ink-soft)]">{m.label}</div>
                     <div className="flex items-center gap-2">
                       <span
                         className="h-2.5 w-2.5 rounded-full"
-                        style={{ background: cfg ? cfg.solid : 'var(--keyline)' }}
+                        style={{ background: dotColor }}
                       />
                       <div>
                         <div className="font-mono text-num text-[var(--ink)]">{m.hours}h</div>

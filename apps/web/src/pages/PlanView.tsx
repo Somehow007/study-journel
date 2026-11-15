@@ -6,11 +6,12 @@ import GoalProgressBar from '../components/GoalProgressBar';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import { Pressable } from '../components/ui/Pressable';
 import { useApp } from '../context/AppContext';
-import { createGoal, formatPeriod, getGoalsByPeriod } from '../lib/goalApi';
+import { createGoal, formatPeriod } from '../lib/goalApi';
+import { useGoalsByPeriod, invalidateAll, qk } from '../lib/queries';
+import { useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../lib/toast';
-import { useApiQuery } from '../lib/useApiQuery';
 import { MONTH_LABELS } from '../lib/constants';
-import type { GoalSummary } from '../types/goal';
+import type { GoalSummary } from '../lib/types/api';
 
 function ProgressRing({ percent, color }: { percent: number; color: string }) {
   const r = 38;
@@ -89,7 +90,8 @@ export default function PlanView() {
   const period = formatPeriod(year, month);
   const [showForm, setShowForm] = useState(false);
 
-  const { data, loading, error, refresh } = useApiQuery(() => getGoalsByPeriod(period), [period]);
+  const qc = useQueryClient();
+  const { data, isPending, error, refetch } = useGoalsByPeriod(period);
 
   const now = useMemo(() => new Date(), []);
 
@@ -102,8 +104,8 @@ export default function PlanView() {
     setCurrentMonth(d.getFullYear(), d.getMonth());
   };
 
-  if (loading && !data) return <QueryLoading />;
-  if (error && !data) return <QueryError message={error.message} onRetry={refresh} />;
+  if (isPending && !data) return <QueryLoading />;
+  if (error && !data) return <QueryError message={error.message} onRetry={() => void refetch()} />;
 
   const goals = data?.goals ?? [];
   const monthPercent = data?.monthPercent ?? 0;
@@ -197,6 +199,8 @@ export default function PlanView() {
               const created = await createGoal(payload);
               setShowForm(false);
               showToast('目标已种下', 'success');
+              invalidateAll(qc);
+              void qc.invalidateQueries({ queryKey: qk.goals(period) });
               navigate(`/plan/${created.id}`);
             } catch (err) {
               showToast(err instanceof Error ? err.message : '创建失败');

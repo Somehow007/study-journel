@@ -1,18 +1,22 @@
 import { useState, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { exportAllData, importData } from './api';
-import { exportAllData as exportLocalData } from './db';
+import { readLegacyIdb } from './legacyIdb';
 import { formatDate } from './dateUtils';
 import { showToast } from './toast';
 import { askConfirm } from './confirm';
+import { invalidateAll } from './queries';
+import type { ImportResult } from './types/api';
 
 /**
- * 共享的数据导出/导入逻辑（Sidebar 和 Settings 共用）。
+ * 共享的数据导出/导入/旧库迁移逻辑（Sidebar 和 Settings 共用）。
  *
- * 第二期后端化后：导出/导入都走服务端（/api/journal/export、/import，按日期幂等 upsert）；
- * 另提供「迁移本地数据」入口：把本浏览器 IndexedDB 里的旧数据（db.ts 保留读取能力）
- * 一次性合并上传到服务端，完成第一期 → 第二期的历史数据迁移。
+ * v3：导出/导入都走 Go 服务端（/api/v1/export、/import，幂等 upsert 合并）；
+ * 「迁移本地旧数据」读取浏览器 IndexedDB（StudyJournalDB）中的第一期数据，
+ * 按 v2 格式（records + customMoods）一次性上传，导入后失效全部查询。
  */
 export function useDataIO() {
+  const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [migrating, setMigrating] = useState(false);
@@ -22,6 +26,21 @@ export function useDataIO() {
     setTimeout(() => setImportStatus('idle'), 3000);
   };
 
+  const summarizeImport = (result: ImportResult): string => {
+    const s = result.stats;
+    const parts = [
+      s.days ? `${s.days} 天` : '',
+      s.entries ? `${s.entries} 条学习` : '',
+      s.minutes ? `${Math.round((s.minutes / 60) * 10) / 10} 小时` : '',
+      s.subjects ? `${s.subjects} 个科目` : '',
+      s.states ? `${s.states} 种状态` : '',
+      s.goals ? `${s.goals} 个目标` : '',
+      s.tasks ? `${s.tasks} 个任务` : '',
+      s.checkins ? `${s.checkins} 次打卡` : '',
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join('、') : '无新增数据';
+  };
+
   const handleExport = async () => {
     try {
       const data = await exportAllData();
@@ -29,7 +48,7 @@ export function useDataIO() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `study-journal-${formatDate(new Date())}.json`;
+      a.download = `study-journey-${formatDate(new Date())}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast('已导出', 'success');
@@ -48,29 +67,27 @@ export function useDataIO() {
 
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      const data: unknown = JSON.parse(text);
 
-      const records = Array.isArray(data) ? data : data.records;
-      if (!records || !Array.isArray(records)) {
+      const looksValid =
+        Array.isArray(data) ||
+        (typeof data === 'object' && data !== null);
+      if (!looksValid) {
         throw new Error('数据格式错误');
-      }
-
-      for (const item of records) {
-        if (!item.date || typeof item.date !== 'string') {
-          throw new Error('数据格式错误：缺少 date 字段');
-        }
       }
 
       const confirmed = await askConfirm({
         title: '导入数据',
-        message: `即将导入 ${records.length} 条记录。同一天已有记录会被合并覆盖，其余日期不受影响。`,
+        message:
+          '即将把文件内容合并导入到服务器。同一天/同一记录会以文件为准合并，其余数据不受影响。',
         confirmLabel: '导入',
       });
       if (!confirmed) return;
 
       const result = await importData(data);
+      invalidateAll(qc);
       flashStatus('success');
-      showToast(`导入完成：${result.recordsImported} 条记录、${result.moodsImported} 个自定义心情`, 'success');
+      showToast(`导入完成：${summarizeImport(result)}`, 'success');
     } catch (err) {
       console.error('Import failed:', err);
       flashStatus('error');
@@ -86,7 +103,7 @@ export function useDataIO() {
   const handleMigrateLocal = async () => {
     setMigrating(true);
     try {
-      const local = await exportLocalData();
+      const local = await readLegacyIdb();
       if (local.records.length === 0 && local.customMoods.length === 0) {
         showToast('浏览器本地没有可迁移的数据');
         return;
@@ -100,9 +117,13 @@ export function useDataIO() {
       });
       if (!confirmed) return;
 
-      const result = await importData(local);
+      const result = await importData({
+        records: local.records,
+        customMoods: local.customMoods,
+      });
+      invalidateAll(qc);
       flashStatus('success');
-      showToast(`迁移完成：${result.recordsImported} 条记录、${result.moodsImported} 个自定义心情已同步到服务器`, 'success');
+      showToast(`迁移完成：${summarizeImport(result)}已同步到服务器`, 'success');
     } catch (err) {
       console.error('Local migration failed:', err);
       flashStatus('error');

@@ -1,173 +1,98 @@
-import { nanoid } from 'nanoid';
+/**
+ * 目标数据层（v3 /api/v1）—— goals/tasks/checkins。
+ * 注意与旧版差异：task/checkin 写操作返回自身 DTO（不再返回整个 GoalDetail），
+ * 调用方经 TanStack Query invalidate 刷新；complete/uncomplete 拆分；
+ * syncLearning → createEntry（服务端生成 entry 并回填 entry_id）。
+ */
+import { apiFetch } from './http';
 import type {
-  CheckInPayload,
-  CompleteTaskPayload,
-  GoalCreatePayload,
+  CheckinRequest,
+  CompleteTaskRequest,
   GoalDetail,
   GoalMonth,
+  GoalPatch,
+  GoalRequest,
   GoalTask,
+  GoalCheckin,
+  TaskPatch,
+  TaskRequest,
   TodayGoals,
-} from '../types/goal';
-import { apiFetch } from './http';
-import { emitJournalChanged } from './journalEvents';
+} from './types/api';
 
-function periodParam(period: string): string {
-  return encodeURIComponent(period);
-}
+const enc = encodeURIComponent;
 
 export async function getGoalsByPeriod(period: string): Promise<GoalMonth> {
-  return apiFetch<GoalMonth>(`/goals?period=${periodParam(period)}`);
+  return apiFetch<GoalMonth>(`/goals?period=${enc(period)}`);
 }
 
 export async function getTodayGoals(date: string): Promise<TodayGoals> {
-  return apiFetch<TodayGoals>(`/goals/today?date=${encodeURIComponent(date)}`);
+  return apiFetch<TodayGoals>(`/goals/today?date=${enc(date)}`);
 }
 
 export async function getGoal(id: string): Promise<GoalDetail> {
-  return apiFetch<GoalDetail>(`/goals/${encodeURIComponent(id)}`);
+  return apiFetch<GoalDetail>(`/goals/${enc(id)}`);
 }
 
-export async function createGoal(payload: GoalCreatePayload): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>('/goals', {
+export async function createGoal(payload: GoalRequest): Promise<GoalDetail> {
+  return apiFetch<GoalDetail>('/goals', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateGoal(id: string, patch: GoalPatch): Promise<GoalDetail> {
+  return apiFetch<GoalDetail>(`/goals/${enc(id)}`, { method: 'PATCH', body: JSON.stringify(patch) });
+}
+
+/** 归档（软删除），历史数据保留 */
+export async function deleteGoal(id: string): Promise<void> {
+  await apiFetch<unknown>(`/goals/${enc(id)}`, { method: 'DELETE' });
+}
+
+/** 结转到下一周期，返回新目标详情 */
+export async function carryOverGoal(id: string): Promise<GoalDetail> {
+  return apiFetch<GoalDetail>(`/goals/${enc(id)}/carry-over`, { method: 'POST' });
+}
+
+// ─── 任务 ────────────────────────────────────────────
+
+export async function addGoalTask(goalId: string, task: TaskRequest): Promise<GoalTask> {
+  return apiFetch<GoalTask>(`/goals/${enc(goalId)}/tasks`, {
+    method: 'POST',
+    body: JSON.stringify(task),
+  });
+}
+
+export async function updateGoalTask(taskId: string, patch: TaskPatch): Promise<GoalTask> {
+  return apiFetch<GoalTask>(`/tasks/${enc(taskId)}`, { method: 'PATCH', body: JSON.stringify(patch) });
+}
+
+export async function deleteGoalTask(taskId: string): Promise<void> {
+  await apiFetch<unknown>(`/tasks/${enc(taskId)}`, { method: 'DELETE' });
+}
+
+/** 完成任务；createEntry=true 时服务端按 durationMin 生成学习条目并回填 entryId */
+export async function completeGoalTask(taskId: string, payload: CompleteTaskRequest = {}): Promise<GoalTask> {
+  return apiFetch<GoalTask>(`/tasks/${enc(taskId)}/complete`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  emitJournalChanged();
-  return data;
 }
 
-export async function updateGoal(
-  id: string,
-  patch: { title?: string; targetValue?: number; unit?: string; color?: string; note?: string; status?: string },
-): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>(`/goals/${encodeURIComponent(id)}`, {
+export async function uncompleteGoalTask(taskId: string): Promise<GoalTask> {
+  return apiFetch<GoalTask>(`/tasks/${enc(taskId)}/uncomplete`, { method: 'POST' });
+}
+
+// ─── 打卡 ────────────────────────────────────────────
+
+export async function upsertCheckIn(goalId: string, date: string, payload: CheckinRequest): Promise<GoalCheckin> {
+  return apiFetch<GoalCheckin>(`/goals/${enc(goalId)}/checkins/${enc(date)}`, {
     method: 'PUT',
-    body: JSON.stringify(patch),
+    body: JSON.stringify(payload),
   });
-  emitJournalChanged();
-  return data;
 }
 
-export async function deleteGoal(id: string): Promise<void> {
-  await apiFetch<void>(`/goals/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  emitJournalChanged();
-}
-
-export async function addGoalTask(
-  goalId: string,
-  task: { title: string; dueDate?: string | null; weekStart?: string | null },
-): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>(`/goals/${encodeURIComponent(goalId)}/tasks`, {
-    method: 'POST',
-    body: JSON.stringify({
-      id: nanoid(),
-      title: task.title,
-      dueDate: task.dueDate ?? '',
-      weekStart: task.weekStart ?? '',
-    }),
-  });
-  emitJournalChanged();
-  return data;
-}
-
-export async function updateGoalTask(
-  goalId: string,
-  taskId: string,
-  task: Pick<GoalTask, 'title'> & { dueDate?: string | null; weekStart?: string | null; sortOrder?: number },
-): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>(
-    `/goals/${encodeURIComponent(goalId)}/tasks/${encodeURIComponent(taskId)}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify({
-        title: task.title,
-        dueDate: task.dueDate ?? '',
-        weekStart: task.weekStart ?? '',
-        sortOrder: task.sortOrder,
-      }),
-    },
-  );
-  emitJournalChanged();
-  return data;
-}
-
-export async function deleteGoalTask(goalId: string, taskId: string): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>(
-    `/goals/${encodeURIComponent(goalId)}/tasks/${encodeURIComponent(taskId)}`,
-    { method: 'DELETE' },
-  );
-  emitJournalChanged();
-  return data;
-}
-
-export async function completeGoalTask(
-  goalId: string,
-  taskId: string,
-  payload: CompleteTaskPayload = {},
-): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>(
-    `/goals/${encodeURIComponent(goalId)}/tasks/${encodeURIComponent(taskId)}/complete`,
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    },
-  );
-  emitJournalChanged();
-  return data;
-}
-
-export async function upsertCheckIn(
-  goalId: string,
-  date: string,
-  payload: CheckInPayload,
-): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>(
-    `/goals/${encodeURIComponent(goalId)}/checkins/${encodeURIComponent(date)}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify({ id: payload.id ?? nanoid(), ...payload }),
-    },
-  );
-  emitJournalChanged();
-  return data;
-}
-
-export async function deleteCheckIn(goalId: string, date: string): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>(
-    `/goals/${encodeURIComponent(goalId)}/checkins/${encodeURIComponent(date)}`,
-    { method: 'DELETE' },
-  );
-  emitJournalChanged();
-  return data;
-}
-
-export async function carryOverGoal(goalId: string): Promise<GoalDetail> {
-  const data = await apiFetch<GoalDetail>(`/goals/${encodeURIComponent(goalId)}/carry-over`, {
-    method: 'POST',
-  });
-  emitJournalChanged();
-  return data;
+export async function deleteCheckIn(goalId: string, date: string): Promise<void> {
+  await apiFetch<unknown>(`/goals/${enc(goalId)}/checkins/${enc(date)}`, { method: 'DELETE' });
 }
 
 export function formatPeriod(year: number, monthIndex: number): string {
   return `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
-}
-
-/** 创建数量型目标时的日/周配额预览（按整月均分） */
-export function previewCountSplit(target: number, period: string): {
-  days: number;
-  plannedDaily: number;
-  plannedWeekly: number;
-} {
-  const [y, m] = period.split('-').map(Number);
-  if (!y || !m || target < 1) {
-    return { days: 0, plannedDaily: 0, plannedWeekly: 0 };
-  }
-  const days = new Date(y, m, 0).getDate();
-  const weeks = Math.max(1, Math.ceil(days / 7));
-  return {
-    days,
-    plannedDaily: Math.ceil(target / days),
-    plannedWeekly: Math.ceil(target / weeks),
-  };
 }

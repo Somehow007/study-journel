@@ -1,19 +1,30 @@
 import { useState } from 'react';
-import { completeGoalTask, deleteCheckIn, getTodayGoals, upsertCheckIn } from '../lib/goalApi';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  completeGoalTask,
+  deleteCheckIn,
+  getGoal,
+  uncompleteGoalTask,
+  upsertCheckIn,
+} from '../lib/goalApi';
 import { showToast } from '../lib/toast';
-import { useApiQuery } from '../lib/useApiQuery';
+import { useTodayGoals, qk, invalidateAll } from '../lib/queries';
 import { useNavigate } from 'react-router-dom';
 import GoalCompleteSheet, { type GoalCompleteValues } from './GoalCompleteSheet';
 import GoalProgressBar from './GoalProgressBar';
 import { Pressable } from './ui/Pressable';
 import { QueryError } from './QueryState';
-import type { GoalCheckIn, GoalTask, TodayGoalItem, TodayGoals } from '../types/goal';
+import type { GoalCheckin, GoalTask, TodayGoalItem, TodayGoals } from '../lib/types/api';
 
 interface TodayGoalsSectionProps {
   date: string;
 }
 
-function patchItems(data: TodayGoals | undefined, goalId: string, updater: (item: TodayGoalItem) => TodayGoalItem): TodayGoals | undefined {
+function patchItems(
+  data: TodayGoals | undefined,
+  goalId: string,
+  updater: (item: TodayGoalItem) => TodayGoalItem,
+): TodayGoals | undefined {
   if (!data) return data;
   return {
     ...data,
@@ -23,7 +34,8 @@ function patchItems(data: TodayGoals | undefined, goalId: string, updater: (item
 
 export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
   const navigate = useNavigate();
-  const { data, error, refresh, setData } = useApiQuery(() => getTodayGoals(date), [date]);
+  const qc = useQueryClient();
+  const { data, isPending, error, refetch } = useTodayGoals(date);
   const [sheet, setSheet] = useState<
     | { item: TodayGoalItem; mode: 'count' }
     | { item: TodayGoalItem; mode: 'task'; task: GoalTask }
@@ -31,11 +43,22 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
   >(null);
 
   const items = data?.items ?? [];
-  if (error) {
+  if (isPending && !data) {
     return (
       <section className="card mb-6 rounded-xl p-6">
         <h2 className="mb-2 font-sans text-h2 text-[var(--ink)]">今日任务</h2>
-        <QueryError message={error.message} onRetry={refresh} />
+        <div className="animate-pulse space-y-2 py-2">
+          <div className="h-4 w-2/3 rounded bg-[var(--hairline)]" />
+          <div className="h-4 w-1/2 rounded bg-[var(--hairline)]" />
+        </div>
+      </section>
+    );
+  }
+  if (error && !data) {
+    return (
+      <section className="card mb-6 rounded-xl p-6">
+        <h2 className="mb-2 font-sans text-h2 text-[var(--ink)]">今日任务</h2>
+        <QueryError message={error.message} onRetry={() => void refetch()} />
       </section>
     );
   }
@@ -57,56 +80,69 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
     );
   }
 
+  const setTodayData = (updater: (cur: TodayGoals | undefined) => TodayGoals | undefined) => {
+    qc.setQueryData<TodayGoals | undefined>(qk.todayGoals(date), updater);
+  };
+
+  /** 写操作后刷新全部查询，并取回目标最新 percent 用于「达标」提示 */
+  const afterWrite = async (goalId: string, before: number) => {
+    invalidateAll(qc);
+    try {
+      const detail = await getGoal(goalId);
+      if (before < 100 && detail.percent >= 100) showToast('这颗开了', 'success');
+    } catch {
+      /* percent 只是锦上添花，失败不阻塞 */
+    }
+  };
+
   const handleConfirm = async (values: GoalCompleteValues) => {
     if (!sheet) return;
     const before = sheet.item.percent;
-    const prev = data;
+    const goalId = sheet.item.goalId;
     try {
       if (sheet.mode === 'count') {
-        setData((cur) =>
-          patchItems(cur, sheet.item.goalId, (item) => ({
+        setTodayData((cur) =>
+          patchItems(cur, goalId, (item) => ({
             ...item,
             todayCheckin: {
-              id: item.todayCheckin?.id ?? 'optimistic',
+              id: item.todayCheckin?.id ?? `tmp-${Date.now()}`,
               goalId: item.goalId,
               date,
               quantity: values.quantity ?? item.suggestedToday ?? 1,
-              durationMin: values.durationMin ?? null,
               note: values.note ?? '',
+              entryId: null,
               createdAt: Date.now(),
               updatedAt: Date.now(),
-            } satisfies GoalCheckIn,
+            } satisfies GoalCheckin,
           })),
         );
-        const updated = await upsertCheckIn(sheet.item.goalId, date, {
-          id: sheet.item.todayCheckin?.id,
+        await upsertCheckIn(goalId, date, {
           quantity: values.quantity ?? sheet.item.suggestedToday ?? 1,
-          durationMin: values.durationMin,
           note: values.note,
-          syncLearning: values.syncLearning,
+          durationMin: values.durationMin,
+          createEntry: values.createEntry,
+          date,
         });
-        if (before < 100 && updated.percent >= 100) showToast('这颗开了', 'success');
       } else {
-        setData((cur) =>
-          patchItems(cur, sheet.item.goalId, (item) => ({
+        setTodayData((cur) =>
+          patchItems(cur, goalId, (item) => ({
             ...item,
             todayTasks: item.todayTasks.map((task) =>
               task.id === sheet.task.id ? { ...task, done: true } : task,
             ),
           })),
         );
-        const updated = await completeGoalTask(sheet.item.goalId, sheet.task.id, {
-          done: true,
+        await completeGoalTask(sheet.task.id, {
           durationMin: values.durationMin,
           reflection: values.note,
-          syncLearning: values.syncLearning,
+          createEntry: values.createEntry,
           date,
         });
-        if (before < 100 && updated.percent >= 100) showToast('这颗开了', 'success');
       }
       setSheet(null);
+      await afterWrite(goalId, before);
     } catch (err) {
-      setData(prev);
+      invalidateAll(qc);
       showToast(err instanceof Error ? err.message : '保存失败');
     }
   };
@@ -151,14 +187,15 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
                   <Pressable
                     variant="pill"
                     onClick={() => {
-                      const prev = data;
-                      setData((cur) =>
+                      setTodayData((cur) =>
                         patchItems(cur, item.goalId, (it) => ({ ...it, todayCheckin: null })),
                       );
-                      void deleteCheckIn(item.goalId, date).catch((err) => {
-                        setData(prev);
-                        showToast(err instanceof Error ? err.message : '取消失败');
-                      });
+                      void deleteCheckIn(item.goalId, date)
+                        .then(() => invalidateAll(qc))
+                        .catch((err) => {
+                          invalidateAll(qc);
+                          showToast(err instanceof Error ? err.message : '取消失败');
+                        });
                     }}
                     className="rounded-full border border-[var(--keyline)] px-3 py-1 font-sans text-caption text-[var(--ink-soft)]"
                   >
@@ -186,8 +223,7 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
                       aria-label={task.done ? '取消完成' : '标记完成'}
                       onClick={() => {
                         if (task.done) {
-                          const prev = data;
-                          setData((cur) =>
+                          setTodayData((cur) =>
                             patchItems(cur, item.goalId, (it) => ({
                               ...it,
                               todayTasks: it.todayTasks.map((t) =>
@@ -195,10 +231,12 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
                               ),
                             })),
                           );
-                          void completeGoalTask(item.goalId, task.id, { done: false }).catch((err) => {
-                            setData(prev);
-                            showToast(err instanceof Error ? err.message : '更新失败');
-                          });
+                          void uncompleteGoalTask(task.id)
+                            .then(() => invalidateAll(qc))
+                            .catch((err) => {
+                              invalidateAll(qc);
+                              showToast(err instanceof Error ? err.message : '更新失败');
+                            });
                           return;
                         }
                         setSheet({ item, mode: 'task', task });
@@ -240,11 +278,7 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
               ? sheet.item.todayCheckin?.quantity ?? sheet.item.suggestedToday ?? 1
               : undefined
           }
-          defaultDurationMin={
-            sheet.mode === 'count'
-              ? sheet.item.todayCheckin?.durationMin ?? 0
-              : sheet.task.durationMin ?? 0
-          }
+          defaultDurationMin={0}
           defaultNote={
             sheet.mode === 'count' ? sheet.item.todayCheckin?.note ?? '' : sheet.task.reflection ?? ''
           }

@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { SUBJECT_COLORS } from '../lib/constants';
-import { previewCountSplit } from '../lib/goalApi';
-import type { GoalType } from '../types/goal';
+import { previewCountSplit } from '../lib/domain';
+import { useSubjects } from '../lib/queries';
+import { useApp } from '../context/AppContext';
+import type { GoalType } from '../lib/types/api';
 import Sheet, { useSheetClose } from './ui/Sheet';
 import { Pressable } from './ui/Pressable';
 
@@ -17,6 +19,7 @@ interface GoalFormModalProps {
     type: GoalType;
     targetValue?: number;
     unit?: string;
+    subjectId?: string;
     color: string;
     note?: string;
   }) => Promise<void>;
@@ -37,18 +40,33 @@ function CloseButton() {
 }
 
 export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormModalProps) {
+  const { settings } = useApp();
+  const weekStartsOn = settings?.weekStartsOn ?? 1;
+  const { data: subjects } = useSubjects();
+  const activeSubjects = useMemo(
+    () => (subjects ?? []).filter((s) => s.archivedAt == null),
+    [subjects],
+  );
+
   const [type, setType] = useState<GoalType>('COUNT');
   const [title, setTitle] = useState('');
   const [targetValue, setTargetValue] = useState(300);
   const [unit, setUnit] = useState('词');
+  const [subjectId, setSubjectId] = useState('');
   const [color, setColor] = useState(SUBJECT_COLORS[0]);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const preview = useMemo(
-    () => (type === 'COUNT' ? previewCountSplit(targetValue, period) : null),
-    [type, targetValue, period],
+    () => (type === 'COUNT' ? previewCountSplit(targetValue, period, weekStartsOn) : null),
+    [type, targetValue, period, weekStartsOn],
   );
+
+  const handleSubjectChange = (id: string) => {
+    setSubjectId(id);
+    const subject = activeSubjects.find((s) => s.id === id);
+    if (subject) setColor(subject.color);
+  };
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
@@ -62,6 +80,7 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
         type,
         targetValue: type === 'COUNT' ? targetValue : undefined,
         unit: type === 'COUNT' ? unit.trim() || '个' : undefined,
+        subjectId: subjectId || undefined,
         color,
         note: note.trim() || undefined,
       });
@@ -157,6 +176,25 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
           className="card mb-4 w-full rounded-md px-3 py-2 font-sans text-body text-[var(--ink)] outline-none"
           style={{ border: '1px solid var(--keyline)', boxShadow: 'none' }}
         />
+
+        {activeSubjects.length > 0 && (
+          <>
+            <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">关联科目（可选）</label>
+            <select
+              value={subjectId}
+              onChange={(e) => handleSubjectChange(e.target.value)}
+              className="card mb-4 w-full rounded-md px-3 py-2 font-sans text-body text-[var(--ink)] outline-none"
+              style={{ border: '1px solid var(--keyline)', boxShadow: 'none' }}
+            >
+              <option value="">不关联</option>
+              {activeSubjects.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">标记颜色</label>
         <div className="mb-6 flex gap-2">

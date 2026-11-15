@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { loginWithPassword } from '../lib/http';
+import { login } from '../lib/auth';
 import { Pressable } from './ui/Pressable';
 
 export default function LoginPage() {
@@ -17,8 +17,9 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      await loginWithPassword(username.trim(), password);
-      window.location.assign('/journal/');
+      await login(username.trim(), password);
+      // 整页刷新：App 重新走 /auth/me 判定，QueryClient 缓存一并重建
+      window.location.assign(import.meta.env.BASE_URL || '/journal/');
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败，请重试');
     } finally {
@@ -30,7 +31,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-6" style={{ background: 'var(--paper)' }}>
       <form onSubmit={onSubmit} className="card w-full max-w-sm rounded-xl p-8">
         <h1 className="font-sans text-h1 text-[var(--ink)]">手帐</h1>
-        <p className="mt-1 font-sans text-small text-[var(--ink-faint)]">使用管理员账号登录</p>
+        <p className="mt-1 font-sans text-small text-[var(--ink-faint)]">登录你的学习手帐</p>
 
         {error && (
           <p className="mt-4 rounded-md px-3 py-2 font-sans text-small" style={{ background: 'var(--danger-subtle)', color: 'var(--danger)' }}>

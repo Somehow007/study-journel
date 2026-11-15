@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Sun, Moon, Download, Upload, RefreshCw, BookOpen, Check } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Pencil, Trash2, Sun, Moon, Download, Upload, RefreshCw, BookOpen, Check, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { deleteCustomMood, getCustomMoods } from '../lib/api';
-import { useApiQuery } from '../lib/useApiQuery';
-import MoodEditModal from '../components/MoodEditModal';
+import { archiveState } from '../lib/api';
+import { logout } from '../lib/auth';
+import { useStates, invalidateAll } from '../lib/queries';
+import StateEditModal from '../components/StateEditModal';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import { Pressable } from '../components/ui/Pressable';
 import { useDataIO } from '../lib/useDataIO';
@@ -16,12 +18,13 @@ import {
   isPickerThemeActive,
   isThemeDark,
 } from '../lib/theme';
-import type { CustomMoodConfig } from '../types';
+import type { JournalState } from '../lib/types/api';
 
 export default function Settings() {
-  const { theme, setTheme, toggleTheme, isDark, dailyGoalMin, setDailyGoalMin } = useApp();
-  const [showMoodEdit, setShowMoodEdit] = useState(false);
-  const [editingMood, setEditingMood] = useState<CustomMoodConfig | null>(null);
+  const qc = useQueryClient();
+  const { theme, setTheme, toggleTheme, isDark, dailyGoalMin, setDailyGoalMin, user } = useApp();
+  const [showStateEdit, setShowStateEdit] = useState(false);
+  const [editingState, setEditingState] = useState<JournalState | null>(null);
   const {
     importStatus,
     migrating,
@@ -32,27 +35,38 @@ export default function Settings() {
     fileInputRef,
   } = useDataIO();
 
-  const { data: customMoods, loading, error, refresh } = useApiQuery(getCustomMoods, []);
-  const customMoodList = customMoods ?? [];
+  const { data: states, isPending, error, refetch } = useStates();
+  const customStates = (states ?? []).filter((s) => s.builtinKey == null && s.archivedAt == null);
 
-  const handleEditMood = (mood: CustomMoodConfig) => {
-    setEditingMood(mood);
-    setShowMoodEdit(true);
+  const handleEditState = (state: JournalState) => {
+    setEditingState(state);
+    setShowStateEdit(true);
   };
 
-  const handleDeleteMood = async (mood: CustomMoodConfig) => {
+  const handleDeleteState = async (state: JournalState) => {
     const confirmed = await askConfirm({
-      title: '删除心情',
-      message: `确定要删除「${mood.label}」心情吗？`,
+      title: '删除状态',
+      message: `确定要删除「${state.label}」吗？历史记录仍会保留该状态标记。`,
       confirmLabel: '删除',
       danger: true,
     });
     if (!confirmed) return;
     try {
-      await deleteCustomMood(mood.id);
+      await archiveState(state.id);
+      invalidateAll(qc);
     } catch (err) {
       showToast(err instanceof Error ? err.message : '删除失败');
     }
+  };
+
+  const handleLogout = async () => {
+    const confirmed = await askConfirm({
+      title: '退出登录',
+      message: '退出后需要重新登录才能查看手帐。',
+      confirmLabel: '退出',
+    });
+    if (!confirmed) return;
+    await logout();
   };
 
   return (
@@ -100,8 +114,8 @@ export default function Settings() {
           })}
         </div>
         <p className="mt-3 font-sans text-caption text-[var(--ink-faint)]">
-          与博客共用主题（当前：{getThemeMeta(theme)?.name ?? theme}
-          {isThemeDark(theme) ? ' · 暗色' : ''}）。同域下两边会一起变。
+          主题保存在本机浏览器（当前：{getThemeMeta(theme)?.name ?? theme}
+          {isThemeDark(theme) ? ' · 暗色' : ''}）。
         </p>
       </section>
 
@@ -130,62 +144,62 @@ export default function Settings() {
 
       <section className="card mb-6 rounded-xl p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-sans text-h2 text-[var(--ink)]">自定义心情</h2>
+          <h2 className="font-sans text-h2 text-[var(--ink)]">自定义状态</h2>
           <Pressable
             variant="pill"
             onClick={() => {
-              setEditingMood(null);
-              setShowMoodEdit(true);
+              setEditingState(null);
+              setShowStateEdit(true);
             }}
             className="pill-dashed inline-flex items-center gap-1 rounded-full px-3 py-1.5 font-sans text-caption text-[var(--ink-soft)]"
           >
             <Plus size={14} strokeWidth={1.75} />
-            添加心情
+            添加状态
           </Pressable>
         </div>
-        <p className="mb-4 font-sans text-small text-[var(--ink-faint)]">自定义心情会以色点显示在日历上。</p>
+        <p className="mb-4 font-sans text-small text-[var(--ink-faint)]">
+          自定义状态会以色点显示在日历上；删除后历史记录保留原标记。
+        </p>
 
-        {loading && !customMoods ? (
+        {isPending && !states ? (
           <QueryLoading />
-        ) : error && !customMoods ? (
-          <QueryError message={error.message} onRetry={refresh} />
-        ) : customMoodList.length === 0 ? (
+        ) : error && !states ? (
+          <QueryError message={error.message} onRetry={() => void refetch()} />
+        ) : customStates.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[var(--hairline)] py-8 text-center">
-            <p className="font-sans text-body text-[var(--ink-faint)]">还没有自定义心情</p>
-            <p className="mt-1 font-sans text-caption text-[var(--ink-faint)]">点击「添加心情」创建属于自己的心情类型</p>
+            <p className="font-sans text-body text-[var(--ink-faint)]">还没有自定义状态</p>
+            <p className="mt-1 font-sans text-caption text-[var(--ink-faint)]">点击「添加状态」创建属于自己的状态类型</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {customMoodList.map((mood) => (
+            {customStates.map((state) => (
               <div
-                key={mood.id}
+                key={state.id}
                 className="flex items-center justify-between rounded-xl border border-[var(--hairline)] bg-[var(--card)] p-3"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: mood.solid }}>
-                    <span className="text-base" style={{ color: 'white' }}>
-                      {mood.emoji}
-                    </span>
-                  </div>
+                  <span className="h-4 w-4 rounded-full" style={{ background: state.color }} />
                   <div>
-                    <div className="font-sans text-small text-[var(--ink)]">{mood.label}</div>
-                    <div className="font-mono text-caption text-[var(--ink-faint)]">{mood.solid}</div>
+                    <div className="font-sans text-small text-[var(--ink)]">{state.label}</div>
+                    <div className="font-mono text-caption text-[var(--ink-faint)]">
+                      {state.polarity === 1 ? '积极' : state.polarity === -1 ? '消极' : '中性'} · {state.color}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-1">
                   <Pressable
                     variant="icon"
-                    onClick={() => handleEditMood(mood)}
+                    onClick={() => handleEditState(state)}
                     className="flex items-center justify-center rounded-full text-[var(--ink-faint)]"
-                    aria-label={`编辑 ${mood.label}`}
+                    aria-label={`编辑 ${state.label}`}
                   >
                     <Pencil size={14} strokeWidth={1.75} />
                   </Pressable>
                   <Pressable
                     variant="icon"
-                    onClick={() => void handleDeleteMood(mood)}
+                    onClick={() => void handleDeleteState(state)}
                     className="flex items-center justify-center rounded-full text-[var(--ink-faint)] hover:bg-[var(--danger-subtle)] hover:text-[var(--danger)]"
-                    aria-label={`删除 ${mood.label}`}
+                    aria-label={`删除 ${state.label}`}
                   >
                     <Trash2 size={14} strokeWidth={1.75} />
                   </Pressable>
@@ -232,13 +246,13 @@ export default function Settings() {
           </Pressable>
         </div>
         <p className="mt-3 font-sans text-caption text-[var(--ink-faint)]">
-          数据已存储在服务器（与博客同源，跨设备同步）。「迁移本地旧数据」用于把本浏览器 IndexedDB
-          中的第一期历史数据合并上传，幂等可重复。
+          数据保存在手帐服务器。「迁移本地旧数据」把本浏览器 IndexedDB 中的第一期历史数据
+          合并上传一次，幂等可重复。
         </p>
         <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} className="hidden" aria-hidden="true" />
       </section>
 
-      <section className="card rounded-xl p-5">
+      <section className="card mb-6 rounded-xl p-5">
         <div className="flex items-center gap-3">
           <span
             className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-inverse)]"
@@ -248,21 +262,29 @@ export default function Settings() {
           </span>
           <div>
             <h2 className="font-sans text-h2 text-[var(--ink)]">手帐</h2>
-            <p className="font-sans text-small text-[var(--ink-soft)]">学习记录与心情台账</p>
+            <p className="font-sans text-small text-[var(--ink-soft)]">学习记录与状态台账</p>
             <p className="mt-1 font-mono text-caption text-[var(--ink-faint)]">
-              v{APP_VERSION} · 已同步
+              v{APP_VERSION} · {user?.username ?? ''}
             </p>
           </div>
         </div>
       </section>
 
-      {showMoodEdit && (
-        <MoodEditModal
+      <Pressable
+        onClick={() => void handleLogout()}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--keyline)] px-4 py-3 font-sans text-small text-[var(--ink-soft)] hover:text-[var(--ink)]"
+      >
+        <LogOut size={16} strokeWidth={1.75} />
+        退出登录
+      </Pressable>
+
+      {showStateEdit && (
+        <StateEditModal
           onClose={() => {
-            setShowMoodEdit(false);
-            setEditingMood(null);
+            setShowStateEdit(false);
+            setEditingState(null);
           }}
-          editMood={editingMood}
+          editState={editingState}
         />
       )}
     </div>

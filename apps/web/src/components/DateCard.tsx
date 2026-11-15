@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMoodConfig } from '../lib/moodUtils';
+import { useStateConfig } from '../lib/stateUtils';
 import { parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS } from '../lib/constants';
 import { useIsDark } from '../lib/useIsDark';
@@ -10,8 +10,10 @@ interface DateCardProps {
   isCurrentMonth: boolean;
   isToday: boolean;
   isFuture: boolean;
-  mood: string | null;
+  /** day.stateId —— v3 状态 id；null = 未选择状态 */
+  stateId: string | null;
   totalMin: number;
+  /** 服务端预览文本（diaryPreview），非完整日记 */
   diary: string;
   goalMin: number;
   taskTotal?: number;
@@ -25,7 +27,7 @@ export default function DateCard({
   isCurrentMonth,
   isToday,
   isFuture,
-  mood,
+  stateId,
   totalMin,
   diary,
   goalMin,
@@ -35,19 +37,19 @@ export default function DateCard({
 }: DateCardProps) {
   const [hovered, setHovered] = useState(false);
   const isDark = useIsDark();
-  const moodConfig = useMoodConfig(mood);
+  const stateConfig = useStateConfig(stateId);
 
-  const hasRecord = Boolean(mood || totalMin > 0 || diary);
+  const hasRecord = Boolean(stateId || totalMin > 0 || diary);
   const hasTasks = taskTotal > 0;
   const tasksDone = hasTasks && taskDone >= taskTotal;
   const pct = goalMin > 0 ? Math.min(100, (totalMin / goalMin) * 100) : 100;
   const barWidth = totalMin > 0 ? Math.max(pct, 3) : 0;
-  const barColor = moodConfig ? (isDark ? moodConfig.dark.solid : moodConfig.solid) : 'var(--brand)';
+  const barColor = stateConfig ? (isDark ? stateConfig.dark.solid : stateConfig.color) : 'var(--brand)';
   const goalReached = totalMin > 0 && pct >= 100;
-  const dotColor = moodConfig
+  const dotColor = stateConfig
     ? isDark
-      ? moodConfig.dark.solid
-      : moodConfig.solid
+      ? stateConfig.dark.solid
+      : stateConfig.color
     : 'var(--keyline)';
 
   const dateObj = parseDate(dateStr);
@@ -70,9 +72,9 @@ export default function DateCard({
             <span className="font-mono text-caption text-[var(--ink-faint)]">
               {dateObj.getMonth() + 1}/{dateObj.getDate()} · {weekday}
             </span>
-            {moodConfig && (
-              <span className="font-sans text-caption" style={{ color: moodConfig.solid }}>
-                {moodConfig.label}
+            {stateConfig && (
+              <span className="font-sans text-caption" style={{ color: stateConfig.color }}>
+                {stateConfig.label}
               </span>
             )}
           </div>
@@ -149,7 +151,7 @@ export default function DateCard({
               style={{
                 background: hasRecord ? dotColor : 'transparent',
                 border: hasRecord ? undefined : '1.5px dashed var(--keyline)',
-                boxShadow: hasRecord && moodConfig ? `0 0 0 4px ${isDark ? moodConfig.dark.tint : moodConfig.tint}` : undefined,
+                boxShadow: hasRecord && stateConfig ? `0 0 0 4px ${isDark ? stateConfig.dark.tint : stateConfig.tint}` : undefined,
               }}
               aria-hidden="true"
             />

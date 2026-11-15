@@ -2,14 +2,13 @@ import type { ReactNode } from 'react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, ArrowRight } from 'lucide-react';
-import { searchDiary } from '../lib/api';
-import { formatDuration, totalDuration, parseDate, getWeekdayChinese } from '../lib/dateUtils';
-import { useAllMoodConfigs } from '../lib/moodUtils';
+import { useSearch } from '../lib/queries';
+import { useStateConfigs, type StateConfig } from '../lib/stateUtils';
+import { formatDuration, parseDate, getWeekdayChinese } from '../lib/dateUtils';
 import { useIsDark } from '../lib/useIsDark';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import { Pressable } from '../components/ui/Pressable';
-import { showToast } from '../lib/toast';
-import type { DayRecord, MoodConfig } from '../types';
+import type { Entry, SearchDayHit } from '../lib/types/api';
 
 function formatSearchDate(dateStr: string): string {
   const date = parseDate(dateStr);
@@ -57,64 +56,109 @@ function highlightSnippet(text: string, keyword: string): ReactNode {
   return <>{parts}</>;
 }
 
-function matchesKw(text: string | undefined, keyword: string): boolean {
-  return Boolean(text && text.toLowerCase().includes(keyword.toLowerCase()));
+function StateChip({ cfg, isDark }: { cfg: StateConfig; isDark: boolean }) {
+  return (
+    <span
+      className="rounded-full px-2 py-0.5 font-sans text-caption"
+      style={{
+        background: isDark ? cfg.dark.tint : cfg.tint,
+        color: isDark ? cfg.dark.ink : cfg.ink,
+      }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
+function DiaryHitCard({
+  hit,
+  cfg,
+  isDark,
+  keyword,
+  onOpen,
+}: {
+  hit: SearchDayHit;
+  cfg: StateConfig | null;
+  isDark: boolean;
+  keyword: string;
+  onOpen: () => void;
+}) {
+  return (
+    <Pressable variant="card" onClick={onOpen} className="card group w-full rounded-xl p-4 text-left">
+      <div className="mb-2 flex items-center gap-3">
+        <span
+          className="h-2.5 w-2.5 rounded-full"
+          style={{
+            background: cfg ? (isDark ? cfg.dark.solid : cfg.color) : 'var(--keyline)',
+          }}
+        />
+        <span className="font-mono text-num text-ink">{formatSearchDate(hit.date)}</span>
+        {cfg && <StateChip cfg={cfg} isDark={isDark} />}
+        <ArrowRight size={16} className="ml-auto text-ink-faint opacity-0 transition-opacity group-hover:opacity-100" />
+      </div>
+      <p className="line-clamp-3 font-sans text-small leading-relaxed text-ink-soft">
+        {highlightSnippet(hit.diary, keyword)}
+      </p>
+    </Pressable>
+  );
+}
+
+function EntryHitCard({
+  entry,
+  keyword,
+  onOpen,
+}: {
+  entry: Entry;
+  keyword: string;
+  onOpen: () => void;
+}) {
+  const hitText = `${entry.title || entry.subjectName}${entry.note ? ` · ${entry.note}` : ''}`;
+  return (
+    <Pressable variant="card" onClick={onOpen} className="card group w-full rounded-xl p-4 text-left">
+      <div className="mb-2 flex items-center gap-3">
+        <span className="font-mono text-num text-ink">{formatSearchDate(entry.date)}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--keyline)] px-2 py-0.5 font-sans text-caption text-ink-soft">
+          <span className="h-2 w-2 rounded-full" style={{ background: entry.subjectColor }} />
+          {entry.subjectName}
+        </span>
+        <span className="ml-auto font-mono text-caption text-ink-faint">
+          {formatDuration(entry.durationMin)}
+        </span>
+        <ArrowRight size={16} className="text-ink-faint opacity-0 transition-opacity group-hover:opacity-100" />
+      </div>
+      <p className="line-clamp-2 font-sans text-small leading-relaxed text-ink-soft">
+        {highlightSnippet(hitText, keyword)}
+      </p>
+    </Pressable>
+  );
 }
 
 export default function Search() {
   const navigate = useNavigate();
   const isDark = useIsDark();
   const [keyword, setKeyword] = useState('');
-  const [results, setResults] = useState<DayRecord[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [debounced, setDebounced] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
-  const allMoods = useAllMoodConfigs();
-  const moodCfgMap = useMemo(() => {
-    const map = new Map<string, MoodConfig>();
-    for (const cfg of allMoods) map.set(cfg.type, cfg);
+
+  const { data, isPending, isFetching, error, refetch } = useSearch(debounced);
+  const stateConfigs = useStateConfigs();
+  const cfgById = useMemo(() => {
+    const map = new Map<string, StateConfig>();
+    for (const c of stateConfigs) map.set(c.id, c);
     return map;
-  }, [allMoods]);
+  }, [stateConfigs]);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const doSearch = useCallback(async (kw: string) => {
-    if (!kw.trim()) {
-      setResults([]);
-      setHasSearched(false);
-      setLoading(false);
-      setSearchError(null);
-      return;
-    }
-    setHasSearched(true);
-    setLoading(true);
-    setSearchError(null);
-    try {
-      const found = await searchDiary(kw.trim());
-      setResults(found);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '搜索失败';
-      setSearchError(message);
-      setResults([]);
-      showToast(message, 'error', { onRetry: () => void doSearch(kw) });
-    } finally {
-      setLoading(false);
-    }
+  const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setKeyword(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebounced(value.trim()), 300);
   }, []);
-
-  const handleInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setKeyword(value);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => doSearch(value), 300);
-    },
-    [doSearch],
-  );
 
   useEffect(() => {
     return () => {
@@ -122,11 +166,17 @@ export default function Search() {
     };
   }, []);
 
+  const hasSearched = debounced.length > 0;
+  const dayHits = data?.days ?? [];
+  const entryHits = data?.entries ?? [];
+  const total = dayHits.length + entryHits.length;
+  const loading = hasSearched && (isPending || (isFetching && !data));
+
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
         <h1 className="font-sans text-h1 text-ink">搜索</h1>
-        <p className="mt-1 font-sans text-caption text-ink-faint">日记、学科、备注</p>
+        <p className="mt-1 font-sans text-caption text-ink-faint">日记、科目、备注</p>
       </div>
 
       <div className="mb-6">
@@ -137,7 +187,7 @@ export default function Search() {
             type="text"
             value={keyword}
             onChange={handleInput}
-            placeholder="搜索日记、学科或备注…"
+            placeholder="搜索日记、科目或备注…"
             className="card w-full rounded-xl py-3.5 pl-11 pr-4 font-sans text-body text-ink outline-none placeholder:text-ink-faint transition-all focus:border-brand"
             style={{ boxShadow: 'none' }}
           />
@@ -145,82 +195,51 @@ export default function Search() {
       </div>
 
       {!hasSearched ? (
-        <QueryEmpty title="输入关键词开始搜索" hint="会同时匹配日记、学科名称和备注" />
+        <QueryEmpty title="输入关键词开始搜索" hint="会同时匹配日记、科目名称和备注" />
       ) : loading ? (
         <QueryLoading />
-      ) : searchError ? (
-        <QueryError message={searchError} onRetry={() => void doSearch(keyword)} />
-      ) : results.length === 0 ? (
+      ) : error ? (
+        <QueryError message={error.message} onRetry={() => void refetch()} />
+      ) : total === 0 ? (
         <QueryEmpty title="没有找到相关记录" hint="换个关键词试试？" />
       ) : (
-        <>
-          <p className="mb-3 font-sans text-caption text-ink-faint">找到 {results.length} 条记录</p>
-          <div className="space-y-3">
-            {results.map((record) => {
-              const moodConfig = record.mood ? (moodCfgMap.get(record.mood) ?? null) : null;
-              const hitLearnings = record.learnings.filter(
-                (l) => matchesKw(l.subject, keyword) || matchesKw(l.note, keyword),
-              );
-              return (
-                <Pressable
-                  variant="card"
-                  key={record.date}
-                  onClick={() => navigate(`/day/${record.date}`)}
-                  className="card group w-full rounded-xl p-4 text-left"
-                >
-                  <div className="mb-2 flex items-center gap-3">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{
-                        background: moodConfig
-                          ? isDark
-                            ? moodConfig.dark.solid
-                            : moodConfig.solid
-                          : 'var(--keyline)',
-                      }}
-                    />
-                    <span className="font-mono text-num text-ink">{formatSearchDate(record.date)}</span>
-                    {moodConfig && (
-                      <span
-                        className="rounded-full px-2 py-0.5 font-sans text-caption"
-                        style={{
-                          background: isDark ? moodConfig.dark.tint : moodConfig.tint,
-                          color: isDark ? moodConfig.dark.ink : moodConfig.ink,
-                        }}
-                      >
-                        {moodConfig.label}
-                      </span>
-                    )}
-                    {record.learnings.length > 0 && (
-                      <span className="ml-auto font-mono text-caption text-ink-faint">
-                        {formatDuration(totalDuration(record.learnings))}
-                      </span>
-                    )}
-                    <ArrowRight size={16} className="text-ink-faint opacity-0 transition-opacity group-hover:opacity-100" />
-                  </div>
-                  {record.diary && matchesKw(record.diary, keyword) && (
-                    <p className="line-clamp-3 font-sans text-small leading-relaxed text-ink-soft">
-                      {highlightSnippet(record.diary, keyword)}
-                    </p>
-                  )}
-                  {hitLearnings.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {hitLearnings.map((l) => (
-                        <span
-                          key={l.id}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--keyline)] px-2 py-0.5 font-sans text-caption text-ink-soft"
-                        >
-                          <span className="h-2 w-2 rounded-full" style={{ background: l.color }} />
-                          {highlightSnippet(`${l.subject}${l.note ? ` · ${l.note}` : ''}`, keyword)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </Pressable>
-              );
-            })}
-          </div>
-        </>
+        <div className="space-y-6">
+          <p className="font-sans text-caption text-ink-faint">找到 {total} 条记录</p>
+
+          {dayHits.length > 0 && (
+            <section>
+              <h2 className="mb-3 font-sans text-small text-ink-faint">日记</h2>
+              <div className="space-y-3">
+                {dayHits.map((hit) => (
+                  <DiaryHitCard
+                    key={`d-${hit.date}`}
+                    hit={hit}
+                    cfg={cfgById.get(hit.stateId) ?? null}
+                    isDark={isDark}
+                    keyword={debounced}
+                    onOpen={() => navigate(`/day/${hit.date}`)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {entryHits.length > 0 && (
+            <section>
+              <h2 className="mb-3 font-sans text-small text-ink-faint">学习记录</h2>
+              <div className="space-y-3">
+                {entryHits.map((entry) => (
+                  <EntryHitCard
+                    key={entry.id}
+                    entry={entry}
+                    keyword={debounced}
+                    onOpen={() => navigate(`/day/${entry.date}`)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
       )}
     </div>
   );
