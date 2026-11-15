@@ -218,6 +218,22 @@ CREATE INDEX idx_score_user_subject ON score(user_id, subject_id, taken_on);
 | 成绩 | `/scores` CRUD（M8） | |
 | 数据 | `GET /export`（v3 全量 JSON）`POST /import`（v3；兼容 v2 文件） | 也是备份手段 |
 
+错误码（`{code,message}`，HTTP 状态与 code 对应；前端按 code 分支）：
+
+| code | HTTP | 含义 |
+|---|---|---|
+| `0` | 200 | 成功（`data` 为负载；导出文件为裸 JSON 非包络） |
+| `UNAUTHORIZED` | 401 | 未登录 / 会话失效 |
+| `INVALID_CREDENTIALS` | 401 | 用户名或密码错误 |
+| `RATE_LIMITED` | 429 | 登录限流（5 次/10 分钟/IP） |
+| `NOT_FOUND` | 404 | 资源不存在或不属于当前用户 |
+| `METHOD_NOT_ALLOWED` | 405 | 方法不允许 |
+| `BAD_REQUEST` | 400 | 请求体非法 / 导入格式无法识别 |
+| `VALIDATION` | 400 | 字段校验失败（日期/范围/必填/外键引用） |
+| `CONFLICT` | 409 | 唯一约束冲突（同名科目、id 已存在） |
+| `IMPORT_FAILED` | 400 | 导入内容校验失败（未知心情/状态、非法日期等，整批回滚） |
+| `INTERNAL` | 500 | 服务器内部错误 |
+
 ## 5. 派生计算（服务端 `internal/domain` 唯一权威 + 前端 `src/lib/domain.ts` 展示镜像；双端共用 `testdata/domain-cases.json` 用例）
 
 | 函数 | 输入 | 规则 |

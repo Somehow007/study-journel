@@ -32,6 +32,8 @@ func NewRouter(d *Deps) http.Handler {
 		r.Post("/auth/login", d.login)
 		r.Post("/auth/logout", d.logout)
 		r.With(requireAuth(d.DB)).Get("/auth/me", d.me)
+
+		d.journalRoutes(r)
 	})
 
 	return r

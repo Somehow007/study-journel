@@ -5,7 +5,7 @@
 
 ## 1. 一句话
 
-学习手帐（原名「花期 Blossom」，v6 起转向考研场景）：React 18 SPA，部署在博客域名子路径 `/journal/`；后端仍在 mysite 仓库（`../mysite`）（`io.github.somehow.mysite.journal`，`/api/journal/*`，MySQL `sj_*` 7 表），登录复用博客 JWT。**M1 起 `apps/server` 已有 Go 骨架**（chi + SQLite + 独立账号，`:8090`，尚未接管流量）。剥离计划见 `separation-plan.md`。
+学习手帐（原名「花期 Blossom」，v6 起转向考研场景）：React 18 SPA，部署在博客域名子路径 `/journal/`；后端仍在 mysite 仓库（`../mysite`）（`io.github.somehow.mysite.journal`，`/api/journal/*`，MySQL `sj_*` 7 表），登录复用博客 JWT。**M2 已落地 `apps/server` 数据层 v3 + `/api/v1` 业务 API**（chi + sqlc + SQLite + 独立账号，`:8090`，尚未接管流量；前端仍走旧 `/api/journal`）。剥离计划见 `separation-plan.md`。
 
 ## 2. 目录
 
@@ -21,7 +21,7 @@
 | `apps/web/src/lib/theme.ts` `apps/web/src/styles/themes/` | 复用博客 8 套主题（`data-theme`，key `mysite_theme_v2`）；`index.css` 把博客变量别名为 `--paper/--ink/--brand…` |
 | `apps/web/src/lib/constants.ts` | `MOOD_CONFIGS`（6 心情三档色）、`SUBJECT_COLORS` |
 | `apps/web/src/context/AppContext.tsx` | 当前月份、主题、`dailyGoalMin`（localStorage） |
-| `apps/server/` | Go module `journal`（M1 骨架）：`cmd/journal-server`（serve + `create-user` 子命令）、`internal/{httpapi,auth,db,migrate,id}`、`db/migrations/*.sql`（embed） |
+| `apps/server/` | Go module `journal`（M2 数据层+API）：`cmd/journal-server`（serve + `create-user`）、`internal/{httpapi,auth,db(domain 生成码+Open),domain,migrate,id}`、`db/migrations/*.sql`（embed，0001 账号三表 + 0002 业务九表）、`db/queries/*.sql`（sqlc 输入）、`sqlc.yaml` |
 | `design/` | `mockup.html`（v5 走查稿）、`concepts/`（来源不明的早期草稿 data.js，未跟踪）、**`concepts-v6/`（考研向 UI 概念稿 A/B/C + SPEC，2026-11-15）** |
 | `docs/` | 本目录：MAP / architecture / data-model / separation-plan / roadmap |
 | 根目录两份中文 md | `🌸…开发设计文档 v5.0.md`（花期视觉规范，**已被 v6 取代，仅作历史**）、`📔…MySQL 存储方案 v2.0.md`（第二期后端化方案，**将被 data-model v3 取代**） |
@@ -34,6 +34,7 @@
 | `pnpm build`（=`pnpm -F web build`） | `tsc && vite build`，产物 `apps/web/dist/`（base `/journal/`） |
 | `./scripts/verify.sh` | web typecheck+build + server `gofmt`/`go vet`/`go test` |
 | `cd apps/server && go run ./cmd/journal-server` | Go 服务 `127.0.0.1:8090`；先 `go run ./cmd/journal-server create-user -username <名>` 建账号 |
+| `cd apps/server && ~/go/bin/sqlc generate` | 重新生成 `internal/db`（sqlc v1.30.0，`sqlc.yaml`）；verify.sh 会校验生成物与仓库一致 |
 
 ## 4. 部署（现状）
 
