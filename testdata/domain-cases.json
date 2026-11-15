@@ -1,0 +1,348 @@
+{
+  "version": 1,
+  "about": "领域计算双端对齐用例：apps/server/internal/domain（go test）与前端 src/lib/domain.ts（vitest，M3-5 接入）共用同一文件。fn 决定 input/want 结构；数值比较允许 1e-4 误差；数组有序。",
+  "cases": [
+    {
+      "name": "streak：今天有记录，连续3天",
+      "fn": "streak",
+      "input": {"dates": ["2026-11-13", "2026-11-14", "2026-11-15"], "today": "2026-11-15"},
+      "want": {"days": 3}
+    },
+    {
+      "name": "streak：今天无记录则从昨天起算（v3 语义）",
+      "fn": "streak",
+      "input": {"dates": ["2026-11-13", "2026-11-14"], "today": "2026-11-15"},
+      "want": {"days": 2}
+    },
+    {
+      "name": "streak：今天昨天都无记录 → 0",
+      "fn": "streak",
+      "input": {"dates": ["2026-11-13"], "today": "2026-11-15"},
+      "want": {"days": 0}
+    },
+    {
+      "name": "streak：中间断档只算尾部",
+      "fn": "streak",
+      "input": {"dates": ["2026-11-13", "2026-11-15"], "today": "2026-11-15"},
+      "want": {"days": 1}
+    },
+    {
+      "name": "streak：空集合 → 0",
+      "fn": "streak",
+      "input": {"dates": [], "today": "2026-11-15"},
+      "want": {"days": 0}
+    },
+    {
+      "name": "streak：跨月连续",
+      "fn": "streak",
+      "input": {"dates": ["2026-10-31", "2026-11-01"], "today": "2026-11-01"},
+      "want": {"days": 2}
+    },
+    {
+      "name": "streak：无序+重复输入",
+      "fn": "streak",
+      "input": {"dates": ["2026-11-15", "2026-11-13", "2026-11-14", "2026-11-14"], "today": "2026-11-15"},
+      "want": {"days": 3}
+    },
+    {
+      "name": "dayTotal：求和",
+      "fn": "dayTotal",
+      "input": {"durations": [30, 45, 15]},
+      "want": {"total": 90}
+    },
+    {
+      "name": "dayTotal：空 → 0",
+      "fn": "dayTotal",
+      "input": {"durations": []},
+      "want": {"total": 0}
+    },
+    {
+      "name": "percent：正常取整",
+      "fn": "percent",
+      "input": {"actual": 612, "target": 1000},
+      "want": {"percent": 61}
+    },
+    {
+      "name": "percent：封顶100",
+      "fn": "percent",
+      "input": {"actual": 150, "target": 100},
+      "want": {"percent": 100}
+    },
+    {
+      "name": "percent：target<=0 → 0",
+      "fn": "percent",
+      "input": {"actual": 5, "target": 0},
+      "want": {"percent": 0}
+    },
+    {
+      "name": "percent：2/3 → 67",
+      "fn": "percent",
+      "input": {"actual": 2, "target": 3},
+      "want": {"percent": 67}
+    },
+    {
+      "name": "percent：99.5% 四舍五入到100（钉边界）",
+      "fn": "percent",
+      "input": {"actual": 199, "target": 200},
+      "want": {"percent": 100}
+    },
+    {
+      "name": "suggestedQuota：向上取整",
+      "fn": "suggestedQuota",
+      "input": {"remaining": 18, "slots": 15},
+      "want": {"quota": 2}
+    },
+    {
+      "name": "suggestedQuota：slots<=0 → remaining",
+      "fn": "suggestedQuota",
+      "input": {"remaining": 18, "slots": 0},
+      "want": {"quota": 18}
+    },
+    {
+      "name": "suggestedQuota：remaining<=0 → 0",
+      "fn": "suggestedQuota",
+      "input": {"remaining": 0, "slots": 15},
+      "want": {"quota": 0}
+    },
+    {
+      "name": "goalProgressCount：2026-11 target300 actual150 asOf11-15 周一",
+      "fn": "goalProgressCount",
+      "input": {"target": 300, "actual": 150, "period": "2026-11", "asOf": "2026-11-15", "weekStartsOn": 1},
+      "want": {
+        "actual": 150, "total": 300, "percent": 50, "reached": false, "remaining": 150,
+        "remainingDays": 16, "remainingWeeks": 4,
+        "plannedDaily": 10, "plannedWeekly": 50, "suggestedDaily": 10, "suggestedWeekly": 38
+      }
+    },
+    {
+      "name": "goalProgressCount：达标 reached",
+      "fn": "goalProgressCount",
+      "input": {"target": 300, "actual": 300, "period": "2026-11", "asOf": "2026-11-15", "weekStartsOn": 1},
+      "want": {
+        "actual": 300, "total": 300, "percent": 100, "reached": true, "remaining": 0,
+        "remainingDays": 16, "remainingWeeks": 4,
+        "plannedDaily": 10, "plannedWeekly": 50, "suggestedDaily": 0, "suggestedWeekly": 0
+      }
+    },
+    {
+      "name": "goalProgressCount：超额 remaining=0 percent封顶",
+      "fn": "goalProgressCount",
+      "input": {"target": 300, "actual": 320, "period": "2026-11", "asOf": "2026-11-30", "weekStartsOn": 1},
+      "want": {
+        "actual": 320, "total": 300, "percent": 100, "reached": true, "remaining": 0,
+        "remainingDays": 1, "remainingWeeks": 1,
+        "plannedDaily": 10, "plannedWeekly": 50, "suggestedDaily": 0, "suggestedWeekly": 0
+      }
+    },
+    {
+      "name": "goalProgressCount：asOf 在月初之前→钳到1号",
+      "fn": "goalProgressCount",
+      "input": {"target": 31, "actual": 0, "period": "2026-11", "asOf": "2026-10-20", "weekStartsOn": 1},
+      "want": {
+        "actual": 0, "total": 31, "percent": 0, "reached": false, "remaining": 31,
+        "remainingDays": 30, "remainingWeeks": 6,
+        "plannedDaily": 2, "plannedWeekly": 6, "suggestedDaily": 2, "suggestedWeekly": 6
+      }
+    },
+    {
+      "name": "goalProgressChecklist：6/9",
+      "fn": "goalProgressChecklist",
+      "input": {"done": 6, "total": 9},
+      "want": {"actual": 6, "total": 9, "percent": 67, "reached": false, "remaining": 3}
+    },
+    {
+      "name": "goalProgressChecklist：全完成",
+      "fn": "goalProgressChecklist",
+      "input": {"done": 9, "total": 9},
+      "want": {"actual": 9, "total": 9, "percent": 100, "reached": true, "remaining": 0}
+    },
+    {
+      "name": "goalProgressChecklist：空目标不算达成",
+      "fn": "goalProgressChecklist",
+      "input": {"done": 0, "total": 0},
+      "want": {"actual": 0, "total": 0, "percent": 0, "reached": false, "remaining": 0}
+    },
+    {
+      "name": "previewCountSplit：2026-11（30天6周一周）",
+      "fn": "previewCountSplit",
+      "input": {"target": 300, "period": "2026-11", "weekStartsOn": 1},
+      "want": {"days": 30, "plannedDaily": 10, "plannedWeekly": 50}
+    },
+    {
+      "name": "previewCountSplit：2026-02（28天5个周一周）",
+      "fn": "previewCountSplit",
+      "input": {"target": 1000, "period": "2026-02", "weekStartsOn": 1},
+      "want": {"days": 28, "plannedDaily": 36, "plannedWeekly": 200}
+    },
+    {
+      "name": "weeksIntersecting：2026-11 周一开始 → 6周",
+      "fn": "weeksIntersecting",
+      "input": {"period": "2026-11", "weekStartsOn": 1},
+      "want": [
+        {"start": "2026-10-26", "end": "2026-11-01"},
+        {"start": "2026-11-02", "end": "2026-11-08"},
+        {"start": "2026-11-09", "end": "2026-11-15"},
+        {"start": "2026-11-16", "end": "2026-11-22"},
+        {"start": "2026-11-23", "end": "2026-11-29"},
+        {"start": "2026-11-30", "end": "2026-12-06"}
+      ]
+    },
+    {
+      "name": "weeksIntersecting：2026-11 周日起始 → 5周",
+      "fn": "weeksIntersecting",
+      "input": {"period": "2026-11", "weekStartsOn": 7},
+      "want": [
+        {"start": "2026-11-01", "end": "2026-11-07"},
+        {"start": "2026-11-08", "end": "2026-11-14"},
+        {"start": "2026-11-15", "end": "2026-11-21"},
+        {"start": "2026-11-22", "end": "2026-11-28"},
+        {"start": "2026-11-29", "end": "2026-12-05"}
+      ]
+    },
+    {
+      "name": "weekStartOf：周三起始",
+      "fn": "weekStartOf",
+      "input": {"date": "2026-11-15", "weekStartsOn": 3},
+      "want": {"weekStart": "2026-11-11"}
+    },
+    {
+      "name": "buildWeeks：按周聚合实际量",
+      "fn": "buildWeeks",
+      "input": {
+        "period": "2026-11", "target": 300, "weekStartsOn": 1,
+        "items": [
+          {"date": "2026-11-01", "value": 10},
+          {"date": "2026-11-05", "value": 20},
+          {"date": "2026-11-10", "value": 30},
+          {"date": "2026-11-16", "value": 40},
+          {"date": "2026-11-30", "value": 50}
+        ]
+      },
+      "want": [
+        {"weekStart": "2026-10-26", "weekEnd": "2026-11-01", "actual": 10, "planned": 50},
+        {"weekStart": "2026-11-02", "weekEnd": "2026-11-08", "actual": 20, "planned": 50},
+        {"weekStart": "2026-11-09", "weekEnd": "2026-11-15", "actual": 30, "planned": 50},
+        {"weekStart": "2026-11-16", "weekEnd": "2026-11-22", "actual": 40, "planned": 50},
+        {"weekStart": "2026-11-23", "weekEnd": "2026-11-29", "actual": 0, "planned": 50},
+        {"weekStart": "2026-11-30", "weekEnd": "2026-12-06", "actual": 50, "planned": 50}
+      ]
+    },
+    {
+      "name": "remainingDays：月末最后一天 → 1",
+      "fn": "remainingDays",
+      "input": {"asOf": "2026-11-30", "period": "2026-11"},
+      "want": {"days": 1}
+    },
+    {
+      "name": "remainingDays：asOf 越过月末 → 0",
+      "fn": "remainingDays",
+      "input": {"asOf": "2026-12-01", "period": "2026-11"},
+      "want": {"days": 0}
+    },
+    {
+      "name": "remainingDays：asOf 在月初前 → 钳到1号",
+      "fn": "remainingDays",
+      "input": {"asOf": "2026-10-20", "period": "2026-11"},
+      "want": {"days": 30}
+    },
+    {
+      "name": "remainingWeeks：只剩最后一周",
+      "fn": "remainingWeeks",
+      "input": {"asOf": "2026-11-30", "period": "2026-11", "weekStartsOn": 1},
+      "want": {"weeks": 1}
+    },
+    {
+      "name": "asOfForPeriod：三态钳位",
+      "fn": "asOfForPeriod",
+      "input": [
+        {"period": "2026-11", "today": "2026-11-20"},
+        {"period": "2026-11", "today": "2026-10-20"},
+        {"period": "2026-11", "today": "2026-12-05"}
+      ],
+      "want": ["2026-11-20", "2026-11-01", "2026-11-30"]
+    },
+    {
+      "name": "shiftDateToPeriod：跨月平移",
+      "fn": "shiftDateToPeriod",
+      "input": [
+        {"date": "2026-11-30", "fromPeriod": "2026-11", "toPeriod": "2026-12"},
+        {"date": "2026-01-31", "fromPeriod": "2026-01", "toPeriod": "2026-02"},
+        {"date": "2026-11-15", "fromPeriod": "2026-10", "toPeriod": "2026-12"},
+        {"date": "", "fromPeriod": "2026-11", "toPeriod": "2026-12"}
+      ],
+      "want": ["2026-12-30", "2026-02-28", "2026-11-15", ""]
+    },
+    {
+      "name": "examCountdown：未来天数",
+      "fn": "examCountdown",
+      "input": {"examDate": "2026-12-20", "today": "2026-11-15"},
+      "want": {"days": 35}
+    },
+    {
+      "name": "examCountdown：已过 → 负数",
+      "fn": "examCountdown",
+      "input": {"examDate": "2026-11-01", "today": "2026-11-15"},
+      "want": {"days": -14}
+    },
+    {
+      "name": "phaseFraction：中段",
+      "fn": "phaseFraction",
+      "input": {"phaseStart": "2026-09-01", "examDate": "2026-12-20", "today": "2026-11-15"},
+      "want": {"fraction": 0.6818}
+    },
+    {
+      "name": "phaseFraction：起点前/考试后钳位",
+      "fn": "phaseFraction",
+      "input": [
+        {"phaseStart": "2026-09-01", "examDate": "2026-12-20", "today": "2026-08-01"},
+        {"phaseStart": "2026-09-01", "examDate": "2026-12-20", "today": "2026-12-25"}
+      ],
+      "want": [{"fraction": 0}, {"fraction": 1}]
+    },
+    {
+      "name": "phaseTicks：3等分含端点",
+      "fn": "phaseTicks",
+      "input": {"phaseStart": "2026-11-01", "examDate": "2026-11-11", "n": 3},
+      "want": ["2026-11-01", "2026-11-06", "2026-11-11"]
+    },
+    {
+      "name": "subjectBreakdown：按时长降序",
+      "fn": "subjectBreakdown",
+      "input": {"entries": [
+        {"date": "2026-11-15", "subjectId": "s1", "subjectName": "数学一", "subjectColor": "#1E4FA3", "durationMin": 60},
+        {"date": "2026-11-15", "subjectId": "s2", "subjectName": "408", "subjectColor": "#2F6B4F", "durationMin": 45},
+        {"date": "2026-11-14", "subjectId": "s1", "subjectName": "数学一", "subjectColor": "#1E4FA3", "durationMin": 30}
+      ]},
+      "want": [
+        {"subjectId": "s1", "name": "数学一", "color": "#1E4FA3", "minutes": 90, "entryCount": 2},
+        {"subjectId": "s2", "name": "408", "color": "#2F6B4F", "minutes": 45, "entryCount": 1}
+      ]
+    },
+    {
+      "name": "dailySeries：按日期升序聚合",
+      "fn": "dailySeries",
+      "input": {"entries": [
+        {"date": "2026-11-15", "subjectId": "s1", "subjectName": "数学一", "subjectColor": "#1E4FA3", "durationMin": 30},
+        {"date": "2026-11-15", "subjectId": "s2", "subjectName": "408", "subjectColor": "#2F6B4F", "durationMin": 45},
+        {"date": "2026-11-14", "subjectId": "s1", "subjectName": "数学一", "subjectColor": "#1E4FA3", "durationMin": 60}
+      ]},
+      "want": [
+        {"date": "2026-11-14", "minutes": 60, "entryCount": 1},
+        {"date": "2026-11-15", "minutes": 75, "entryCount": 2}
+      ]
+    },
+    {
+      "name": "stateBreakdown：按天数降序",
+      "fn": "stateBreakdown",
+      "input": {"marks": [
+        {"stateId": "st1", "label": "专注", "color": "#D23B22"},
+        {"stateId": "st2", "label": "顺利", "color": "#C2571A"},
+        {"stateId": "st1", "label": "专注", "color": "#D23B22"}
+      ]},
+      "want": [
+        {"stateId": "st1", "label": "专注", "color": "#D23B22", "count": 2},
+        {"stateId": "st2", "label": "顺利", "color": "#C2571A", "count": 1}
+      ]
+    }
+  ]
+}
