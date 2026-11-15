@@ -78,7 +78,7 @@
 
 ## Resolution
 
-**状态：代码完成并提交（`e3a503a` 契约层 + `d374daa` 原子切换），自动化验证全绿；1440/390 视觉走查待 owner 确认后归档。**
+**状态：完成并归档。提交：`e3a503a` 契约层 + `d374daa` 原子切换 + `2f61a0c` docs + `5285622` 走查修复。**
 
 ### 验证结论
 
@@ -95,7 +95,11 @@
 - `vite-plugin-pwa` 仍在 devDeps 未用（vite.config 早已移除）；清理留作独立小任务。
 - commit 拆分与方案一致：A=契约层（`e3a503a`）、B=原子切换（`d374daa`）；docs/归档随走查确认后补。
 
-### 待办（走查后）
+### 走查记录（agent 自走查，Playwright）
 
-- owner 在 1440/390 宽度走查 9 页面 + 登录/登出/导入导出。
-- 归档本任务目录 → `.trellis/tasks/archive/2026-11/`，CHANGES 补归档行。
+- 种子：Go API 直接造数（4 默认科目+3 自定义、13 个记录日含日记/状态、3 目标+任务+3 次打卡、settings 考试信息），脚本幂等可复跑。
+- 页面走查 1440×950 与 390×950 全 9 页 + 登录页截图：渲染正常、无横向溢出、无路由错乱。
+- 交互走查：选状态/加条目/日记保存刷新仍在/主题切 liquid-glass-dark/目标弹窗/登出确认→回登录→重新登录 全过。
+- **修复 2 处**（`5285622`）：条目卡与搜索卡片在 `title===note` 时重复渲染（服务端 entryTitle 由 note 首行派生所致）；`handleAdd/UpdateEntry` 未捕获 ApiError 变 unhandled pageerror——补 catch + toast(onRetry)。
+- 唯一 console 噪音：未登录时 `/auth/me` 401 由浏览器记为 network error，属会话探测预期路径。
+- 偏差：390 全页截图中底栏悬浮 mid-page 为 fullPage 拼接伪影，非真实遮挡（Layout 已按 `--journal-bottom-nav` 预留 padding）。

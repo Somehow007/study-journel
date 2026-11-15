@@ -14,4 +14,5 @@
 - 2026-11-15 | M2 完成：0002_v3 九表迁移 + internal/domain 纯函数（domain-cases.json 双端用例）+ sqlc 全资源查询 + /api/v1 业务 API（days/entries/subjects/states/goals/tasks/checkins/search/stats/streak/export/import v1-v3）+ settings 默认值与首登种子 | → `.trellis/tasks/archive/2026-11/11-15-m2-data-api/prd.md`
 - 2026-11-15 | M2 走查修复：complete 空 body 双写响应等 7 处（commit 84b616f） | → `.trellis/tasks/archive/2026-11/11-15-m2-data-api/prd.md` Resolution
 - 2026-11-15 | M3 开工：前端切换 Go /api/v1 + Cookie 会话 + TanStack Query + v3 类型/领域镜像 | → `.trellis/tasks/11-15-m3-frontend-api/prd.md`
-- 2026-11-15 | M3 代码完成：前端切 Go /api/v1 + Cookie 会话 + v3 数据模型（commit e3a503a 契约层 + d374daa 原子切换）；typecheck/build/vitest46/verify.sh 全绿 + :8090 冒烟通过；1440/390 视觉走查待 owner | → `.trellis/tasks/11-15-m3-frontend-api/prd.md` Resolution
+- 2026-11-15 | M3 代码完成：前端切 Go /api/v1 + Cookie 会话 + v3 数据模型（commit e3a503a 契约层 + d374daa 原子切换）；typecheck/build/vitest46/verify.sh 全绿 + :8090 冒烟通过 | → `.trellis/tasks/11-15-m3-frontend-api/prd.md` Resolution
+- 2026-11-15 | M3 走查+归档：Playwright 双视口 9 页+交互全过；修复条目 title/note 重复渲染与保存失败无 toast（commit 5285622）；console 仅预期 401 探测 | → `.trellis/tasks/archive/2026-11/11-15-m3-frontend-api/prd.md`
