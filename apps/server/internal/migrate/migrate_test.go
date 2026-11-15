@@ -38,11 +38,15 @@ func TestUpAppliesBundledMigrationsIdempotently(t *testing.T) {
 	if err := Up(sqlDB, migrations.FS); err != nil {
 		t.Fatalf("second Up: %v", err)
 	}
-	if got := userVersion(t, sqlDB); got != 1 {
-		t.Fatalf("user_version = %d, want 1", got)
+	if got := userVersion(t, sqlDB); got != 2 {
+		t.Fatalf("user_version = %d, want 2", got)
 	}
 
-	for _, table := range []string{"user", "session", "setting"} {
+	for _, table := range []string{
+		"user", "session", "setting",
+		"subject", "state", "day", "entry", "goal", "goal_task", "goal_checkin",
+		"focus_session", "score",
+	} {
 		var name string
 		err := sqlDB.QueryRow(
 			"SELECT name FROM sqlite_master WHERE type='table' AND name=?", table,
@@ -69,6 +73,32 @@ func TestUpAppliesBundledMigrationsIdempotently(t *testing.T) {
 	}
 	if theme != "graphite" {
 		t.Fatalf("theme = %q, want graphite", theme)
+	}
+}
+
+// M2-1 验收：外键生效——孤儿 entry（不存在的 subject_id）必须插入失败。
+func TestForeignKeysRejectOrphans(t *testing.T) {
+	sqlDB := openTempDB(t)
+	if err := Up(sqlDB, migrations.FS); err != nil {
+		t.Fatalf("Up: %v", err)
+	}
+	if _, err := sqlDB.Exec(
+		"INSERT INTO user (id, username, password_hash, created_at) VALUES ('u1','alice','h',1)",
+	); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+	if _, err := sqlDB.Exec(
+		`INSERT INTO entry (id, user_id, date, subject_id, title, duration_min, created_at, updated_at)
+		 VALUES ('e1','u1','2026-11-15','no-such-subject','t',30,1,1)`,
+	); err == nil {
+		t.Fatal("orphan entry insert should fail (foreign_keys=ON)")
+	}
+	// day.state_id 同样受约束
+	if _, err := sqlDB.Exec(
+		`INSERT INTO day (user_id, date, state_id, created_at, updated_at)
+		 VALUES ('u1','2026-11-15','no-such-state',1,1)`,
+	); err == nil {
+		t.Fatal("orphan day.state_id insert should fail")
 	}
 }
 
