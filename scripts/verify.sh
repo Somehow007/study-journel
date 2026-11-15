@@ -15,6 +15,9 @@ fi
 echo "▶ web：typecheck"
 pnpm -F web typecheck
 
+echo "▶ web：test（domain-cases.json 双端用例）"
+pnpm -F web test
+
 echo "▶ web：build"
 pnpm -F web build
 
