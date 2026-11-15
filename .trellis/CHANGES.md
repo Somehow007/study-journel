@@ -17,3 +17,4 @@
 - 2026-11-15 | M3 代码完成：前端切 Go /api/v1 + Cookie 会话 + v3 数据模型（commit e3a503a 契约层 + d374daa 原子切换）；typecheck/build/vitest46/verify.sh 全绿 + :8090 冒烟通过 | → `.trellis/tasks/archive/2026-11/11-15-m3-frontend-api/prd.md` Resolution
 - 2026-11-15 | M3 走查+归档：Playwright 双视口 9 页+交互全过；修复条目 title/note 重复渲染与保存失败无 toast（commit 5285622）；console 仅预期 401 探测 | → `.trellis/tasks/archive/2026-11/11-15-m3-frontend-api/prd.md`
 - 2026-11-15 | M4-1/M4-2 代码完成：internal/importer（MySQL sj_*→SQLite v3 + 逐项对账）+ cmd/import-mysite + journal-server backup + internal/bootstrap/domain 抽取 + deploy/（deploy.sh/journal.service/nginx 片段/CUTOVER.md）；verify.sh 全绿 + 真实本地 MySQL 演练对账全等；⚠️ M4-3 首发与 M4-4 回滚演练待 owner 按 deploy/CUTOVER.md 在服务器执行，期间勿跑 mysite server-deploy.sh | → `.trellis/tasks/archive/2026-11/11-15-m4-migration-cutover/prd.md`
+- 2026-11-15 | M4-1 走查修复：force 清库改按 user_id 且并入事务、自定义状态 sort 避开内置位、备份默认落到库旁；二进制级走查（backup/-force 重迁/手插 session 过 API）全过 | → `apps/server` commit 42d25ca

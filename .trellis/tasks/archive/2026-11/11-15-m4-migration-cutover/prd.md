@@ -55,6 +55,13 @@ M4-3/M4-4 是服务器侧操作，本任务交付可执行脚本 + runbook，实
 - 本地演练①：scratch MySQL `sj_rehearsal` 造脏数据 → dry-run 正确报告 skipped/warnings；实迁对账差异 → exit 1 ✓。
 - 本地演练②：真实本地 `mysite` MySQL（2 day / 1 item / 11 goal / 39 task / 1 checkin）→ `/tmp/journal-real.db` 迁移，9 项对账 + 逐日分钟**全部相等**，exit 0；抽查 goal→subject 按色匹配、checkin `entry_id` 回填正确。
 
+### 走查修复（commit 42d25ca）
+
+- **force 清库范围**：原 `wipeBusiness` 全表 DELETE 会误清其他用户业务数据，改为按 user_id 清理并与迁移同事务（失败回滚不丢旧数据）；新增 `TestForceWipeScopesToUser`。
+- **自定义状态 sort**：原 0..n 与内置 6 态相撞（`ListStates ORDER BY sort`），偏移至 `len(bootstrap.States)+i`，与 `NextStateSort` 同口径。
+- **-force 备份默认路径**：原落进程 cwd（`journal.bak-TS`），改为 `<db>.bak-<ts>`。
+- 二进制走查：`backup` 子命令产出可打开的一致快照；`-force` 重迁真实库对账全等 exit 0；手插 session 经 API 验证迁移数据（day/entry/goal/checkin/state 解析、totalMin/percent 派生值）全部正常。
+
 ### 未做（移交）
 
 - **M4-3 首发 / M4-4 回滚演练**：服务器侧操作，物料已备好在 `deploy/CUTOVER.md`，需 owner 确认后按阶段执行（建账号→mysqldump 冷备→dry-run→实迁→nginx→推前端→冒烟）。
