@@ -720,7 +720,7 @@ func (d *Deps) importData(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 				color := s.Color
-				if !validColor(color) {
+				if !domain.ValidColor(color) {
 					color = "#8D919A"
 				}
 				dbID, err := d.upsertSubjectByFile(ctx, q, userID, s, now, subjectMap)
@@ -818,7 +818,7 @@ func (d *Deps) importData(w http.ResponseWriter, r *http.Request) {
 				if color == "" {
 					color = m.Solid
 				}
-				if !validColor(color) {
+				if !domain.ValidColor(color) {
 					color = "#8D919A"
 				}
 				// id conflict → keep existing, map anyway
@@ -940,7 +940,7 @@ func (d *Deps) importRecords(ctx context.Context, q *db.Queries, userID string,
 				return errors.New("条目缺少可用科目: " + rec.Date)
 			}
 			note := it.Note
-			title := entryTitle("", note, subjName(ctx, q, userID, subjID))
+			title := domain.EntryTitle("", note, subjName(ctx, q, userID, subjID))
 			eid := it.ID
 			if eid == "" {
 				var err error

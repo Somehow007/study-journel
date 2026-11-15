@@ -471,7 +471,7 @@ func (d *Deps) resolveSubjectID(w http.ResponseWriter, r *http.Request, subjectI
 	}
 	// create with optional color hint
 	color := "#8D919A"
-	if validColor(colorHint) {
+	if domain.ValidColor(colorHint) {
 		color = strings.ToUpper(colorHint)
 	}
 	sort, _ := q.NextSubjectSort(ctx, userID)
@@ -493,23 +493,6 @@ func (d *Deps) resolveSubjectID(w http.ResponseWriter, r *http.Request, subjectI
 		return "", false
 	}
 	return sid, true
-}
-
-// entryTitle derives a title: explicit > first line of note > subject name.
-func entryTitle(explicit, note, subjectName string) string {
-	if t := strings.TrimSpace(explicit); t != "" {
-		return t
-	}
-	if i := strings.IndexByte(note, '\n'); i >= 0 {
-		if t := strings.TrimSpace(note[:i]); t != "" {
-			return t
-		}
-		return strings.TrimSpace(subjectName)
-	}
-	if t := strings.TrimSpace(note); t != "" {
-		return t
-	}
-	return strings.TrimSpace(subjectName)
 }
 
 func (d *Deps) createEntry(w http.ResponseWriter, r *http.Request) {
@@ -553,7 +536,7 @@ func (d *Deps) createEntry(w http.ResponseWriter, r *http.Request) {
 	if req.Note.Set && req.Note.Val != nil {
 		note = *req.Note.Val
 	}
-	title := entryTitle(derefOpt(req.Title), note, subj.Name)
+	title := domain.EntryTitle(derefOpt(req.Title), note, subj.Name)
 	if title == "" {
 		title = subj.Name
 	}
@@ -661,7 +644,7 @@ func (d *Deps) updateEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	if title == "" {
 		subj, _ := q.GetSubject(ctx, db.GetSubjectParams{ID: subjectID, UserID: userID})
-		title = entryTitle("", note, subj.Name)
+		title = domain.EntryTitle("", note, subj.Name)
 		if title == "" {
 			title = subj.Name
 		}

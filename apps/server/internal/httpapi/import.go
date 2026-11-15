@@ -91,7 +91,7 @@ func subjectByIDOrName(ctx context.Context, q *db.Queries, userID, id, name,
 		return s.ID, true
 	}
 	color := "#8D919A"
-	if validColor(colorHint) {
+	if domain.ValidColor(colorHint) {
 		color = strings.ToUpper(colorHint)
 	}
 	sort, _ := q.NextSubjectSort(ctx, userID)
@@ -142,7 +142,7 @@ func (d *Deps) upsertSubjectByFile(ctx context.Context, q *db.Queries, userID st
 		return existing.ID, nil
 	}
 	color := s.Color
-	if !validColor(color) {
+	if !domain.ValidColor(color) {
 		color = "#8D919A"
 	}
 	sort := s.Sort
@@ -197,7 +197,7 @@ func (d *Deps) upsertStateByFile(ctx context.Context, q *db.Queries, userID stri
 		return "", errors.New("state.label 为空: " + s.ID)
 	}
 	color := s.Color
-	if !validColor(color) {
+	if !domain.ValidColor(color) {
 		color = "#8D919A"
 	}
 	polarity := s.Polarity
@@ -329,7 +329,7 @@ func (d *Deps) upsertGoalByFile(ctx context.Context, q *db.Queries, userID strin
 		u := *g.Unit
 		unit = &u
 	}
-	if g.Color != nil && validColor(*g.Color) {
+	if g.Color != nil && domain.ValidColor(*g.Color) {
 		c := strings.ToUpper(*g.Color)
 		color = &c
 	}

@@ -4,12 +4,14 @@ go 1.27.4
 
 require (
 	github.com/go-chi/chi/v5 v5.5.0
+	github.com/go-sql-driver/mysql v1.9.3
 	golang.org/x/crypto v0.59.0
 	golang.org/x/term v0.48.0
 	modernc.org/sqlite v1.62.0
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect

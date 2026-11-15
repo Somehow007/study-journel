@@ -2,6 +2,7 @@
 //
 //	journal-server [-addr 127.0.0.1:8090] [-db journal.db]
 //	journal-server create-user -username NAME [-password PW] [-db journal.db]
+//	journal-server backup [-db journal.db] [-out journal.db.bak-TS]
 package main
 
 import (
@@ -45,8 +46,13 @@ func envBool(key string, fallback bool) bool {
 }
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "create-user" {
-		os.Exit(runCreateUser(os.Args[2:]))
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "create-user":
+			os.Exit(runCreateUser(os.Args[2:]))
+		case "backup":
+			os.Exit(runBackup(os.Args[2:]))
+		}
 	}
 	os.Exit(runServe(os.Args[1:]))
 }
@@ -169,6 +175,44 @@ func runCreateUser(args []string) int {
 		return 1
 	}
 	fmt.Printf("已创建用户 %s (id=%s)\n", u.Username, u.ID)
+	return 0
+}
+
+// runBackup writes a consistent snapshot via VACUUM INTO — the pre-migration
+// and daily-cron backup path (separation-plan §1).
+func runBackup(args []string) int {
+	fs := flag.NewFlagSet("backup", flag.ContinueOnError)
+	dbPath := fs.String("db", envOr("JOURNAL_DB", "journal.db"), "sqlite database path")
+	out := fs.String("out", "", "backup output path (default <db>.bak-YYYYMMDD-HHMMSS)")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if _, err := os.Stat(*dbPath); err != nil {
+		fmt.Fprintf(os.Stderr, "backup: 数据库不存在: %s\n", *dbPath)
+		return 1
+	}
+	if *out == "" {
+		*out = fmt.Sprintf("%s.bak-%s", *dbPath, time.Now().Format("20060102-150405"))
+	}
+	if strings.Contains(*out, "'") {
+		fmt.Fprintln(os.Stderr, "backup: 输出路径不能含单引号")
+		return 2
+	}
+	if _, err := os.Stat(*out); err == nil {
+		fmt.Fprintf(os.Stderr, "backup: 输出文件已存在: %s\n", *out)
+		return 1
+	}
+	sqlDB, err := internaldb.Open(*dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "backup: %v\n", err)
+		return 1
+	}
+	defer sqlDB.Close()
+	if _, err := sqlDB.Exec(fmt.Sprintf("VACUUM INTO '%s'", *out)); err != nil {
+		fmt.Fprintf(os.Stderr, "backup: %v\n", err)
+		return 1
+	}
+	fmt.Printf("已备份 → %s\n", *out)
 	return 0
 }
 

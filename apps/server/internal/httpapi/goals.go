@@ -280,7 +280,7 @@ func (d *Deps) validateGoalInput(w http.ResponseWriter, r *http.Request, req *go
 		fail(w, http.StatusBadRequest, "VALIDATION", "unit 过长")
 		return false
 	}
-	if color != nil && *color != "" && !validColor(*color) {
+	if color != nil && *color != "" && !domain.ValidColor(*color) {
 		fail(w, http.StatusBadRequest, "VALIDATION", "color 必须是 #RRGGBB")
 		return false
 	}

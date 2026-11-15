@@ -169,18 +169,6 @@ type subjectRequest struct {
 	Sort  optional[int64]  `json:"sort"`
 }
 
-func validColor(s string) bool {
-	if len(s) != 7 || s[0] != '#' {
-		return false
-	}
-	for _, c := range s[1:] {
-		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
-			return false
-		}
-	}
-	return true
-}
-
 func (d *Deps) listSubjects(w http.ResponseWriter, r *http.Request) {
 	rows, err := d.q().ListSubjects(r.Context(), uid(r))
 	if err != nil {
@@ -206,7 +194,7 @@ func (d *Deps) createSubject(w http.ResponseWriter, r *http.Request) {
 	}
 	color := "#8D919A"
 	if req.Color.Set && req.Color.Val != nil {
-		if !validColor(*req.Color.Val) {
+		if !domain.ValidColor(*req.Color.Val) {
 			fail(w, http.StatusBadRequest, "VALIDATION", "color 必须是 #RRGGBB")
 			return
 		}
@@ -277,7 +265,7 @@ func (d *Deps) updateSubject(w http.ResponseWriter, r *http.Request) {
 	}
 	color := cur.Color
 	if req.Color.Set {
-		if req.Color.Val == nil || !validColor(*req.Color.Val) {
+		if req.Color.Val == nil || !domain.ValidColor(*req.Color.Val) {
 			fail(w, http.StatusBadRequest, "VALIDATION", "color 必须是 #RRGGBB")
 			return
 		}
@@ -357,7 +345,7 @@ func (d *Deps) createState(w http.ResponseWriter, r *http.Request) {
 	}
 	color := "#8D919A"
 	if req.Color.Set {
-		if req.Color.Val == nil || !validColor(*req.Color.Val) {
+		if req.Color.Val == nil || !domain.ValidColor(*req.Color.Val) {
 			fail(w, http.StatusBadRequest, "VALIDATION", "color 必须是 #RRGGBB")
 			return
 		}
@@ -428,7 +416,7 @@ func (d *Deps) updateState(w http.ResponseWriter, r *http.Request) {
 	}
 	color := cur.Color
 	if req.Color.Set {
-		if req.Color.Val == nil || !validColor(*req.Color.Val) {
+		if req.Color.Val == nil || !domain.ValidColor(*req.Color.Val) {
 			fail(w, http.StatusBadRequest, "VALIDATION", "color 必须是 #RRGGBB")
 			return
 		}

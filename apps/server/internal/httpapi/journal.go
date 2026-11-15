@@ -1,15 +1,14 @@
 package httpapi
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	"journal/internal/bootstrap"
 	"journal/internal/db"
 	"journal/internal/id"
 )
@@ -144,26 +143,7 @@ func (d *Deps) journalRoutes(r chi.Router) {
 	})
 }
 
-// ---- first-login bootstrap seeds (idempotent) ----
-
-var builtinStates = []struct {
-	key, label, color string
-	polarity, sort    int64
-}{
-	{"inspired", "专注", "#D23B22", 1, 0},
-	{"happy", "顺利", "#C2571A", 1, 1},
-	{"calm", "平稳", "#1E4FA3", 0, 2},
-	{"tired", "疲惫", "#8D919A", -1, 3},
-	{"anxious", "焦虑", "#B07A12", -1, 4},
-	{"sad", "低落", "#5E5A8C", -1, 5},
-}
-
-var seedSubjects = []struct{ name, color string }{
-	{"数学一", "#1E4FA3"},
-	{"408", "#2F6B4F"},
-	{"英语一", "#B07A12"},
-	{"政治", "#D23B22"},
-}
+// ---- first-login bootstrap seeds (idempotent; spec in internal/bootstrap) ----
 
 func (d *Deps) ensureBootstrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +156,7 @@ func (d *Deps) ensureBootstrap(next http.Handler) http.Handler {
 			fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
 			return
 		}
-		if bs >= int64(len(builtinStates)) && sc > 0 {
+		if bs >= int64(len(bootstrap.States)) && sc > 0 {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -186,46 +166,9 @@ func (d *Deps) ensureBootstrap(next http.Handler) http.Handler {
 			return
 		}
 		defer tx.Rollback()
-		qt := q.WithTx(tx)
-		now := nowMs()
-		if bs < int64(len(builtinStates)) {
-			for _, s := range builtinStates {
-				if _, err := qt.GetStateByBuiltinKey(ctx, db.GetStateByBuiltinKeyParams{UserID: userID, BuiltinKey: &s.key}); err == nil {
-					continue
-				} else if !errors.Is(err, sql.ErrNoRows) {
-					fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
-					return
-				}
-				sid, err := nid()
-				if err != nil {
-					fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
-					return
-				}
-				if err := qt.CreateState(ctx, db.CreateStateParams{
-					ID: sid, UserID: userID, BuiltinKey: &s.key, Label: s.label,
-					Color: s.color, Polarity: s.polarity, Sort: s.sort,
-					CreatedAt: now, UpdatedAt: now,
-				}); err != nil {
-					fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
-					return
-				}
-			}
-		}
-		if sc == 0 {
-			for i, s := range seedSubjects {
-				sid, err := nid()
-				if err != nil {
-					fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
-					return
-				}
-				if err := qt.CreateSubject(ctx, db.CreateSubjectParams{
-					ID: sid, UserID: userID, Name: s.name, Color: s.color,
-					Sort: int64(i), CreatedAt: now, UpdatedAt: now,
-				}); err != nil {
-					fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
-					return
-				}
-			}
+		if err := bootstrap.Ensure(ctx, q.WithTx(tx), userID, nowMs()); err != nil {
+			fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
+			return
 		}
 		if err := tx.Commit(); err != nil {
 			fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
