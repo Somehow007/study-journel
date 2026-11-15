@@ -272,20 +272,37 @@ func (d *Deps) completeTask(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
 		return
 	}
+	var req taskRequest
+	if r.ContentLength != 0 { // 空 body = 仅标记完成
+		if !decodeJSON(w, r, &req) {
+			return
+		}
+	}
+	wantEntry := req.CreateEntry.Set && req.CreateEntry.Val != nil && *req.CreateEntry.Val
 	if cur.DoneAt != nil {
-		// idempotent: already done
+		// 已完成：幂等返回；例外是「补建 entry」——done 但还没挂条目时允许补上
+		if wantEntry && cur.EntryID == nil {
+			g, okG := d.requireGoal(w, r, cur.GoalID)
+			if !okG {
+				return
+			}
+			eid, okE := d.maybeCreateEntry(w, r, g, cur.Title, req.Date, durPtr(req.DurationMin), "goal")
+			if !okE {
+				return
+			}
+			if err := q.UpdateTask(ctx, db.UpdateTaskParams{
+				ID: id, Title: cur.Title, DueDate: cur.DueDate, WeekStart: cur.WeekStart,
+				DoneAt: cur.DoneAt, Reflection: cur.Reflection, EntryID: &eid,
+				Sort: cur.Sort, UpdatedAt: nowMs(),
+			}); err != nil {
+				fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
+				return
+			}
+		}
 		t, _ := q.GetTask(ctx, db.GetTaskParams{ID: id, UserID: uid(r)})
 		ok(w, taskOut(t))
 		return
 	}
-	var req taskRequest
-	if !decodeJSON(w, r, &req) && r.ContentLength != 0 {
-		// empty body is allowed (plain complete)
-		if !decodeJSON(w, r, &struct{}{}) {
-			return
-		}
-	}
-	// decode may have failed on empty body; req stays zero-value — acceptable.
 	now := nowMs()
 	entryID := cur.EntryID
 	reflection := cur.Reflection
@@ -296,7 +313,6 @@ func (d *Deps) completeTask(w http.ResponseWriter, r *http.Request) {
 			reflection = *req.Reflection.Val
 		}
 	}
-	wantEntry := req.CreateEntry.Set && req.CreateEntry.Val != nil && *req.CreateEntry.Val
 	if wantEntry {
 		g, okG := d.requireGoal(w, r, cur.GoalID)
 		if !okG {

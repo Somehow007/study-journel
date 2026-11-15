@@ -18,7 +18,7 @@ import (
 
 type dayMarkDTO struct {
 	Date         string    `json:"date"`
-	StateID      string    `json:"stateId"`
+	StateID      *string   `json:"stateId"`
 	State        *stateDTO `json:"state,omitempty"`
 	TotalMin     int64     `json:"totalMin"`
 	EntryCount   int64     `json:"entryCount"`
@@ -175,7 +175,7 @@ func (d *Deps) listDays(w http.ResponseWriter, r *http.Request) {
 		m := dayMarkDTO{Date: date}
 		if dr, ok := dayByDate[date]; ok {
 			if dr.StateID != nil {
-				m.StateID = *dr.StateID
+				m.StateID = dr.StateID
 				if s, ok := states[*dr.StateID]; ok {
 					so := stateOut(s)
 					m.State = &so

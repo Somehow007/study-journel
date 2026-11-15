@@ -278,7 +278,16 @@ func TestCarryOver(t *testing.T) {
 		`{"title":"已完成的","dueDate":"`+due+`"}`, cookie)
 	td2 := data(t, rec.Body.String())
 	doneID := td2["id"].(string)
-	doJSON(t, h, "POST", "/api/v1/tasks/"+doneID+"/complete", "", cookie)
+	// 空 body complete：必须 200 且响应是单个 JSON（回归：此前 EOF 路径
+	// 会先写 400 再写 200，客户端收到拼接的非法响应）
+	rec = doJSON(t, h, "POST", "/api/v1/tasks/"+doneID+"/complete", "", cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("complete empty body = %d %s", rec.Code, rec.Body.String())
+	}
+	cd := data(t, rec.Body.String())
+	if cd["done"] != true {
+		t.Fatalf("complete empty body resp = %v", cd)
+	}
 	// carry over
 	rec = doJSON(t, h, "POST", "/api/v1/goals/"+gid+"/carry-over", "", cookie)
 	if rec.Code != http.StatusOK {

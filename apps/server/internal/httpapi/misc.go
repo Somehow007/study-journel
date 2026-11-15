@@ -130,11 +130,11 @@ func (d *Deps) statsMonth(w http.ResponseWriter, r *http.Request) {
 	for d := range entryDates {
 		recorded[d] = true
 	}
-	// state breakdown needs state lookup per day row
-	stateIDs := map[string]struct{}{}
-	for _, dr := range dayRows {
-		if dr.StateID != nil {
-			stateIDs[*dr.StateID] = struct{}{}
+	// state breakdown: resolve labels/colors once via a single ListStates
+	stateByID := map[string]db.State{}
+	if allStates, err := q.ListStates(ctx, userID); err == nil {
+		for _, s := range allStates {
+			stateByID[s.ID] = s
 		}
 	}
 	marks := []domain.StateMark{}
@@ -142,13 +142,12 @@ func (d *Deps) statsMonth(w http.ResponseWriter, r *http.Request) {
 		if dr.StateID == nil {
 			continue
 		}
-		if s, err := q.GetState(ctx, db.GetStateParams{ID: *dr.StateID, UserID: userID}); err == nil {
+		if s, ok := stateByID[*dr.StateID]; ok {
 			marks = append(marks, domain.StateMark{
 				StateID: s.ID, Label: s.Label, Color: s.Color,
 			})
 		}
 	}
-	_ = stateIDs
 	// daily series
 	dailyMap := map[string]*struct {
 		min   int64
@@ -758,7 +757,6 @@ func (d *Deps) importData(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 				stats.Days++
-				stats.Minutes += 0
 				if err := upsertDayRow(ctx, q, userID, dd.Date, sid, dd.Diary, now); err != nil {
 					fail(w, http.StatusBadRequest, "IMPORT_FAILED", err.Error())
 					return

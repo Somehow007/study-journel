@@ -75,8 +75,9 @@ func goalColor(g db.Goal, subjectColor string) string {
 	return "#8D919A"
 }
 
-// computeSummary builds the read-time progress fields for one goal.
-func (d *Deps) computeSummary(r *http.Request, g db.Goal,
+// computeSummary builds the read-time progress fields for one goal. Callers
+// fetch weekStartsOn/today once per request and pass them in.
+func computeSummary(g db.Goal, wso int, today string,
 	tasks []taskDTO, checkins []checkinDTO, subjectColor, subjectName string) goalSummaryDTO {
 	out := goalSummaryDTO{
 		ID: g.ID, Period: g.Period, Title: g.Title, Type: g.Type,
@@ -85,9 +86,6 @@ func (d *Deps) computeSummary(r *http.Request, g db.Goal,
 		SortOrder: g.Sort, Status: g.Status, CarriedFrom: g.CarriedFrom,
 		CreatedAt: g.CreatedAt, UpdatedAt: g.UpdatedAt,
 	}
-	setting, _ := d.getSettingOrCreate(r)
-	wso := int(setting.WeekStartsOn)
-	today := domain.Today()
 	asOf, err := domain.AsOfForPeriod(g.Period, today)
 	if err != nil {
 		asOf = today
@@ -197,11 +195,13 @@ func (d *Deps) listGoals(w http.ResponseWriter, r *http.Request) {
 	summaries := make([]goalSummaryDTO, 0, len(goalRows))
 	dayMarks := map[string]dayMarkAgg{}
 	percentSum, reachedCount := 0, 0
+	setting, _ := d.getSettingOrCreate(r)
+	wso, today := int(setting.WeekStartsOn), domain.Today()
 	for _, g := range goalRows {
 		tasks := tasksByGoal[g.ID]
 		checkins := checkinsByGoal[g.ID]
 		sname, scolor := d.subjectInfo(r, g.SubjectID)
-		sum := d.computeSummary(r, g, tasks, checkins, scolor, sname)
+		sum := computeSummary(g, wso, today, tasks, checkins, scolor, sname)
 		summaries = append(summaries, sum)
 		percentSum += sum.Percent
 		if sum.Reached {
@@ -413,7 +413,8 @@ func (d *Deps) goalDetail(w http.ResponseWriter, r *http.Request, id string) {
 	ts := tasks[g.ID]
 	cs := checkins[g.ID]
 	sname, scolor := d.subjectInfo(r, g.SubjectID)
-	sum := d.computeSummary(r, g, ts, cs, scolor, sname)
+	setting, _ := d.getSettingOrCreate(r)
+	sum := computeSummary(g, int(setting.WeekStartsOn), domain.Today(), ts, cs, scolor, sname)
 	detail := goalDetailDTO{
 		goalSummaryDTO: sum, Tasks: ts, Checkins: cs, Weeks: []domain.WeekProgress{},
 	}
@@ -710,7 +711,7 @@ func (d *Deps) todayGoals(w http.ResponseWriter, r *http.Request) {
 		tasks := tasksByGoal[g.ID]
 		checkins := checkinsByGoal[g.ID]
 		sname, scolor := d.subjectInfo(r, g.SubjectID)
-		sum := d.computeSummary(r, g, tasks, checkins, scolor, sname)
+		sum := computeSummary(g, wso, date, tasks, checkins, scolor, sname)
 		it := item{
 			GoalID: g.ID, Title: g.Title, Type: g.Type, Color: sum.Color,
 			Percent: sum.Percent, Reached: sum.Reached, Unit: g.Unit,

@@ -54,8 +54,20 @@ func upsertEntryRow(ctx context.Context, q *db.Queries, userID string,
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	return q.CreateEntry(ctx, db.CreateEntryParams{
+	if err := q.CreateEntry(ctx, db.CreateEntryParams{
 		ID: e.ID, UserID: userID, Date: e.Date, SubjectID: subjectID,
+		Title: title, Note: e.Note, DurationMin: e.DurationMin,
+		Source: source, Sort: e.Sort, CreatedAt: created, UpdatedAt: updated,
+	}); err == nil {
+		return nil
+	}
+	// file id 与其他用户的行撞主键 → 换新生成的 id（entry_id 引用方再校验）
+	eid, err := nid()
+	if err != nil {
+		return err
+	}
+	return q.CreateEntry(ctx, db.CreateEntryParams{
+		ID: eid, UserID: userID, Date: e.Date, SubjectID: subjectID,
 		Title: title, Note: e.Note, DurationMin: e.DurationMin,
 		Source: source, Sort: e.Sort, CreatedAt: created, UpdatedAt: updated,
 	})

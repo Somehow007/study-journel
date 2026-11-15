@@ -53,8 +53,12 @@ func (d *Deps) putCheckin(w http.ResponseWriter, r *http.Request) {
 	var entryID *string
 	wantEntry := req.CreateEntry.Set && req.CreateEntry.Val != nil && *req.CreateEntry.Val
 	if wantEntry {
+		entryDate := req.Date
+		if entryDate == "" {
+			entryDate = date // 默认落在打卡日，而不是调用当天
+		}
 		eid, okE := d.maybeCreateEntry(w, r, g,
-			"打卡 · "+g.Title, req.Date, durPtr(req.DurationMin), "goal")
+			"打卡 · "+g.Title, entryDate, durPtr(req.DurationMin), "goal")
 		if !okE {
 			return
 		}
