@@ -1,0 +1,9 @@
+{
+  "name": "study-journey",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -F web dev",
+    "build": "pnpm -F web build",
+    "preview": "pnpm -F web preview"
+  }
+}

@@ -15,6 +15,12 @@ dist-ssr
 design/shots/
 test-results/
 
+# Go 服务产物与本地数据库
+apps/server/bin/
+*.db
+*.db-wal
+*.db-shm
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
