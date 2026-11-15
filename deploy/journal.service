@@ -1,0 +1,20 @@
+[Unit]
+Description=Study Journal API (Go, chi+SQLite)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+ExecStart=/opt/journal/journal-server -addr 127.0.0.1:8090 -db /var/lib/journal/journal.db
+Environment=JOURNAL_COOKIE_SECURE=1
+Restart=always
+RestartSec=3
+MemoryMax=160M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

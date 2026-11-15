@@ -5,7 +5,7 @@
 
 ## 1. 一句话
 
-学习手帐（原名「花期 Blossom」，v6 起转向考研场景）：React 18 SPA，部署在 `/journal/` 子路径；**M3 起前端已切到 `apps/server` Go 服务**（chi + sqlc + SQLite，`/api/v1`，Cookie 会话 `sj_session`，独立用户名/密码账号，`:8090`）。旧链路（mysite Spring `/api/journal/*` + 博客 JWT + Dexie IndexedDB）已整体移除，仅保留 `legacyIdb.ts` 供一次性迁移旧本地数据。剥离计划见 `separation-plan.md`。
+学习手帐（原名「花期 Blossom」，v6 起转向考研场景）：React 18 SPA，部署在 `/journal/` 子路径；**M3 起前端已切到 `apps/server` Go 服务**（chi + sqlc + SQLite，`/api/v1`，Cookie 会话 `sj_session`，独立用户名/密码账号，`:8090`）。**M4-1/M4-2 已交付** MySQL `sj_*`→SQLite 迁移器（`cmd/import-mysite` + `internal/importer`，逐项对账）与独立部署物料（`deploy/`），M4-3 首发切流待 owner 按 `deploy/CUTOVER.md` 执行。旧链路（mysite Spring `/api/journal/*` + 博客 JWT + Dexie IndexedDB）已整体移除，仅保留 `legacyIdb.ts` 供一次性迁移旧本地数据。剥离计划见 `separation-plan.md`。
 
 ## 2. 目录
 
@@ -24,7 +24,8 @@
 | `apps/web/src/lib/theme.ts` `apps/web/src/styles/themes/` | 复用博客 8 套主题（`data-theme`，key `mysite_theme_v2`）；`index.css` 把博客变量别名为 `--paper/--ink/--brand…` |
 | `apps/web/src/lib/constants.ts` | `SUBJECT_COLORS`、`WEEKDAY`/`MONTH_LABELS`（MOOD 配置已删，内置状态由服务端种子下发） |
 | `apps/web/src/context/AppContext.tsx` | 会话门禁（user undefined/null）、主题、settings 查询（dailyGoalMin 等服务端化）+ 首登旧值上报 |
-| `apps/server/` | Go module `journal`（M2 数据层+API）：`cmd/journal-server`（serve + `create-user`）、`internal/{httpapi,auth,db(domain 生成码+Open),domain,migrate,id}`、`db/migrations/*.sql`（embed，0001 账号三表 + 0002 业务九表）、`db/queries/*.sql`（sqlc 输入）、`sqlc.yaml` |
+| `apps/server/` | Go module `journal`（M2 数据层+API）：`cmd/journal-server`（serve + `create-user` + `backup`）、`cmd/import-mysite`（M4-1 MySQL sj_*→SQLite 迁移 CLI）、`internal/{httpapi,auth,db(domain 生成码+Open),domain,migrate,id,bootstrap(首登种子),importer(M4-1)}`、`db/migrations/*.sql`（embed，0001 账号三表 + 0002 业务九表）、`db/queries/*.sql`（sqlc 输入）、`sqlc.yaml` |
+| `deploy/` | M4-2 部署物料：`deploy.sh`（本地交叉编译+推送，`--skip-web/--skip-go` 分阶段）、`journal.service`、`nginx/journal-api.conf`（`/journal/api/`→`127.0.0.1:8090/api/`）、`CUTOVER.md`（M4-3 首发 + M4-4 回滚 runbook） |
 | `design/` | `mockup.html`（v5 走查稿）、`concepts/`（来源不明的早期草稿 data.js，未跟踪）、**`concepts-v6/`（考研向 UI 概念稿 A/B/C + SPEC，2026-11-15）** |
 | `docs/` | 本目录：MAP / architecture / data-model / separation-plan / roadmap |
 | 根目录两份中文 md | `🌸…开发设计文档 v5.0.md`（花期视觉规范，**已被 v6 取代，仅作历史**）、`📔…MySQL 存储方案 v2.0.md`（第二期后端化方案，**将被 data-model v3 取代**） |
@@ -38,15 +39,18 @@
 | `pnpm build`（=`pnpm -F web build`） | `tsc && vite build`，产物 `apps/web/dist/`（base `/journal/`） |
 | `./scripts/verify.sh` | web typecheck+build + server `gofmt`/`go vet`/`go test` |
 | `cd apps/server && go run ./cmd/journal-server` | Go 服务 `127.0.0.1:8090`；先 `go run ./cmd/journal-server create-user -username <名>` 建账号 |
+| `go run ./cmd/journal-server backup -db <path>` | `VACUUM INTO` 一致性快照（默认 `<db>.bak-<ts>`，已存在则拒绝） |
+| `go run ./cmd/import-mysite -db <sqlite> -mysql-dsn '...' [-dry-run]` | M4-1 迁移：MySQL `sj_*`→SQLite v3 + 对账报告（差异 exit 1）；详见 `cmd/import-mysite` 头注释与 `deploy/CUTOVER.md` |
+| `JOURNAL_SERVER=user@host ./deploy/deploy.sh [--skip-web\|--skip-go]` | M4-2 部署：本地构建（web `VITE_API_BASE=/journal/api` + Go 交叉编译 CGO_ENABLED=0）→ rsync `/var/www/journal/` + `/opt/journal/` + systemctl；需免密 sudo |
 | `cd apps/server && ~/go/bin/sqlc generate` | 重新生成 `internal/db`（sqlc v1.30.0，`sqlc.yaml`）；verify.sh 会校验生成物与仓库一致 |
 
 ## 4. 部署（现状）
 
-由 **mysite** `deploy/server-deploy.sh` 顺带完成：服务器 `~/project/study-journey` git pull → `npm install && npm run build` → rsync 到 `/var/www/journal/`；nginx `location /journal/` alias 静态目录，`/api/` 反代 mysite 8081。
+**目标形态已交付，尚未切流**：`deploy/deploy.sh` 在本机完成 web 生产构建（`VITE_API_BASE=/journal/api`）+ Go 交叉编译（`CGO_ENABLED=0`）→ rsync 前端到 `/var/www/journal/`、二进制到 `/opt/journal/` → `journal.service`（systemd，`127.0.0.1:8090`，SQLite `/var/lib/journal/journal.db`）。nginx 需在 mysite.conf 的 443+8080 两个 server 块加 `deploy/nginx/journal-api.conf` 的 `/journal/api/` 反代。**M4-3 首发与 M4-4 回滚步骤见 `deploy/CUTOVER.md`**；执行前线上仍是 mysite `deploy/server-deploy.sh` 的旧链路（Spring `/api/journal` + 静态前端）。
 
 ## 5. 已知漂移 / 坑
 
-- **M1–M4 期间不要跑 mysite `deploy/server-deploy.sh`**：其手帐段 `cd $JOURNAL_DIR && npm install && npm run build` + 校验 `dist/index.html` 与新布局（pnpm workspace、`apps/web/dist`）不兼容，会让整个部署中断；改造归 M4-2。前端在此窗口冻结不上线。
+- **M4-3 切流完成前不要跑 mysite `deploy/server-deploy.sh`**：其手帐段 `cd $JOURNAL_DIR && npm install && npm run build` + 校验 `dist/index.html` 与新布局（pnpm workspace、`apps/web/dist`）不兼容，会让整个部署中断；且它会用旧前端覆盖 `/var/www/journal`。替代物是本仓库 `deploy/deploy.sh`（M4-2 已交付）。M5 清理 mysite 手帐段后此坑消除。
 - Go 模块下载：本机直连 `proxy.golang.org` 超时，已 `go env -w GOPROXY=https://goproxy.cn,direct`；新环境需同样设置。
 - `apps/web/package.json` 仍含 `vite-plugin-pwa` 依赖，但 vite 配置已移除 PWA（子路径 SW 冲突）。
 - `lib/domain.ts` 仅作展示预览；业务计算唯一权威在 `apps/server/internal/domain`，两侧用 `testdata/domain-cases.json` 同一组用例对齐。

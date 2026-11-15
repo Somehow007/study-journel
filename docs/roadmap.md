@@ -11,7 +11,7 @@
 | M1 | Go 后端骨架 | `apps/server` 可跑、auth、CI、目录重构 | M0 | ✅ 已定 |
 | M2 | 数据层 v3 | 全部表 + domain + API（对旧接口平齐） | M1 | — |
 | M3 | 前端换 API | web 调新后端，IndexedDB 下线 | M2 | — |
-| M4 | 迁移与切换 | 数据迁入、nginx 切流、旧接口只读 | M2 M3 | — |
+| M4 | 迁移与切换 | 数据迁入、nginx 切流、旧接口只读 | M2 M3 | M4-1/2 ✅（2026-11-15），M4-3/4 待 owner 执行 `deploy/CUTOVER.md` |
 | M5 | mysite 清理 | journal 模块下线（14 天稳定后） | M4 | — |
 | M6 | **B 格纸 UI 落地** | 默认主题换装上线 | M4 | ✅ B 已定 |
 | M7 | 新功能补齐 | 科目预设/热力图/倒计时等（B 版内） | M6 | — |
