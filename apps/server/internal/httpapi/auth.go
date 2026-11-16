@@ -101,6 +101,68 @@ func (d *Deps) me(w http.ResponseWriter, r *http.Request) {
 	ok(w, userPublic{ID: p.UserID, Username: p.Username})
 }
 
+type changePasswordRequest struct {
+	OldPassword string `json:"oldPassword"`
+	NewPassword string `json:"newPassword"`
+}
+
+// changePassword verifies the old password, rewrites the argon2id hash, and
+// drops every other session of the user (keeps the current one).
+func (d *Deps) changePassword(w http.ResponseWriter, r *http.Request) {
+	var req changePasswordRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodyBytes)).Decode(&req); err != nil {
+		fail(w, http.StatusBadRequest, "BAD_REQUEST", "请求体不是合法 JSON")
+		return
+	}
+	if req.OldPassword == "" || req.NewPassword == "" {
+		fail(w, http.StatusBadRequest, "VALIDATION", "新旧密码不能为空")
+		return
+	}
+	if !d.LoginLimiter.Allow("pw:" + clientIP(r)) {
+		fail(w, http.StatusTooManyRequests, "RATE_LIMITED", "尝试过于频繁，请 10 分钟后再试")
+		return
+	}
+	p := principalFrom(r.Context())
+	if p == nil {
+		fail(w, http.StatusUnauthorized, "UNAUTHORIZED", "未登录")
+		return
+	}
+	user, err := auth.FindUserByID(r.Context(), d.DB, p.UserID)
+	if err != nil {
+		d.Logger.Error("change password lookup", "err", err)
+		fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
+		return
+	}
+	if user == nil || !auth.VerifyPassword(user.PasswordHash, req.OldPassword) {
+		fail(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "原密码错误")
+		return
+	}
+	newLen := len([]rune(req.NewPassword))
+	if newLen < 8 || newLen > 128 {
+		fail(w, http.StatusBadRequest, "VALIDATION", "新密码长度需在 8–128 位之间")
+		return
+	}
+	if req.NewPassword == req.OldPassword {
+		fail(w, http.StatusBadRequest, "VALIDATION", "新密码不能与旧密码相同")
+		return
+	}
+	if err := auth.UpdateUserPassword(r.Context(), d.DB, user.ID, req.NewPassword); err != nil {
+		d.Logger.Error("change password update", "err", err)
+		fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
+		return
+	}
+	keep := ""
+	if cookie, err := r.Cookie(SessionCookieName); err == nil {
+		keep = cookie.Value
+	}
+	if err := auth.DeleteOtherSessions(r.Context(), d.DB, user.ID, keep); err != nil {
+		// 密码已改成功；会话清理失败不阻断响应，仅记日志
+		d.Logger.Error("delete other sessions", "err", err)
+	}
+	d.LoginLimiter.Reset("pw:" + clientIP(r))
+	ok(w, map[string]any{"ok": true})
+}
+
 func setSessionCookie(w http.ResponseWriter, token string, expires time.Time, secure bool) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookieName,

@@ -85,3 +85,15 @@ func DeleteSession(ctx context.Context, db *sql.DB, token string) error {
 	_, err := db.ExecContext(ctx, "DELETE FROM session WHERE id = ?", hashToken(token))
 	return err
 }
+
+// DeleteOtherSessions removes every session of userID except the one
+// identified by keepToken (raw cookie value). keepToken="" deletes all.
+func DeleteOtherSessions(ctx context.Context, db *sql.DB, userID, keepToken string) error {
+	if keepToken == "" {
+		_, err := db.ExecContext(ctx, "DELETE FROM session WHERE user_id = ?", userID)
+		return err
+	}
+	_, err := db.ExecContext(ctx,
+		"DELETE FROM session WHERE user_id = ? AND id != ?", userID, hashToken(keepToken))
+	return err
+}

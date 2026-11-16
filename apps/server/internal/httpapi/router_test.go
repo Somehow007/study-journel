@@ -159,6 +159,64 @@ func TestLoginRateLimit(t *testing.T) {
 	}
 }
 
+func TestChangePassword(t *testing.T) {
+	deps, h := newTestEnv(t)
+	ctx := context.Background()
+	if _, err := auth.CreateUser(ctx, deps.DB, "carol", "old-pass-1"); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	login := func(pw string) *httptest.ResponseRecorder {
+		return doJSON(t, h, "POST", "/api/v1/auth/login",
+			`{"username":"carol","password":"`+pw+`"}`, "")
+	}
+	// 两个会话：cookieA 改密方（应保留），cookieB 其他设备（应被踢）
+	recA := login("old-pass-1")
+	if recA.Code != http.StatusOK {
+		t.Fatalf("login A: %d", recA.Code)
+	}
+	cookieA := sessionCookie(recA)
+	recB := login("old-pass-1")
+	cookieB := sessionCookie(recB)
+
+	change := func(body, cookie string) *httptest.ResponseRecorder {
+		return doJSON(t, h, "POST", "/api/v1/auth/password", body, cookie)
+	}
+	// 未登录 → 401
+	if rec := change(`{"oldPassword":"old-pass-1","newPassword":"new-pass-22"}`, ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("no cookie = %d", rec.Code)
+	}
+	// 旧密码错 → 401
+	if rec := change(`{"oldPassword":"wrong","newPassword":"new-pass-22"}`, cookieA); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("wrong old = %d", rec.Code)
+	}
+	// 新密码过短 → 400
+	if rec := change(`{"oldPassword":"old-pass-1","newPassword":"short"}`, cookieA); rec.Code != http.StatusBadRequest {
+		t.Fatalf("short new = %d", rec.Code)
+	}
+	// 新旧相同 → 400
+	if rec := change(`{"oldPassword":"old-pass-1","newPassword":"old-pass-1"}`, cookieA); rec.Code != http.StatusBadRequest {
+		t.Fatalf("same pw = %d", rec.Code)
+	}
+	// 成功 → 200
+	if rec := change(`{"oldPassword":"old-pass-1","newPassword":"new-pass-22"}`, cookieA); rec.Code != http.StatusOK {
+		t.Fatalf("change = %d %s", rec.Code, rec.Body.String())
+	}
+	// 当前会话存活，其他会话被踢
+	if rec := doJSON(t, h, "GET", "/api/v1/auth/me", "", cookieA); rec.Code != http.StatusOK {
+		t.Fatalf("me with cookieA = %d", rec.Code)
+	}
+	if rec := doJSON(t, h, "GET", "/api/v1/auth/me", "", cookieB); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("me with cookieB = %d, want 401", rec.Code)
+	}
+	// 旧密码登录失败，新密码登录成功
+	if rec := login("old-pass-1"); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("old pw login = %d, want 401", rec.Code)
+	}
+	if rec := login("new-pass-22"); rec.Code != http.StatusOK {
+		t.Fatalf("new pw login = %d", rec.Code)
+	}
+}
+
 func TestUnknownRouteJSON(t *testing.T) {
 	_, h := newTestEnv(t)
 	rec := doJSON(t, h, "GET", "/api/v1/nope", "", "")
