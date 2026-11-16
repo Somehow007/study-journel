@@ -66,3 +66,4 @@
 - 2026-11-16 | 11-16-b-fidelity 收尾轮完成并归档：18 项逐项定夺（12 修/补、6 接受）——节奏改算到昨天、热力图标签、暗色方格、窄桌面顶栏、长状态名（省略+容器查询隐藏）、待办/子任务失败态、目标编辑入口、手机日历当日块、搜索标签、色块反馈、截图触屏；verify/visual 全绿 + 探针全过 | → `.trellis/tasks/archive/2026-11/11-16-b-fidelity/prd.md` Resolution
 - 2026-11-16 | **B 还原度修复 + S9 上线**：S1–S9 + 收尾轮 18 项全量部署（journal-server 重启 :8090 + /var/www/journal 前端）；部署前手动备份 journal-20261116-2318.db；冒烟 health 200 / 前端 200 / auth/me 401 正常；日记数据未动 | → `.trellis/tasks/archive/2026-11/11-16-b-fidelity/prd.md` Resolution
 - 2026-11-16 | 生产账密重置：admin→somehow + 新密码（owner 指定，user_id 不变、数据无损；旧 session 全部踢下线；操作前 journal-server backup）；登录+数据接口冒烟通过 | → 无（运维操作）
+- 2026-11-16 | 时光页手机端左贴边修复：.nb-memory padding-left:0（桌面时间线对齐）源序在移动断点之后未被重置，移动端内容贴左边框；移动 media block 补回 20px，shot.mjs MOBILE 补 memory 防再漏；390px 实测 padding/边界 0→20px、1440 桌面不变，verify 全绿 | → c758a6a
