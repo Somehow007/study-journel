@@ -1162,3 +1162,76 @@ textarea.nb-field {
   color: var(--ink-faint);
   margin: 0 0 18px;
 }
+
+/* ---------- 统计页 ---------- */
+/* 每日时长柱状（纯 CSS，对齐原型 ink 柱 + 红线目标 + 今日红柱） */
+.nb-bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 200px;
+  border-bottom: 1.5px solid var(--ink);
+  margin-top: 8px;
+}
+.nb-bars-goal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dashed var(--brand);
+  pointer-events: none;
+}
+.nb-bar-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.nb-bar-col:hover .nb-bar {
+  background: var(--brand);
+}
+.nb-bar {
+  display: block;
+  width: 100%;
+  background: var(--ink);
+  min-height: 0;
+}
+.nb-bar.today {
+  background: var(--brand);
+}
+.nb-bars-labels {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+}
+.nb-bar-label {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: 9px;
+  color: var(--ink-faint);
+}
+/* 等宽数字小工具（sec-side 等场景） */
+.nb-mono {
+  font-family: var(--font-num);
+}
+@media (max-width: 767px) {
+  .nb-kv {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .nb-kv > div:nth-child(2) {
+    border-right: 0;
+  }
+  .nb-kv > div:nth-child(-n + 2) {
+    border-bottom: 1px dashed var(--rule-dash);
+  }
+  .nb-bars {
+    height: 140px;
+  }
+}
