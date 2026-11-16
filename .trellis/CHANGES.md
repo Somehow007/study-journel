@@ -52,3 +52,4 @@
 - 2026-11-16 | S3 日历格日期号定位：.nb-cal-d absolute 左上（button 裸文本垂直居中根治），状态字补 line-height:1 同基线；手机隐藏状态字/时长单位小字、stamp inset 顶 14→18px；手机覆盖误置早序媒体块已纠正；1440/390 逐格零重叠零溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S3-calendar-cell.md`
 - 2026-11-16 | S4 状态色统一：stateUtils 新增 stateTextColor（极性→红笔/浅墨，签名容忍 undefined 兜底红笔），CalGrid/MonthView 图例 cfg.ink 与 Memory/Stats 内联 polarity 全部收口；computed-style 双主题实测（亮 #D23B22/#8D919A、暗 #FF7A5C/#6E7686）+ visual 零报错零溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S4-state-color.md`
 - 2026-11-16 | S3 后走查：三页日历格结构完整（每格恰好 1 个 .nb-cal-d、裸文本 0）、断点 767/768 行为正确、点击导航/暗色继承/像素局部图全过；新发现分流——768–855px 顶栏右簇致全页横滚（存量）与长状态名换行压时长（低优先）记 prd 走查补记留收尾轮 | → `.trellis/tasks/11-16-b-fidelity/cards/S3-calendar-cell.md`
+- 2026-11-16 | S4 后全量目检走查：visual 全量 18 组合零 pageerror/零溢出 + DOM 探针 18 断言全过——状态色极性规则全表面一致（格/图例/今日/时光/统计，亮暗双主题）、S3 定位与手机隐藏无回归、无新发现 | → `.trellis/tasks/11-16-b-fidelity/prd.md` 走查补记

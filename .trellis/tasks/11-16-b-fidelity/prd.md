@@ -86,6 +86,13 @@ S0 必须最先做；S1 第二。S3–S7 互不依赖，可任意顺序，但**�
 
 **收尾轮（S9 之后统一做）**：所有 S 卡完成后，汇总①本节未决项（2/3/4/6）②各卡「执行记录」里的遗留问题③执行中新发现——一次走查 + 逐项定夺（修 or 记录为有意差异），修完补 prd `## Resolution` 并归档。收尾轮同样一条一 commit。
 
+### 走查补记（2026-11-16 · S4 后全量目检）
+
+- 覆盖：`visual.sh` 全量 12 页×1440 + 6 页×390（报告 `/tmp/sj-visual.uqoSxf/report.html`）**零 pageerror / 零横向溢出**；playwright DOM 探针 18 项断言全过（本模型无视觉，以 computed-style/DOM 几何断言代替目检，截图留 `impl/` 供 owner 复核）。
+- **S4 验证**：状态色极性规则全表面一致——日历格（16 处）、状态图例（6 态）、今日迷你日历、时光（16 条）、统计状态记数（6 行）：专注/顺利/平稳 = brand 红笔、疲惫/焦虑/低落 = ink-faint 浅墨（亮 `#D23B22`/`#8D919A`，暗 `#FF7A5C`/`#6E7686`，polarity 取自 `/api/v1/states` 服务端权威逐一比对）；MoodSelector 未选中浅墨/选中红圈不变，日详情页选中态红笔。
+- **回归**：S3 日历日期号顶部定位（offset=6px）、手机 `.nb-cal-state` `display:none`、`.nb-cal-dur small` 隐藏均保持；plan/annual/search/settings 页面正常渲染；暗色主题抽查（calendar 图例 + memory）通过，测后已还原 notebook。
+- **新发现**：无。S4 为纯颜色重构，无版式改动；AnnualReview「最常状态」标签不着色为既有设计（不在本卡范围，概念稿未要求）。
+
 ## 验收（整体）
 
 - 12 页 × 1440 与 6 页 × 390 对照报告：无竖排折行、无数字重叠、无横向溢出、零 pageerror。
