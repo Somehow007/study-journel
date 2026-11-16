@@ -92,6 +92,8 @@
   display: flex;
   align-items: flex-end;
   gap: 16px;
+  flex-wrap: wrap;
+  row-gap: 10px;
   border-bottom: 1.5px solid var(--ink);
   padding-bottom: 12px;
 }
@@ -102,6 +104,7 @@
   line-height: 0.9;
   letter-spacing: -0.02em;
   color: var(--ink);
+  white-space: nowrap;
 }
 .nb-date-num.sm {
   font-size: 40px;
@@ -125,6 +128,7 @@
   align-items: center;
   gap: 10px;
   color: var(--ink);
+  white-space: nowrap;
 }
 .nb-sec::before {
   content: '';
@@ -188,6 +192,7 @@ a.nb-sec-side {
   font-weight: 600;
   font-size: 12px;
   padding-top: 12px;
+  white-space: nowrap;
 }
 .nb-table .nb-m {
   width: 80px;
@@ -710,6 +715,9 @@ textarea.nb-field {
   margin-top: 4px;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .nb-kv.cols-2 {
   grid-template-columns: repeat(2, 1fr);
