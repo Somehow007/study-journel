@@ -347,7 +347,7 @@ export default function GoalDetail() {
                 if (isFuture) {
                   return (
                     <div key={d.dateStr} className="nb-cal-cell nb-cal-checkin future">
-                      {Number(d.dateStr.slice(8))}
+                      <span className="nb-cal-d">{Number(d.dateStr.slice(8))}</span>
                     </div>
                   );
                 }
@@ -364,7 +364,7 @@ export default function GoalDetail() {
                       openCountSheet(d.dateStr, null, goal.suggestedDaily ?? 1);
                     }}
                   >
-                    {Number(d.dateStr.slice(8))}
+                    <span className="nb-cal-d">{Number(d.dateStr.slice(8))}</span>
                     {checkin && <span className="nb-stamp-circle">{checkin.quantity}</span>}
                   </button>
                 );

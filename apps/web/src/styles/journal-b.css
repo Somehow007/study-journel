@@ -488,12 +488,19 @@ button.nb-cal-cell {
 .nb-cal-cell.future {
   color: var(--ink-faint);
 }
+.nb-cal-d {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  line-height: 1;
+}
 .nb-cal-state {
   position: absolute;
   right: 7px;
   top: 6px;
   font-family: var(--font-title);
   font-size: 11px;
+  line-height: 1;
 }
 .nb-cal-dur {
   position: absolute;
@@ -1117,8 +1124,28 @@ textarea.nb-field {
     font-size: 10px;
     padding: 3px 4px;
   }
+  /* 手机格内精简：隐藏状态字与时长单位小字，日期/时长/条左收 4px */
+  .nb-cal-state {
+    display: none;
+  }
+  .nb-cal-dur {
+    font-size: 12px;
+    left: 4px;
+    bottom: 6px;
+  }
+  .nb-cal-dur small {
+    display: none;
+  }
+  .nb-cal-bar {
+    left: 4px;
+  }
+  .nb-cal-d {
+    left: 4px;
+    top: 4px;
+    font-size: 11px;
+  }
   .nb-stamp-circle {
-    inset: 14px 4px 3px;
+    inset: 18px 4px 3px;
     font-size: 12px;
     border-width: 1.5px;
   }

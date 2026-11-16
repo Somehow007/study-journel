@@ -71,7 +71,7 @@ export default function CalGrid({ period, marks, highlightDate, heightClass = 'h
             onClick={() => navigate(`/day/${d.dateStr}`)}
             aria-label={d.dateStr}
           >
-            {d.day}
+            <span className="nb-cal-d">{d.day}</span>
             {cfg && !isFuture && (
               <span className="nb-cal-state" style={{ color: cfg.ink }}>
                 {cfg.label}

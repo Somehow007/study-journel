@@ -49,3 +49,4 @@
 - 2026-11-16 | 走查补记分流：6 条新发现——学科分布竖排并入 S8 组1、QueryState 通栏并入 S8 组5、日期 picker 图标并入 S8 组4；手机日历当日小计块/搜索语义/目标编辑入口/时光长滚留收尾轮（S9 后统一处理） | → `.trellis/tasks/11-16-b-fidelity/prd.md`、`cards/S8-details.md`
 - 2026-11-16 | S2 手机整屏方格纸：nb-book 去 margin/边框/阴影、页底透明 + main.nb-mobile-paper 连续方格、mhead 并入纸面加墨线、nb-date-num 40px；390 书宽=390 零溢出零 pageerror，桌面 1440 逐像素无变化；「今日学习」y 仅 +28.6px（未达 100px 期望，mhead 保留所致，已记录）；新发现暗色 --grid-size 缺失存量问题留收尾轮 | → `.trellis/tasks/11-16-b-fidelity/cards/S2-mobile-fullbleed.md`
 - 2026-11-16 | S2 走查+回归修复：9 路由×390+弹层/空态/暗色全过（零 pageerror/零溢出/书页贴边/方格连续）；发现 main flex-1 无效致短页（错误/加载/空态）纸面中途截断露 body 接缝，补 min-height:100vh 修复；暗色 --grid-size 缺失确认为存量问题 | → `.trellis/tasks/11-16-b-fidelity/cards/S2-mobile-fullbleed.md`
+- 2026-11-16 | S3 日历格日期号定位：.nb-cal-d absolute 左上（button 裸文本垂直居中根治），状态字补 line-height:1 同基线；手机隐藏状态字/时长单位小字、stamp inset 顶 14→18px；手机覆盖误置早序媒体块已纠正；1440/390 逐格零重叠零溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S3-calendar-cell.md`

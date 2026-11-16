@@ -41,3 +41,26 @@ SPEC-B §3 日历：「格内：左上日期、右上状态字、左下大时长
 `fix(web): 日历格日期号定位左上——button 内容默认垂直居中导致错位；手机隐藏状态字`
 
 ## 执行记录
+
+2026-11-16 执行（Devin）：
+
+**改动**（3 文件，均在卡范围内）：
+- `apps/web/src/components/CalGrid.tsx`：`{d.day}` → `<span className="nb-cal-d">{d.day}</span>`。
+- `apps/web/src/pages/GoalDetail.tsx`：打卡日历两处日期号（future `<div>` 格、可点 `<button>` 格）同样包 `<span className="nb-cal-d">`。
+- `apps/web/src/styles/journal-b.css`：
+  - `.nb-cal-state` 前新增 `.nb-cal-d`（absolute `left:8px top:6px line-height:1`，字体/颜色继承 `.nb-cal-cell`）。
+  - `.nb-cal-state` 补 `line-height: 1`（卡外一行，验收「同一基线」需要：实测两文本底边差 3px → 0）。
+  - `@media(max-width:767px)` 末尾块（与 `.nb-cal-checkin`/`.nb-stamp-circle` 手机规则同处）追加：`.nb-cal-state{display:none}`、`.nb-cal-dur{font-size:12px;left:4px;bottom:6px}`、`.nb-cal-dur small{display:none}`、`.nb-cal-bar{left:4px}`、`.nb-cal-d{left:4px;top:4px;font-size:11px}`；`.nb-stamp-circle` 手机 inset 顶 `14px`→`18px`。
+
+**与卡面的两处偏差（如实记录）**：
+1. 卡说手机规则放「`--nb-cal-h:56px` 媒体块旁边」——该块源码序**早于**基础 `.nb-cal-*` 规则，同优先级后写者胜，`left/top/bottom/font-size` 全部被基础规则覆盖（`display:none` 侥幸生效因基础规则未写 display）。已把元素级覆盖移到文件尾部既有 `@media(max-width:767px)` 块；`--nb-cal-h` 保留原位。
+2. `.nb-stamp-circle` 手机 inset 顶按卡的预案 14→18px：日期号底边 ≈15px，14px 时 goal 页 14 个格子 stamp 与日期号 bounding box 相交（椭圆视觉擦边）。
+
+**验收实测**（临时库 8091 + vite 5176，visual.sh 同口径；探针 `/tmp/sj-s3/measure.mjs` 逐格 getBoundingClientRect + Range 文本底边）：
+- `./scripts/verify.sh` 全绿；`./scripts/visual.sh calendar,today,goal`：**零 pageerror / 零横向溢出**（报告 `/tmp/sj-visual.DppOZ1/report.html`，截图 `impl/`）。
+- 1440：calendar/today/goal 三页 30 格 `.nb-cal-d` 全部 top=6/left=8（最大偏差 0）；`.nb-cal-state` 右上与日期号**文本底边差 0**（同一基线）；`.nb-cal-dur` 左下；格内元素两两相交 0；`.today` 红框 `2px solid` brand 不变。
+- 390：`.nb-cal-state` 全隐藏（16/16）、`.nb-cal-dur small` 全隐藏（16/16）；`.nb-cal-d` top=4/left=4/fs=11、`.nb-cal-dur` bottom=6、`.nb-cal-bar` left=4；goal 打卡格 stamp 与日期号相交 0（修复前 14 处）；无文字重叠。
+- worst 统计中 ±1px 项（sRight/durBot）为格子 1px border 使 border-box 与 padding-box 差 1px 的测量口径，非布局问题。
+- 截图无法目检（本模型无视觉），以 DOM 几何逐格断言代替；截图留 `/tmp/sj-visual.DppOZ1/impl/` 供 owner 复核。
+
+遗留：无。
