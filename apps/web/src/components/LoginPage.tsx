@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { login } from '../lib/auth';
-import { Pressable } from './ui/Pressable';
+
+const year = new Date().getFullYear();
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -12,7 +13,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     if (!username.trim() || !password) {
-      setError('请输入用户名和密码');
+      setError('请输入账号和口令');
       return;
     }
     setLoading(true);
@@ -28,51 +29,48 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6" style={{ background: 'var(--paper)' }}>
-      <form onSubmit={onSubmit} className="card w-full max-w-sm rounded-xl p-8">
-        <h1 className="font-sans text-h1 text-[var(--ink)]">手帐</h1>
-        <p className="mt-1 font-sans text-small text-[var(--ink-faint)]">登录你的学习手帐</p>
+    <div className="nb-login-desk">
+      <div className="nb-login-book">
+        <form onSubmit={onSubmit} className="nb-login-sheet">
+          <div className="nb-login-title">
+            <b>考研手记</b>
+            <span>
+              STUDY LOG · {year}—{year + 1}
+            </span>
+          </div>
 
-        {error && (
-          <p className="mt-4 rounded-md px-3 py-2 font-sans text-small" style={{ background: 'var(--danger-subtle)', color: 'var(--danger)' }}>
-            {error}
-          </p>
-        )}
+          {error && <p className="nb-login-error">{error}</p>}
 
-        <label className="mt-6 block font-sans text-small text-[var(--ink-soft)]" htmlFor="journal-user">
-          用户名
-        </label>
-        <input
-          id="journal-user"
-          autoComplete="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="mt-1.5 w-full rounded-md border px-3 py-2 font-sans text-body outline-none"
-          style={{ borderColor: 'var(--keyline)', background: 'var(--card)', color: 'var(--ink)' }}
-        />
+          <label className="nb-flab" htmlFor="journal-user">
+            账号
+          </label>
+          <input
+            id="journal-user"
+            className="nb-field"
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
 
-        <label className="mt-4 block font-sans text-small text-[var(--ink-soft)]" htmlFor="journal-pass">
-          密码
-        </label>
-        <input
-          id="journal-pass"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1.5 w-full rounded-md border px-3 py-2 font-sans text-body outline-none"
-          style={{ borderColor: 'var(--keyline)', background: 'var(--card)', color: 'var(--ink)' }}
-        />
+          <label className="nb-flab" htmlFor="journal-pass">
+            口令
+          </label>
+          <input
+            id="journal-pass"
+            className="nb-field"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-        <Pressable
-          type="submit"
-          disabled={loading}
-          className="mt-6 w-full rounded-md py-2.5 font-sans text-small text-[var(--text-inverse)]"
-          style={{ background: 'var(--brand)' }}
-        >
-          {loading ? '登录中…' : '登录'}
-        </Pressable>
-      </form>
+          <button type="submit" className="nb-btn p nb-login-submit" disabled={loading}>
+            {loading ? '翻开中…' : '翻开'}
+          </button>
+          <p className="nb-login-foot">手帐仅本人使用</p>
+        </form>
+        <span className="nb-login-stamp">考研</span>
+      </div>
     </div>
   );
 }

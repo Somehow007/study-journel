@@ -44,6 +44,8 @@
   --subject-pol: #D23B22;
   --grid-size: 20px;
   --nb-hard-shadow: #1B2433;
+  --nb-desk: #DCD8CC;
+  --nb-cover: #1F2B44;
 }
 
 /* ---------- 夜间墨蓝 ---------- */
@@ -82,4 +84,6 @@
   --subject-eng: #E0B356;
   --subject-pol: #FF8A70;
   --nb-hard-shadow: #000000;
+  --nb-desk: #0C1119;
+  --nb-cover: #18233C;
 }

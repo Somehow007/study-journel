@@ -1712,3 +1712,119 @@ textarea.nb-field {
     justify-content: center;
   }
 }
+
+/* ---------- 登录页（书桌上的书） ---------- */
+.nb-login-desk {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: var(--nb-desk);
+  padding: 32px 16px;
+}
+.nb-login-book {
+  position: relative;
+  width: min(520px, 94vw);
+  aspect-ratio: 520 / 700;
+  background: var(--nb-cover);
+  border-radius: 4px 14px 14px 4px;
+  box-shadow:
+    inset 18px 0 0 #172036,
+    20px 30px 60px rgba(0, 0, 0, 0.25);
+  display: grid;
+  place-items: center;
+}
+.nb-login-book::before {
+  content: '';
+  position: absolute;
+  left: 30px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.nb-login-sheet {
+  width: min(340px, 76%);
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  padding: 28px 30px;
+}
+.nb-login-title {
+  text-align: center;
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 14px;
+}
+.nb-login-title b {
+  display: block;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+.nb-login-title span {
+  display: block;
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+  letter-spacing: 0.2em;
+}
+.nb-login-error {
+  margin-top: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--font-title);
+  font-size: 13px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+.nb-login-sheet .nb-flab {
+  margin-top: 16px;
+}
+.nb-login-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: 24px;
+  padding: 10px;
+}
+.nb-login-foot {
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-top: 12px;
+}
+.nb-login-stamp {
+  position: absolute;
+  right: 40px;
+  bottom: 46px;
+  border: 2px solid var(--brand);
+  color: var(--brand);
+  padding: 4px 12px;
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 15px;
+  transform: rotate(-2deg);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .nb-login-book {
+    width: min(480px, 96vw);
+    aspect-ratio: 480 / 680;
+  }
+  .nb-login-sheet {
+    width: min(320px, 80%);
+    padding: 22px 20px;
+  }
+  .nb-login-title b {
+    font-size: 24px;
+  }
+  .nb-login-stamp {
+    right: 20px;
+    bottom: 26px;
+    font-size: 12px;
+    padding: 3px 9px;
+  }
+}
