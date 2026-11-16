@@ -7,6 +7,7 @@ import { logout } from '../lib/auth';
 import { useStates, useSubjects, invalidateAll } from '../lib/queries';
 import StateEditModal from '../components/StateEditModal';
 import SubjectEditModal from '../components/SubjectEditModal';
+import PasswordEditModal from '../components/PasswordEditModal';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
@@ -42,6 +43,7 @@ export default function Settings() {
   const [editingState, setEditingState] = useState<JournalState | null>(null);
   const [showSubjectEdit, setShowSubjectEdit] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [showPasswordEdit, setShowPasswordEdit] = useState(false);
   const [customGoalMin, setCustomGoalMin] = useState(String(dailyGoalMin));
   const {
     importStatus,
@@ -390,6 +392,13 @@ export default function Settings() {
           />
         </SetRow>
 
+        {/* 账号安全 */}
+        <SetRow title="账号安全" desc="修改登录密码，其他设备会退出">
+          <button type="button" className="nb-btn" onClick={() => setShowPasswordEdit(true)}>
+            修改密码
+          </button>
+        </SetRow>
+
         {/* 账号与版本 */}
         <div className="nb-set-foot">
           <span className="nb-mono">
@@ -420,6 +429,8 @@ export default function Settings() {
           editSubject={editingSubject}
         />
       )}
+
+      {showPasswordEdit && <PasswordEditModal onClose={() => setShowPasswordEdit(false)} />}
     </div>
   );
 }

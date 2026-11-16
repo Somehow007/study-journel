@@ -32,6 +32,14 @@ export async function login(username: string, password: string): Promise<User> {
   return user;
 }
 
+/** POST /auth/password {oldPassword,newPassword}；成功后其他设备会话失效 */
+export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  await apiFetch<unknown>('/auth/password', {
+    method: 'POST',
+    body: JSON.stringify({ oldPassword, newPassword }),
+  });
+}
+
 /** POST /auth/logout 清服务端 session，然后回手帐入口（App 重新判定登录态） */
 export async function logout(): Promise<void> {
   try {
