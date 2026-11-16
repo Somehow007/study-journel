@@ -2,17 +2,18 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, RefreshCw, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { archiveState } from '../lib/api';
+import { archiveState, unarchiveSubject } from '../lib/api';
 import { logout } from '../lib/auth';
-import { useStates, invalidateAll } from '../lib/queries';
+import { useStates, useSubjects, invalidateAll } from '../lib/queries';
 import StateEditModal from '../components/StateEditModal';
+import SubjectEditModal from '../components/SubjectEditModal';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import { useDataIO } from '../lib/useDataIO';
 import { APP_VERSION } from '../lib/version';
 import { showToast } from '../lib/toast';
 import { askConfirm } from '../lib/confirm';
 import { THEME_PICKER_ITEMS, getThemeMeta } from '../lib/theme';
-import type { JournalState, SettingsPatch } from '../lib/types/api';
+import type { JournalState, SettingsPatch, Subject } from '../lib/types/api';
 
 /** 每日学习目标预设（分钟）：4h/5h/6h/8h/10h，界外值走自定义输入 */
 const GOAL_PRESETS = [240, 300, 360, 480, 600];
@@ -38,6 +39,8 @@ export default function Settings() {
   const { theme, setTheme, dailyGoalMin, setDailyGoalMin, user, settings, patchSettings } = useApp();
   const [showStateEdit, setShowStateEdit] = useState(false);
   const [editingState, setEditingState] = useState<JournalState | null>(null);
+  const [showSubjectEdit, setShowSubjectEdit] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [customGoalMin, setCustomGoalMin] = useState(String(dailyGoalMin));
   const {
     importStatus,
@@ -50,8 +53,11 @@ export default function Settings() {
   } = useDataIO();
 
   const { data: states, isPending, error, refetch } = useStates();
+  const { data: subjects } = useSubjects();
   const customStates = (states ?? []).filter((s) => s.builtinKey == null && s.archivedAt == null);
   const builtinStates = (states ?? []).filter((s) => s.builtinKey != null && s.archivedAt == null);
+  const activeSubjects = (subjects ?? []).filter((s) => s.archivedAt == null);
+  const archivedSubjects = (subjects ?? []).filter((s) => s.archivedAt != null);
 
   useEffect(() => {
     setCustomGoalMin(String(dailyGoalMin));
@@ -66,6 +72,21 @@ export default function Settings() {
   const handleEditState = (state: JournalState) => {
     setEditingState(state);
     setShowStateEdit(true);
+  };
+
+  const handleEditSubject = (subject: Subject | null) => {
+    setEditingSubject(subject);
+    setShowSubjectEdit(true);
+  };
+
+  const handleRestoreSubject = async (subject: Subject) => {
+    try {
+      await unarchiveSubject(subject.id);
+      invalidateAll(qc);
+      showToast(`已恢复「${subject.name}」`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '恢复失败');
+    }
   };
 
   const handleDeleteState = async (state: JournalState) => {
@@ -136,6 +157,56 @@ export default function Settings() {
               分钟
             </span>
           </div>
+        </SetRow>
+
+        {/* 科目预设：chips 点按进编辑弹层；已归档可恢复 */}
+        <SetRow title="科目预设" desc="记一条时作为快捷选项">
+          {subjects === undefined ? null : (
+            <>
+              <div className="nb-set-chips">
+                {activeSubjects.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="nb-chip"
+                    style={{ borderColor: s.color, color: s.color }}
+                    onClick={() => handleEditSubject(s)}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="nb-chip nb-chip-dash"
+                  onClick={() => handleEditSubject(null)}
+                >
+                  <Plus size={12} strokeWidth={2} /> 添加
+                </button>
+              </div>
+              {archivedSubjects.length > 0 && (
+                <div className="nb-set-archived">
+                  <div className="nb-set-archived-title">已归档（{archivedSubjects.length}）</div>
+                  {archivedSubjects.map((s) => (
+                    <div key={s.id} className="nb-set-state">
+                      <span className="nb-swatch" style={{ background: s.color, opacity: 0.45 }} />
+                      <span className="nb-set-state-name" style={{ opacity: 0.6 }}>
+                        {s.name}
+                      </span>
+                      <span className="nb-set-state-ops">
+                        <button
+                          type="button"
+                          className="nb-set-restore"
+                          onClick={() => void handleRestoreSubject(s)}
+                        >
+                          恢复
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </SetRow>
 
         {/* 外观 */}
@@ -278,6 +349,16 @@ export default function Settings() {
             setEditingState(null);
           }}
           editState={editingState}
+        />
+      )}
+
+      {showSubjectEdit && (
+        <SubjectEditModal
+          onClose={() => {
+            setShowSubjectEdit(false);
+            setEditingSubject(null);
+          }}
+          editSubject={editingSubject}
         />
       )}
     </div>

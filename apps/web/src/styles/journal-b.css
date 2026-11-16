@@ -1650,6 +1650,29 @@ textarea.nb-field {
   display: flex;
   gap: 4px;
 }
+/* 已归档字典项（科目/状态）的恢复区 */
+.nb-set-archived {
+  margin-top: 12px;
+}
+.nb-set-archived-title {
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-bottom: 4px;
+}
+.nb-set-restore {
+  font-family: var(--font-title);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand);
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.nb-set-restore:hover {
+  text-decoration: underline;
+}
 .nb-icon-btn {
   display: inline-flex;
   align-items: center;

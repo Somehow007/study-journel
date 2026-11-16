@@ -92,6 +92,10 @@ export async function archiveSubject(id: string): Promise<void> {
   await apiFetch<unknown>(`/subjects/${enc(id)}/archive`, { method: 'POST' });
 }
 
+export async function unarchiveSubject(id: string): Promise<void> {
+  await apiFetch<unknown>(`/subjects/${enc(id)}/unarchive`, { method: 'POST' });
+}
+
 export async function listStates(): Promise<JournalState[]> {
   return apiFetch<JournalState[]>('/states');
 }
@@ -106,6 +110,10 @@ export async function updateState(id: string, patch: StatePatch): Promise<Journa
 
 export async function archiveState(id: string): Promise<void> {
   await apiFetch<unknown>(`/states/${enc(id)}/archive`, { method: 'POST' });
+}
+
+export async function unarchiveState(id: string): Promise<void> {
+  await apiFetch<unknown>(`/states/${enc(id)}/unarchive`, { method: 'POST' });
 }
 
 // ─── 设置 ────────────────────────────────────────────
