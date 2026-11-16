@@ -5,7 +5,7 @@
 
 ## 0. 先读哪
 
-1. `.trellis/CHANGES.md` 尾部 30 行（增量补课）
+1. `.trellis/CHANGES.md` 补课：新会话/无法确定最后活跃时点 → 全文读；旧会话恢复 → 从最后活跃时点增量补（`tail -30` 只是起点）；「进度/某功能做没做」类状态问题查状态源（`docs/roadmap.md` 里程碑状态、任务档案、git log）——事件流里没有 ≠ 没做过
 2. `docs/MAP.md`（现状地图）
 3. 按任务读：`docs/architecture.md`（栈与架构）、`docs/data-model.md`（数据）、`docs/separation-plan.md`（剥离）、`docs/roadmap.md`（任务卡）、`design/concepts-v6/README.md` + `SPEC-<X>.md`（UI）
 
