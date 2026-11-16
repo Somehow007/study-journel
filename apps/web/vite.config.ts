@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// 本包未装 @types/node（禁止加依赖）；仅需读取环境变量
+declare const process: { env: Record<string, string | undefined> }
+
 // 集成部署约定：手帐作为独立应用部署在 /journal/ 下。
 // M3 起数据层走 Go 服务 /api/v1（Cookie 会话）；生产由 Nginx 将
 // /journal/api/ 反代到 Go 服务。PWA 注册已移除（子路径 SW 作用域易冲突）。
@@ -27,12 +30,13 @@ export default defineConfig({
   server: {
     // 5174：避让博客前端的 5173（博客 CORS 白名单本就包含 5174）
     port: 5174,
-    open: '/journal/',
+    // JOURNAL_VISUAL=1 时不自动打开浏览器（visual.sh 截图脚本用）
+    open: process.env.JOURNAL_VISUAL ? false : '/journal/',
     proxy: {
-      // 开发环境把 /api 直连本地 Go 服务（8090）；/api/v1/* + /api/health 均由其处理。
+      // 开发环境把 /api 直连本地 Go 服务（8090，可用 JOURNAL_API_TARGET 覆盖）；/api/v1/* + /api/health 均由其处理。
       // 生产环境由 Nginx 的 location /journal/api/ 同源反代，无需此配置。
       '/api': {
-        target: 'http://localhost:8090',
+        target: process.env.JOURNAL_API_TARGET ?? 'http://localhost:8090',
         changeOrigin: true,
       },
       // 顶栏博客站点名仍走旧博客后端（可选，失败回退默认标题）

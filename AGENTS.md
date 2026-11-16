@@ -17,6 +17,7 @@
 
 - M1 之后升级为全工作区 `lint + typecheck + test + build`（见 roadmap M1-6），本节同步更新。
 - 涉及页面的改动：额外用浏览器在 1440 与 390 宽各看一遍；有概念稿的页面对照 `design/concepts-v6/shots/`。
+- `./scripts/visual.sh [页面,...]`：临时库 + 概念稿同款种子 + 1440/390 截图，产出 `/tmp/sj-visual.*/report.html`（左概念稿 / 右实现并排 + 横向溢出自检）。看图验收，不能只看脚本输出。
 
 ## 2. 改动纪律（命中任一条：先在任务 prd 写方案 / 列消费点，再动手）
 

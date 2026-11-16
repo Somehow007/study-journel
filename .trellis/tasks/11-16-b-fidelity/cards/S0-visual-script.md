@@ -49,4 +49,13 @@
 `chore(web): 视觉对照脚本 visual.sh——临时库+概念稿同款种子+1440/390 并排报告`
 
 ## 执行记录
-（执行者填写）
+
+2026-11-16 执行（SWE-2 Flash）：
+
+- ref 两脚本原样复制到 `apps/web/scripts/visual/`；`vite.config.ts` 按方案加 `JOURNAL_API_TARGET` / `JOURNAL_VISUAL` 两处环境变量覆盖（默认值不变）；新增 `scripts/visual.sh`（chmod +x）；AGENTS.md §1 补用法一行。
+- **两处与卡面方案的偏差（已实测记录）**：
+  1. `vite --config apps/web/vite.config.ts` 从仓库根跑会把 vite root 解析到仓库根（`Failed to resolve dependency: react`，`/journal/` 探活超时）→ 改用卡内备选方案 `(cd apps/web && vite --port 5176 --strictPort)`，已在脚本注释注明。
+  2. 该 subshell 形态下 `$!` 是子 shell 而非 vite，trap kill 后 vite 成孤儿（5176 残留实测复现）→ 加 `exec env ...` 让子 shell 直接 exec 成 vite，复测端口干净。
+  3. `tsc --noEmit` 报 `process` 未定义（本包无 @types/node，且禁止加依赖）→ `vite.config.ts` 顶部加模块级 `declare const process`。
+- 验收：`./scripts/verify.sh` 全绿（typecheck/test/build + gofmt/vet/test + sqlc 一致性）。`./scripts/visual.sh` 全量跑通：12 desktop + 6 mobile 截图，报告「零 pageerror / 零横向溢出」；`/tmp/sj-visual.*/impl/*.png` 尺寸/体积正常（memory-desktop 1440×14873 全页时间线）。执行环境无图像读取能力，截图以尺寸+体积+零报错代理确认，建议人工抽看 report.html。
+- 遗留：`apps/web/m3-interact.tmp.mjs`、`design/concepts/`、`.claude/` 为既有未跟踪文件，未动。
