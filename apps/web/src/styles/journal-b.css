@@ -87,6 +87,12 @@
   }
 }
 
+/* 加载/错误态：渲染在 .nb-book 外的 Layout 宽容器里，限宽居中防通栏 */
+.journal-query {
+  max-width: 640px;
+  margin-inline: auto;
+}
+
 /* ---------- 日期大标题 ---------- */
 .nb-date {
   display: flex;

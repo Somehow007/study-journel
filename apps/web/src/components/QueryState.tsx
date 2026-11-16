@@ -8,7 +8,7 @@ interface QueryErrorProps {
 
 export function QueryLoading() {
   return (
-    <div className="animate-pulse space-y-3 py-8" aria-busy="true">
+    <div className="journal-query animate-pulse space-y-3 py-8" aria-busy="true">
       <div className="h-8 w-40 bg-[var(--hairline)]" />
       <div className="h-40 bg-[var(--hairline)]" />
       <div className="h-24 bg-[var(--hairline)]" />
@@ -18,7 +18,7 @@ export function QueryLoading() {
 
 export function QueryError({ message, onRetry }: QueryErrorProps) {
   return (
-    <div className="card px-6 py-10 text-center">
+    <div className="journal-query card px-6 py-10 text-center">
       <p className="font-sans text-body text-[var(--ink-soft)]">{message || '加载失败，请稍后重试'}</p>
       {onRetry && (
         <Pressable onClick={onRetry} className="nb-btn p mt-4">
