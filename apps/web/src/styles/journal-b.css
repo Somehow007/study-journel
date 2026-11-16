@@ -50,7 +50,13 @@
   .nb-book,
   .nb-book.nb-side300 {
     grid-template-columns: 1fr;
-    margin: 16px 12px 24px;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  /* 整屏一张纸：页底透明，露出 main.nb-mobile-paper 的连续方格，避免逐页格线错位 */
+  .nb-page.nb-gridbg {
+    background: none;
   }
   .nb-page {
     min-height: 0;
@@ -75,6 +81,9 @@
   }
   .nb-page.r {
     box-shadow: none;
+  }
+  .nb-page .nb-date-num {
+    font-size: 40px;
   }
 }
 
@@ -870,12 +879,22 @@ textarea.nb-field {
   .nb-topnav {
     display: none;
   }
+  /* 整屏方格纸底：与 .nb-gridbg 同款，铺在 main 上让手机头与书页连成一张纸 */
+  .nb-mobile-paper {
+    background-color: var(--card);
+    background-image:
+      linear-gradient(var(--hairline) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: -1px -1px;
+  }
   .nb-mhead {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 22px 12px;
+    padding: 14px 20px 12px;
+    border-bottom: 1.5px solid var(--ink);
   }
   .nb-mhead .nb-brand {
     font-size: 17px;

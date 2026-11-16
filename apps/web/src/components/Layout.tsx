@@ -17,7 +17,7 @@ export default function Layout() {
   return (
     <div className="relative z-10 min-h-screen">
       <TopNav />
-      <main ref={mainRef} className="flex-1 overflow-y-auto pb-[var(--journal-bottom-nav)] md:pb-0">
+      <main ref={mainRef} className="nb-mobile-paper flex-1 overflow-y-auto pb-[var(--journal-bottom-nav)] md:pb-0">
         <MobileHead />
         <div className="mx-auto" style={{ maxWidth: 1600 }}>
           <Outlet />

@@ -29,3 +29,27 @@ SPEC-B §3「手机：整屏方格纸」。现状 390 宽：手机头在纸外�
 `fix(web): 手机整屏方格纸——去书页外边距/边框，手机头并入纸面，大标题 40px`
 
 ## 执行记录
+
+2026-11-16 执行（Devin）：
+
+**改动**（2 文件，均在卡范围内）：
+- `apps/web/src/styles/journal-b.css`
+  - L49 `@media(max-width:767px)`：`.nb-book`/`.nb-side300` → `margin:0; border:0; box-shadow:none`；新增 `.nb-page.nb-gridbg{background:none}`（页底透明，露出 main 连续方格，避免逐页格线错位）；末尾新增 `.nb-page .nb-date-num{font-size:40px}`（必须带 `.nb-page` 前缀——裸 `.nb-date-num` 与 L98 基础规则同优先级但源码序在前，会被 64px 覆盖，首版踩过）。
+  - L878 同媒体块：新增 `.nb-mobile-paper`（与 `.nb-gridbg` 同款 `--card`+方格 background，复制声明而非复用类——`nb-gridbg` 直接挂 main 会在桌面也生效）；`.nb-mhead` padding `14px 22px 12px`→`14px 20px 12px`（对齐 `.nb-page` 20px），新增 `border-bottom:1.5px solid var(--ink)`。
+- `apps/web/src/components/Layout.tsx`：`<main>` 加 `nb-mobile-paper` class（无其他改动；桌面端该类无任何样式声明，不生效）。
+
+**验收实测**（临时库 8091 + vite 5176，同 visual.sh 口径；measure.mjs 量 DOM + PIL 读截图像素）：
+- `./scripts/verify.sh` 全绿。
+- shot.mjs 跑 `calendar,today,plan,goal,stats,learn-form`：**零 pageerror / 零横向溢出**（overflow=0 ×5 页）。
+- 390 下 `.nb-book` = left:0 / width:390 / top:61.5（原 12/366/76.5）；`main` 计算样式含方格 background；`.nb-page` 底透明；`.nb-mhead` 底边 `1.5px solid var(--ink)`（computed 报 1px 为浏览器取整，与 `.nb-topnav` 同表现）。
+- 像素验证：6 页手机截图顶部 y=0 起即 SHEET+20px 方格节奏连续（无 PAPER 色带、无接缝错位），y≈61 全宽墨线 = mhead 下边框；learn-form 底部 Sheet 顶部墨线仍在（y=283，scrim 变暗属正常遮罩）。
+- 大标题：`.nb-date-num` 全部 40px / 高 36px 单行（calendar 十一月 117.6px、today 11.16 79.8px、plan 十一月计划 196px、stats 统计 78.4px，均 << 350px 内容宽）。
+- **桌面回归**：6 页 1440 截图与 S1 后基线 `/tmp/sj-visual.qVEf09` **逐像素 diff 为空**（完全一致）。
+
+**与验收标准的偏差（如实记录）**：「今日学习」sec y 坐标 227.1 → 198.5，仅 **+28.6px**，未达卡内 ≥100px 期望值。原因：~130px「顶部浪费」估算把手机头（60.5px）计入，但决策 3 明确保留品牌头不改内容；实际可回收的只有书页 margin/边框（-15px）+ 大标题降字号（-13.6px 净）。纸面本身上移 77px（SHEET 从 y≈77 提到 y=0），可视纸面面积增量约 +77px。若 owner 认为还不够，剩余空间在 mhead 内容/留白（属决策 3 范围，需另行拍板）。
+
+**执行中新发现（超出卡范围，留收尾轮/owner 定夺）**：
+- `--grid-size` 只在 `[data-theme='journal-notebook']`（明色）定义，`journal-notebook-dark` 未定义 → 暗色下 `background-size` 失效为 auto，`.nb-gridbg` 方格不平铺（computed 验证 `auto`）。**存量问题**：M6 起桌面暗色页内方格即缺失，非本卡引入；`.nb-mobile-paper` 与 `.nb-gridbg` 行为一致无回归。修法是在暗色块补 `--grid-size: 20px`（一行，但属主题 token，超出 S2 范围）。
+- `QueryLoading`/`QueryError` 在 mobile 下现在落在方格纸面上（原为 `--paper` 底），视觉更统一；其通栏宽度问题仍归 S8 组5。
+
+遗留：无。

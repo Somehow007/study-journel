@@ -47,3 +47,4 @@
 - 2026-11-16 | S1 桌面容器去限宽：Layout 删按路由 maxWidth，统一 mx-auto+1600，留白归 .nb-book margin；实测 1440 书宽 1368 / 1920 书宽 1528 全页一致，visual 零报错零溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S1-desktop-container.md`
 - 2026-11-16 | S1 后全量目检走查：S1 修复确认（书宽 1368/1528、标题单行、KV 不折行）；原清单 S2–S9 逐项确认仍在；新发现 6 条（学科分布标签竖排、手机日历缺当日小计块、搜索 tabs 语义差异、目标详情缺编辑入口等）记 prd 走查补记 | → `.trellis/tasks/11-16-b-fidelity/prd.md`
 - 2026-11-16 | 走查补记分流：6 条新发现——学科分布竖排并入 S8 组1、QueryState 通栏并入 S8 组5、日期 picker 图标并入 S8 组4；手机日历当日小计块/搜索语义/目标编辑入口/时光长滚留收尾轮（S9 后统一处理） | → `.trellis/tasks/11-16-b-fidelity/prd.md`、`cards/S8-details.md`
+- 2026-11-16 | S2 手机整屏方格纸：nb-book 去 margin/边框/阴影、页底透明 + main.nb-mobile-paper 连续方格、mhead 并入纸面加墨线、nb-date-num 40px；390 书宽=390 零溢出零 pageerror，桌面 1440 逐像素无变化；「今日学习」y 仅 +28.6px（未达 100px 期望，mhead 保留所致，已记录）；新发现暗色 --grid-size 缺失存量问题留收尾轮 | → `.trellis/tasks/11-16-b-fidelity/cards/S2-mobile-fullbleed.md`
