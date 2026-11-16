@@ -61,20 +61,23 @@ export default function LearningHeatmap() {
     return cols;
   }, [from, today, minByDate]);
 
-  // 月标签：取每列首日（周起点）所在月，月变化处标注
+  // 月标签：取每列首日（周起点）所在月，月变化处标注；与上一个标签相距不足 3 列时
+  // 让位给新月份（首列常是只露一两周的残月，否则两个标签会粘连）
   const monthLabels = useMemo(() => {
     const labels: (string | null)[] = [];
     let prev = '';
-    for (const col of columns) {
-      const first = col[0]?.date ?? '';
-      const month = first.slice(5, 7);
-      if (month !== prev) {
-        labels.push(`${Number(month)}月`);
-        prev = month;
-      } else {
+    let lastIdx = -1;
+    columns.forEach((col, i) => {
+      const month = (col[0]?.date ?? '').slice(5, 7);
+      if (month === prev) {
         labels.push(null);
+        return;
       }
-    }
+      if (lastIdx >= 0 && i - lastIdx < 3) labels[lastIdx] = null;
+      labels.push(`${Number(month)}月`);
+      prev = month;
+      lastIdx = i;
+    });
     return labels;
   }, [columns]);
 
