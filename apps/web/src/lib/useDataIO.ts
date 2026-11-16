@@ -9,7 +9,7 @@ import { invalidateAll } from './queries';
 import type { ImportResult } from './types/api';
 
 /**
- * 共享的数据导出/导入/旧库迁移逻辑（Sidebar 和 Settings 共用）。
+ * 共享的数据导出/导入/旧库迁移逻辑（Settings 使用）。
  *
  * v3：导出/导入都走 Go 服务端（/api/v1/export、/import，幂等 upsert 合并）；
  * 「迁移本地旧数据」读取浏览器 IndexedDB（StudyJournalDB）中的第一期数据，

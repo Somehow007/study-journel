@@ -60,3 +60,12 @@
   - `Settings.tsx` 主题说明文案「本机浏览器」→「账号跨设备同步」
   - **验证**：verify.sh 全绿；playwright 冒烟 data-theme=journal-notebook(-dark)、paper/ink/brand 变量正确、暗色缓存持久化生效
   - **下一步 P2**：外壳 Layout/Sidebar/SiteTopBar/BottomNav 换装（顶部导航+印章+手机 Tab）
+- 2026-11-16 **P2 完成（未提交）**：
+  - 新增 `components/NotebookNav.tsx`：`TopNav`（桌面：考研手记+STUDY LOG·VOL.{年} / 5 文字链接 / 右侧 搜索·设置+印章 D-xxx）+ `MobileHead`（手机页头：品牌+搜索/设置+印章，P4 起换各页 mTop 标题）+ 共享 `ExamStamp`（examDate 空不渲染，负值显示 D+n）
+  - `journal-b.css` 追加外壳类：`.nb-topnav/.nb-brand/.nb-navlink/.nb-topnav-right/.nb-mhead/.nb-tabbar`（激活=600+2px 红下划线用透明 border 防位移；Tab 宋体文字+红下划线 box-shadow 同款）；响应式一律走 `@media (max-width:767px)`（unlayered CSS 压过 tailwind 响应式工具类）
+  - `Layout.tsx`：删 SiteTopBar+Sidebar+flex 侧栏布局 → TopNav + MobileHead(仅手机) + 主区
+  - `BottomNav.tsx` 重写：图标 Tab+「更多」Sheet → 5 宋体文字 Tab（今日/计划/日历/时光/统计），保留 `journal-bottom-nav` 类（Sheet 遮挡 CSS 依赖）
+  - 删除 `SiteTopBar.tsx`（含 `/v1/site/config` 博客残留调用）+ `Sidebar.tsx`（功能全部已被 Settings 覆盖：主题/导出/导入/版本）；`index.css` `--journal-bottom-nav` 4.5rem→4rem 对齐新 Tab 高
+  - **手机端无入口页核对**：搜索/设置=页头链接、年度=Stats 页按钮（与桌面一致）、表单=页内 Modal——无孤儿路由
+  - **验证**：verify.sh 绿；playwright 冒烟 27 项全过（1440/390：顶栏/Tab 显隐、7 链接序、激活态红下划线 rgb(210,59,34)、印章 D-34+考研 rotate(-2deg)、宋体 Tab、零 pageerror）
+  - **下一步 P3**：原子组件 Sheet/Pressable/ConfirmDialog/QueryState 换 nb- 规则

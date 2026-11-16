@@ -34,7 +34,7 @@
     --shadow-3: 0 2px 8px var(--shadow-color-md), 0 16px 40px var(--shadow-color-md);
     --shadow-4: 0 4px 12px var(--shadow-color-md), 0 24px 56px var(--shadow-color-md);
 
-    --journal-bottom-nav: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    --journal-bottom-nav: calc(4rem + env(safe-area-inset-bottom, 0px));
     --surface-pressed: color-mix(in srgb, var(--ink) 6%, transparent);
     --focus-ring: 0 0 0 2px var(--card), 0 0 0 4px var(--brand);
     --duration-press: 120ms;

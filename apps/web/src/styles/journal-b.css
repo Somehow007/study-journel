@@ -604,3 +604,116 @@ textarea.nb-field {
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- 外壳：顶部导航 / 手机头 / 底部 Tab（SPEC-B §3 顶部导航/手机） ---------- */
+.nb-topnav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 14px 36px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.nb-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.nb-brand small {
+  font-family: var(--font-num);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
+}
+.nb-navlink {
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.nb-navlink:hover {
+  color: var(--ink);
+}
+.nb-navlink.on {
+  font-weight: 600;
+  color: var(--ink);
+  border-bottom-color: var(--brand);
+}
+.nb-topnav-right {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-left: auto;
+}
+
+/* 手机头（每页顶部 品牌+搜索/设置+印章；P4 起换各页 mTop 标题） */
+.nb-mhead {
+  display: none;
+}
+.nb-mhead-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 手机底部 Tab：宋体文字 + 红色下划线 */
+.nb-tabbar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  justify-content: space-around;
+  background: var(--paper);
+  border-top: 1.5px solid var(--ink);
+  padding-top: 12px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  font-family: var(--font-title);
+  font-size: 14px;
+  color: var(--ink-faint);
+}
+.nb-tabbar a {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  color: inherit;
+}
+.nb-tabbar a span {
+  padding-bottom: 3px;
+  box-shadow: inset 0 -2px 0 transparent;
+}
+.nb-tabbar a.on {
+  font-weight: 700;
+  color: var(--ink);
+}
+.nb-tabbar a.on span {
+  box-shadow: inset 0 -2px 0 var(--brand);
+}
+
+@media (max-width: 767px) {
+  .nb-topnav {
+    display: none;
+  }
+  .nb-mhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 22px 12px;
+  }
+  .nb-mhead .nb-brand {
+    font-size: 17px;
+  }
+  .nb-tabbar {
+    display: flex;
+  }
+}

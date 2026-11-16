@@ -44,7 +44,7 @@ export async function logout(): Promise<void> {
   }
 }
 
-/** 当前会话用户（fetchMe/login 成功后有值）；SiteTopBar 等同步场景用 */
+/** 当前会话用户（fetchMe/login 成功后有值）；同步场景用 */
 export function getSessionUser(): User | null {
   return cachedUser;
 }
