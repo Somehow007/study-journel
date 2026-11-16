@@ -107,9 +107,10 @@ S0 必须最先做；S1 第二。S3–S7 互不依赖，可任意顺序，但**�
 
 ### 走查补记（2026-11-16 · S7 后走查）
 
-- 覆盖：`visual.sh today,learn-form`（报告 `/tmp/sj-visual.Kv8upi/report.html`）零 pageerror / 零横向溢出；DOM 探针 48 项断言全过（1440+390，临时库同 visual.sh 口径，探针用后已删，截图 `impl/`）。
-- **S7 验证**：待办 4 行平铺（2 COUNT 已记 + 408 两任务一勾一未勾，任务行 em=目标名；马原 0 行不出行）；头部「3 / 4」与 DOM 勾选行数一致；无 `nb-goal`/`nb-meter`/`nb-btn`/「项今日任务」；日记工具条 computed `position:static` 置于文本区上方、编辑/预览 `paddingRight=2px`；删除钮桌面 `opacity 0→tr:hover/focus-within 1→移开 0`、390 常显 1；交互四项全过（任务行出「记下完成」Sheet 副标题=任务名、已勾任务取消去 `on`、COUNT 取消打卡「已记→今日」再点出 Sheet 副标题=目标名）。
-- **观察项（不改，记录）**：COUNT 行勾选态整行删除线含目标名（`nb-todo.on` 统一口径）；`rows=0` 空态分支种子未覆盖（判据 `items`→`rows`，路径同改前）。
+- 覆盖：`visual.sh` **全量 18 组合**（12 页×1440 + 6 页×390，报告 `/tmp/sj-visual.dBoOOK/report.html`）零 pageerror / 零横向溢出；卡面探针 48 项 + 走查探针 24 项断言全过（临时库同 visual.sh 口径，两轮探针用后已删）。
+- **S7 验证**：待办 4 行平铺（2 COUNT 已记 + 408 两任务一勾一未勾，任务行 em=目标名；马原 0 行不出行）；头部「3 / 4」与 DOM 勾选行数一致；无 `nb-goal`/`nb-meter`/`nb-btn`/「项今日任务」；日记工具条 computed `position:static` 置于文本区上方、编辑/预览 `paddingRight=2px`；删除钮桌面 `opacity 0→tr:hover 1→移开 0`、390 常显 1；交互四项全过（任务行出「记下完成」Sheet 副标题=任务名、已勾任务取消去 `on`、COUNT 取消打卡「已记→今日」再点出 Sheet 副标题=目标名）。
+- **走查补充（边界/主题）**：暗色 `journal-notebook-dark` computed 色精确——行文字 `rgb(228,230,234)`(#E4E6EA)、em/完成行字 `rgb(110,118,134)`(#6E7686)、删除线与 `.nb-chip.on` `rgb(255,122,92)`(#FF7A5C)、`.nb-box` 边同 ink；删除钮暗色下 hover/focus-within/blur 显隐均正确。空态（2026-10-15 无目标月）：`今天没有待办任务`+「去制定 →」+0 行，桌面/手机一致。未来日 2026-11-18（对照 `TaskRelevantOn` 语义）：恰 4 行——两 COUNT 未打卡「今日 36 题/今日 1 套」、`7.4 课后选择题` 带「过期」标记、`7.5 散列表` 无标记；已完成/未到期任务均不出行，头部「0 / 4」。learn-form「+ 补一条」弹层正常打开。
+- **观察项（不改，记录）**：COUNT 行勾选态整行删除线含目标名（`nb-todo.on` 统一口径）；`rows=0` 空态已由走查覆盖（上月无目标日实测通过）。
 
 ## 验收（整体）
 
