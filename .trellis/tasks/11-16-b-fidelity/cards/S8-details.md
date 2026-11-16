@@ -41,3 +41,40 @@ S1 之后先跑一次 `./scripts/visual.sh` 全量，**已经自然消失的条�
 - 提交：`fix(web): 加载/错误态限宽居中——S1 宽容器下不再通栏`
 
 ## 执行记录
+
+执行：2026-11-16 · SWE-2 Max（Devin）。验证环境 = 手动复刻 visual.sh（8091 临时库 + 概念稿种子 + 5176 vite），探针 `apps/web/scripts/visual/probe-s8-*.tmp.mjs`（用后已删）；截图 `/tmp/sj-s8.qQX5T2/`。
+
+### 组 1（commit e70040e）
+- 加了 4 处兜底：`.nb-date-num`、`.nb-sec`、`.nb-table .nb-k` 各 `white-space:nowrap`；`.nb-kv b` 加 `nowrap+overflow:hidden+text-overflow:ellipsis`。`.nb-subj` 已有 nowrap（L470），跳过。
+- `.nb-k` 未加 min-width：`td:has(> .nb-meter){width:100%}` 才是挤压源，nowrap 后 min-content=全名宽，66px 名列不动、meter 列不挤（1024 截图确认）。
+- **卡外同一关注点 1 处**：`.nb-date` 原只在 ≤767px 有 `flex-wrap`；1024 实测 `.nb-date-meta`（统计「2026年11月按学习时长」、年度「年度回顾 ANNUAL REVIEW」）被挤成逐字竖排，属本组验收「无逐字竖排」覆盖范围 → 基础规则补 `flex-wrap:wrap;row-gap:10px`（与手机媒体查询同款；date-num nowrap 后挤压更甚，不修不行）。1440 无视觉变化。
+- 验收：1024px stats/annual/goal 截图——科目名单行、meta 横排、chips/pager 折行自然；shot.mjs `stats,annual` 1440/390 零 pageerror/零横向溢出；390 stats KV 两列全显。探针 `nb-k h>40` 为误报（td 高=行高），断言改用 whiteSpace/截图。
+- 观察项：`.nb-kv b` 省略号在 1024 触发（`86h…`），是卡面设计的兜底非缺陷。
+
+### 组 2（commit c826821）
+- `.nb-stamp-circle` 按卡面改固定正圆（`left/top 50%+6px + translate(-50%,-50%) + width:min(100%-12px, cal-h-30px) + aspect-ratio:1`），transform 含 `rotate(var(--rot,0deg))`；手机媒体查询删掉旧 inset 覆盖（否则打回拉伸矩形），保 `font-size:12px;border-width:1.5px`。
+- GoalDetail：`<span nb-stamp-circle>` 加 `style={{ '--rot': (d.day*37%21)-10 }}`——用 `d.day`（getCalendarDays 的日号）；类型断言用 `import type { CSSProperties }`（文件无 React 命名空间导入，`as React.CSSProperties` 不可达）。
+- 周进度 `第N周` → `{weekStart.slice(5)···}–{weekEnd.slice(5)···}`（WeekProgress 两字段纯字符串，未 new Date）；`idx` 参数随之删除。
+- 验收：1440 截图 14 圈全正圆带 ±10° 旋转、不压日期号；390 DOM 断言 14/14 正圆（|w-h|≤1）+ 全带 matrix transform + 与 `.nb-cal-d` 零几何重叠 + 零溢出 PASS。
+
+### 组 3（commit 81ca781）
+- `taskWhenLabel` weekStart 分支 `new Date+setDate` → `addDays(task.weekStart,6)`（domain.ts UTC 零点运算）；dateUtils 新 import `addDays`（domain 无出向依赖，无环）。
+- **同类写法盘点**（卡面要求）：`rg "new Date\("` 全仓 42 处，唯一 `new Date(YYYY-MM-DD)` 违例即本修复点。其余合法：无参（当前时刻）、`new Date(ms)` 时间戳（`task.doneAt`）、`new Date(y,m,d)` 数字参本地日历构造（`parseDate`/`getCalendarDays`/PlanView/MonthView/Stats/AnnualReview/TodayDetail L73——与 parseDate 同语义，本就按用户本地日工作）、domain.ts 内部 UTC 实现。无另开卡必要。
+- 验收：verify.sh 全绿；临时库给王道 408 造 weekStart=2026-11-16 任务，GoalDetail `.nb-taskmeta` 渲染 `11/16–11/22` 与改前一致（东八区）。探针任务留于一次性库随环境销毁（DELETE 路径 404 未清理，无影响）。
+
+### 组 4（commit 441fc2a）
+- number spinner：`rg type="number"` 7 处全带 `nb-field`（Settings `nb-set-num`、GoalFormModal、GoalCompleteSheet ×3、LearningFormModal ×2）→ `.nb-field[type='number']` 加 appearance 三行。
+- 色块：`.pressable`（default）也有 `min-height:var(--hit-min)=44px`，卡面 fallback 命中 → GoalFormModal/StateEditModal/SubjectEditModal/LearningFormModal 4 处 `Pressable variant="icon"` 改普通 `<button type="button">`（Pressable import 保留：modal 壳与取消钮仍在用）。预览里的 `<span class="nb-swatch">`×3 未动。
+- date picker 图标：取最保守方案 `.nb-field[type='date']::-webkit-calendar-picker-indicator{display:none}`——只藏图标不 `appearance:none`，Chrome 点字段本身仍可唤起、iOS/Android 无该 indicator 不受影响。覆盖 Settings 初试日期 + GoalDetail 任务绑定日期两处。Firefox 可能仍显示图标（无等价伪元素），低优先记录。
+- 验收：verify.sh 全绿；shot.mjs `goal-form,learn-form,settings` 零 pageerror/零溢出；截图——goal-form 色块 8 枚 26px 一排、数量框 300 无箭头；settings 初试日期无日历图标、自定义分钟框无箭头；learn-form h/m 无箭头。LearningFormModal 色块未截图（在「其他…」分支内）——与已验三处同代码同 CSS，风险忽略。
+
+### 组 5（commit 495bc42）
+- QueryLoading/QueryError 根节点加 `journal-query`；QueryEmpty 按卡面不动（均在 `.nb-book` 内）。CSS `max-width:640px;margin-inline:auto`（560–720 区间取 640）。
+- 消费点 `rg` 11 处：QueryLoading 8 页 + QueryError 9 处全为早退渲染在 Layout 容器，只加 class 无逻辑改动。
+- 验收：shot.mjs 无法触发 → 探针强造两态：`/plan/no-such-goal` 出 QueryError、`route` 延迟 days API 截 QueryLoading——均 w=640、left=400 居中，截图观感正常。
+- 全量回归：shot.mjs 全 11 桌面 + 6 手机 零 pageerror/零横向溢出（报告 `/tmp/sj-s8.qQX5T2/report.html`），today/calendar 页面 `.nb-date` wrap 无回归。
+
+### 遗留 → 收尾轮
+- `.nb-date-meta` 未加 nowrap（靠 `.nb-date` wrap 兜底）；极端长 meta 单独成行时仍可折行——设计内。
+- Firefox date 输入可能仍显示原生日历图标（webkit 伪元素不覆盖），低优先。
+- 组4 新发现记录：`<button class="nb-swatch">` 失去 pressable-icon 的 active 缩放反馈，仅靠边框变色示意选中；如需按压反馈收尾轮可加 `.nb-swatch:active{transform:scale(.96)}`。
