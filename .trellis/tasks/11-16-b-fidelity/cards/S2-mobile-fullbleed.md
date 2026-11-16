@@ -48,6 +48,10 @@ SPEC-B §3「手机：整屏方格纸」。现状 390 宽：手机头在纸外�
 
 **与验收标准的偏差（如实记录）**：「今日学习」sec y 坐标 227.1 → 198.5，仅 **+28.6px**，未达卡内 ≥100px 期望值。原因：~130px「顶部浪费」估算把手机头（60.5px）计入，但决策 3 明确保留品牌头不改内容；实际可回收的只有书页 margin/边框（-15px）+ 大标题降字号（-13.6px 净）。纸面本身上移 77px（SHEET 从 y≈77 提到 y=0），可视纸面面积增量约 +77px。若 owner 认为还不够，剩余空间在 mhead 内容/留白（属决策 3 范围，需另行拍板）。
 
+**S2 后走查（2026-11-16 补记）**：9 路由 ×390 全过 + 弹层/空态/暗色/错误态——零 pageerror、零横向溢出、书页全 390 贴边、各页顶部方格自 y=0 连续、tabbar `--paper` 区与概念稿一致、登录页不受影响（Layout 外）、goal-form 底部 Sheet 墨线正常、暗色 mhead 墨线正常。
+- **修复 1 处（本卡引入的回归）**：`main` 仅 `flex-1`（父容器非 flex，无效）→ 短内容页（QueryError/QueryLoading/空搜索结果）`main` 高度 < 视口，方格纸面在中途截断、下方露出 `body --paper` 接缝。修法：`.nb-mobile-paper` 加 `min-height:100vh`（仅 ≤767 生效）。验证：错误态 `main` 293.5→844，像素/elementFromPoint 确认铺满。
+- 附带说明：`search` hit-card 量得 351px > 内容 350px，为卡片 rotate(±0.6deg) 后 getBoundingClientRect 几何放大，非布局溢出（overflow=0）。
+
 **执行中新发现（超出卡范围，留收尾轮/owner 定夺）**：
 - `--grid-size` 只在 `[data-theme='journal-notebook']`（明色）定义，`journal-notebook-dark` 未定义 → 暗色下 `background-size` 失效为 auto，`.nb-gridbg` 方格不平铺（computed 验证 `auto`）。**存量问题**：M6 起桌面暗色页内方格即缺失，非本卡引入；`.nb-mobile-paper` 与 `.nb-gridbg` 行为一致无回归。修法是在暗色块补 `--grid-size: 20px`（一行，但属主题 token，超出 S2 范围）。
 - `QueryLoading`/`QueryError` 在 mobile 下现在落在方格纸面上（原为 `--paper` 底），视觉更统一；其通栏宽度问题仍归 S8 组5。

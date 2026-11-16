@@ -881,6 +881,7 @@ textarea.nb-field {
   }
   /* 整屏方格纸底：与 .nb-gridbg 同款，铺在 main 上让手机头与书页连成一张纸 */
   .nb-mobile-paper {
+    min-height: 100vh;
     background-color: var(--card);
     background-image:
       linear-gradient(var(--hairline) 1px, transparent 1px),
