@@ -130,6 +130,8 @@ S0 必须最先做；S1 第二。S3–S7 互不依赖，可任意顺序，但**�
 
 ### 终验（2026-11-16 · S1–S8 完成，S9 延后）
 
+> 同日追记：S9 已完成（`db9822d` + `1bbba50`），见 `cards/S9-pace-hint.md` 执行记录；剩收尾轮。
+
 - **范围合规**：`e20167f..HEAD` 共 26 commit，作者均为用户本人、零 `Co-authored-by`；改动仅 `apps/web/src`、`apps/web/scripts/visual`、`scripts/visual.sh`、`.trellis`，另 `vite.config.ts`（S0 visual 用 env 覆盖代理/关自动打开，默认行为不变）与 `AGENTS.md`（S0 登记 visual.sh）；未动后端/`db/`/`deploy/`、无新依赖、无硬编码色值新增；`new Date('YYYY-MM-DD')` 违例已清零。
 - **验证**：`./scripts/verify.sh` 全绿（web tsc+build、server gofmt/vet/test、sqlc 一致）；`./scripts/visual.sh` 全量 12×1440 + 6×390 **零 pageerror / 零横向溢出**（`/tmp/sj-visual.JXOtPz/report.html`）。
 - **目检（本轮由有视觉的模型逐图看过，补此前「无视觉、以 DOM 断言代替」的缺口）**：

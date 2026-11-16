@@ -32,3 +32,22 @@
 2. `feat(web): 计划/今日显示目标节奏 落后/按计划/领先`
 
 ## 执行记录
+### 方案与消费点（2026-11-16，动手前）
+
+- **消费点**（`rg -n "computeSummary|goalSummary|GoalSummary|TodayGoalItem" apps`）：
+  - server `httpapi/goals.go`：`goalSummaryDTO`（L16，被 `goalDetailDTO` 内嵌 → `/goals/:id` 也带出）、`computeSummary`（L80）三处调用——`listGoals` L204（asOf=today）、`goalDetail` L417（today）、`todayGoals` L714（asOf=查询日 date）；`todayGoals` 的局部 `item` 结构即 TodayGoalItem。
+  - web `lib/types/api.ts` `GoalSummary`(L127)/`GoalDetail extends`/`TodayGoalItem`(L175)；读方 `PlanView.tsx`（GoalTitle/GoalRow/ChecklistGoalBlock）、`TodayGoalsSection.tsx`（TodayGoalItem，只读不展示 pace）、`TodayDetail.tsx` 右页「本月目标」（数据源是 `useGoalsByPeriod` 的 GoalSummary，不是 TodayGoalItem）。
+  - 只加字段不改旧字段，向后兼容；旧前端忽略未知字段。
+- **N+1**：`computeSummary` 已经拿到该目标的 tasks——三处调用方都先 `loadGoalBundle` 按 period 一次批量取 tasks+checkins（`ListTasksForUserPeriod`），CHECKLIST 逾期计数无需新增查询。
+- **domain**：`progress.go` 加 `PaceCount(target, actual, period, asOf) (int, error)`，函数内部再 `AsOfForPeriod` 钳一次（与 `RemainingDays` 自钳同风格，防调用方漏钳）；`tasks.go` 加单任务谓词 `TaskOverdue(done, dueDate, weekStart, asOf) (bool, error)`（照 `TaskRelevantOn` 风格；卡面名 `OverdueTasks` 改为谓词形，计数在 httpapi 循环里做，与 TaskRelevantOn 用法一致）。dueDate 优先：有 dueDate 只看 dueDate，否则看 weekStart+6。
+- **双端用例**：`domain-cases.json` 加 `paceCount` ≥4 条 + 前端 `domain.ts paceCount` + `domain.test.ts`/Go `runDomainCase` 分支；`TaskOverdue` 单测进 `tasks_test.go`（卡面未要求前端镜像，前端只展示服务端值）。
+- **展示**：`PaceText` 放 `components/PaceText.tsx`（PlanView 与 TodayDetail 两处共用，避免页面间互相 import）；显示条件 `pace != null && period == 当前月 && !reached`。
+
+### 执行记录（2026-11-16）
+
+- **commit**：`db9822d feat(server)`（domain `PaceCount`/`TaskOverdue` + 单测、`domain-cases.json` 7 条 `paceCount`、前端 `domain.ts paceCount` + `domain.test.ts` 分支、`goalSummaryDTO.Pace`/today item `pace`、`api.ts` 两类型加 `pace`、httpapi 集成测试断言 COUNT pace=domain 值 / CHECKLIST 今日到期 pace=0 / today 接口每项带 pace）；`1bbba50 feat(web)`（`components/PaceText.tsx` + PlanView GoalRow meta 末尾右对齐 / ChecklistGoalBlock 标题行下 / TodayDetail「本月目标」small 行首）。
+- **与卡面差异**：卡面 `OverdueTasks(...)` 实现为单任务谓词 `TaskOverdue`（同 `TaskRelevantOn` 风格），计数在 `computeSummary` 循环；`PaceCount` 内部自钳 asOf；`api.ts` 类型随 commit 1 提交（属契约镜像）。N+1：无新增查询（tasks 已由 `loadGoalBundle` 按 period 批量取）。
+- **验证**：`./scripts/verify.sh` 全绿（含 Go domain/httpapi 测试与 vitest 双端 53 条）；`./scripts/visual.sh plan,today` 零 pageerror / 零横向溢出，目检截图位置同概念稿（右下、落后红/其余绿）。
+- **手算对账**（种子，今天 11-16，11 月 30 天）：1000 题 actual 542，expected=⌊1000×16/30⌋=533 → 「领先 9 题」✓；英一 8/11，expected=⌊11×16/30⌋=5 → 「领先 3 套」✓；408 / 马原无逾期 → 「按计划」✓。
+- **探针**（一次性，用后已删；独立 8091/5176 临时库）：给 408 加一条 dueDate=昨天的未完成任务 → API pace=-1，计划页/今日页「逾期 1 项」✓；色值 computed 逾期 `rgb(210,59,34)`=brand、领先 `rgb(47,107,79)`=success ✓；上月/下月各建 1 个 COUNT 目标，翻月后目标可见但无任何节奏字样 ✓；1440/390 双档零 pageerror、零横向溢出 ✓。
+- **观察项**：390 下 COUNT 行节奏字因 meta 折行落到第二行右对齐，可读不溢出，接受。期望值含当天份额（elapsed 含今天），早上未打卡时会显示「落后一天份额」——卡面规则如此，记录待 owner 观感反馈。
