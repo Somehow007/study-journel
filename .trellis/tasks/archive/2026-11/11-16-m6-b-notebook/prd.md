@@ -92,3 +92,36 @@
 - 2026-11-16 | **P4-11 设置页（settings）完成**：Settings.tsx 重写为 nb-book.nb-single——nb-date（设置+考研目标、外观与数据）+5 个 nb-set-row（grid 260px|1fr gap30 padding22 虚线底，手机单列）：①考研目标=新增行，ExamGoalRow 子组件（名称 nb-field+初试日期 nb-field.num type=date 双列 1fr/1fr max520，失焦/Enter commit→patchSettings PATCH /settings；AppContext 暴露 patchSettings=updateSettings.mutate 复用乐观更新——此前 examName/examDate 仅 NotebookNav 读、无写入 UI，本次补齐，顶栏印章 D-xxx 端到端可配）②每日学习目标=nb-chip 预设 [240/300/360/480/600]→4h/5h/6h/8h/10h（原 60-480 全档改原型五档）+.on 激活+「或自定义」nb-field.num 76px 分钟输入（useEffect 同步 dailyGoalMin、失焦/Enter→setDailyGoalMin clamp 15-960）③外观=THEME_PICKER_ITEMS→nb-chip（格纸·米白/格纸·夜间墨蓝两档，服务端同步提示 nb-set-note 保留）④自定义状态=内置态 nb-chip-static 展示排（pointer-events:none）+customStates 行（nb-swatch 色块+serif600 名+nb-mono 极性·hex+右侧 nb-icon-btn 铅笔/垃圾桶，删除仍走 askConfirm+archiveState+invalidateAll）+nb-chip-dash「+ 添加状态」开 StateEditModal（editState 逻辑保留）⑤数据管理=三 nb-btn（导出 JSON/导入 JSON[importStatus success→success 色 error→danger 色]/IndexedDB→服务器[migrating→RefreshCw animate-spin]）+迁移说明 nb-set-note+hidden file input；底部 nb-set-foot=版本·用户名 mono+退出登录 nb-btn.r（askConfirm+logout 保留）；删全部 card/rounded/pill 旧样式与 Sun/Moon/BookOpen/Check 图标；journal-b.css +~130 行（nb-set-row/label/title/desc/body/chips/chip-static/inline/num/note/states/state/state-name/state-meta/state-ops/icon-btn/icon-btn-danger/add/exam/foot/logout+手机 767px 单列）；verify.sh 绿+playwright 全过（5 行渲染/考研名+日期失焦保存→顶栏 nb-stamp D-34考研/examDate 服务端=2026-12-20/dailyGoalMin 360→240→360 往返+自定义框同步/主题 chip 切 journal-notebook-dark 再切回/内置 6 chip+0 自定义行+添加 Sheet 打开/数据按钮×3/版本 dev/退出/390px 行单列 276px/零 pageerror；测试值 dailyGoalMin 已还原 360、examName=考研 属预期配置） | → 本提交
 - 2026-11-16 | **P4-12 登录页（login）完成**：components/LoginPage.tsx 重写为原型「书桌上的书」——.nb-login-desk（min-h-100dvh grid 居中，背景 var(--nb-desk) 新主题 token：米白 #DCD8CC/墨蓝 #0C1119）→ .nb-login-book（width min(520px,94vw)+aspect-ratio 520/700 自适应高、background var(--nb-cover) 新 token #1F2B44/#18233C、border-radius 4px 14px 14px 4px、box-shadow inset 18px 0 0 #172036 书脊+20px 30px 60px rgba(0,0,0,.25)、::before 左 30px 2px 白 8% 线）→ .nb-login-sheet（min(340px,76%) 内页：nb-login-title 居中宋体 30px ls.2em「考研手记」+1.5px 墨底线+nb-login-title span mono11 ls.2em「STUDY LOG · {year}—{year+1}」动态年份；账号/口令 nb-flab+nb-field；nb-login-error 1px danger 边+8% 底红字错误条；nb-login-submit nb-btn.p 通栏 padding10「翻开/翻开中…」；nb-login-foot「手帐仅本人使用」；nb-login-stamp 右下 absolute rotate(-2deg) 2px brand 边 mono15「考研」——原型 D-xxx 印章需 examDate 而 settings 要登录后才有，登录页用静态「考研」章替代）；删旧 max-w-sm card 圆角表单+Pressable；提交/错误/loading 逻辑零改（finally 复位保留）；journal-notebook.css +2 token×2 主题、journal-b.css +~90 行；verify.sh 绿+playwright 全过（结构 12 项/错密提示+URL 不变/正确登录跳 /journal//390px 书封 374px/零 pageerror） | → 本提交
 - 2026-11-16 | **P4 全量走查 + 收尾清理**：审查发现 StateEditModal 是 P4 漏网表单弹层（Settings 添加/编辑状态调用，仍是旧圆角 pill 风）→ 按 LearningFormModal/GoalFormModal 同款约定重写（Sheet title 仅 aria、CloseButton 绝对定位 X、nb-dialog-h mb-5 pr-8、nb-flab+nb-field、极性三 nb-chip .on、SUBJECT_COLORS nb-swatch Pressable+borderColor brand/ink 选中、nb-split 预览、mt-6 flex 右对齐取消 nb-btn/保存 nb-btn.p、编辑态左侧删除 nb-btn.r；isStateLabelDuplicate/createState/updateState/archiveState/askConfirm 逻辑零改）；孤儿清理：GoalProgressBar（P4-4 后零消费）、SproutBadge（P4-1 按 SPEC 移除后零消费）git rm；pnpm remove recharts（最后引用方 AnnualReview/Stats 已弃用，依赖清零）；ToastHost/BookLoader/DiaryEditor 保存态圆点保留（全局 chrome/6px 状态点，非页面内容）。**全量走查**：种子 6 天连记（streak）+2 条目组+COUNT 目标（3 打卡）+CHECKLIST 目标（2 任务 1 完成）→ 12 路由 @1440 全渲染（calendar/today×2/plan/goal-count/goal-checklist/stats/memory/annual/search/settings 均 nb-book 正确单双页+宋体标题）、交互抽查 learn-form/goal-form/state-edit 三弹层 nb-dialog-h 齐、暗色主题经服务端 PATCH 端到端 journal-notebook-dark（页底 #1B2336/墨字 #E4E6EA）再还原、9 路由 @390 全部 bookW=318 不横向溢出、零 pageerror；StateEditModal 新建→列表出现→编辑回填→删除全链路验证；种子 days/goals/entries/自定义状态全清（dev 库归零）。verify.sh 绿 | → 本提交
+- 2026-11-16 | **P5 收尾完成**：verify.sh 终验绿（typecheck+vitest 46 用例+build+gofmt/vet/test+sqlc 一致）；MAP.md 同步（主题体系改 journal-notebook 双主题/nb- 组件类/journal-b.css 条目、组件清单去 DateCard 加 NotebookNav/CalGrid/LoginPage、AppContext 加 patchSettings、§5 主题漂移项标记已解决）；roadmap M6 行标记完成；无项目 README（仅 design 概念稿 README 属设计源不动）。任务归档 → `.trellis/tasks/archive/2026-11/11-16-m6-b-notebook/` | → 本提交
+
+## Resolution（2026-11-16）
+
+**状态：完成并归档。M6 B 格纸 UI 全期落地：P1 基础层 → P5 收尾，共 13 个提交。**
+
+### 遇到的问题 / 怎么解决的
+
+- **PlanView hooks 顺序违规**（P4-3）：`subjectColorById` useMemo 误置于 isPending 早退之后 → 首帧 pending 少跑 hooks、数据到再跑全量 → "Rendered more hooks" 白屏。修复：所有 hook 移回条件返回之前。
+- **GoalDetail CHECKLIST 白屏**（P4-4）：服务端 `checkins` 对 CHECKLIST 目标返回 `null`，旧代码 `forEach` 直接崩（存量 bug，非本次引入）。修复：`?? []` 兜底 weeks/tasks/checkins 三处。
+- **MonthView 格高塌陷**（P4-2）：`.nb-cal.h112` 类选择器优先级压过移动端媒体查询默认值 → 手机格高不一致。修复：媒体查询内显式列出全部高度档统一 56px。
+- **StateEditModal 漏网**（P4 收尾走查发现）：P4 页面清单未含它，但它是 Settings 的表单弹层仍是旧圆角风 → 按 GoalFormModal 同款约定补 nb- 化。
+- **孤儿与依赖清理**（P4 收尾）：GoalProgressBar/SproutBadge 零消费删除；recharts 在 Stats/AnnualReview 弃用后零引用，`pnpm remove`。
+- **主题切换验证坑**：playwright 直改 `documentElement.dataset.theme` 会被 AppContext 服务端同步覆盖回 `notebook`——暗色验证须走 `PATCH /settings {theme}` 服务端路径（已按此验证 journal-notebook-dark 端到端生效）。
+
+### 验证结论
+
+- `./scripts/verify.sh` 全绿（web typecheck + vitest domain-cases 46 用例 + build + server gofmt/vet/test + sqlc 生成一致性）。
+- 每期 playwright 冒烟：P1 双主题 token、P2 导航 27 项、P3 Sheet/ConfirmDialog 14 项、P4-1~P4-12 各页专项（条目数/交互/空态/移动端），全程零 pageerror；P4 收尾全量走查 12 路由 @1440 + 9 路由 @390 + 三弹层 + 暗色端到端。
+- M6 验收口径（roadmap）：1440/390 截图对照概念稿 ✅（每页 playwright 截图存 /tmp，走查记录在各期 prd 日志）；verify.sh 全绿 ✅。
+
+### 后续方向（归 M7/M10，不在本任务）
+
+- M7 新功能：倒计时 UI 已有印章 D-xxx（examName/examDate 设置页已接线）、科目预设、热力图（AnnualReview 已有 12 月热力格基础）、正字统计等 SPEC-B §4 项——每功能一个任务卡先写 prd。
+- M10：A 石墨/C 夜读扩展主题，`setting.theme` 值域与 `journal-<id>` data-theme 约定已预留。
+- 观察项：dev 库 examName=考研/examDate=2026-12-20 为 P4-11 验证写入的合理配置；M4-4 live 回滚演练仍待 owner 决策。
+
+### Key Decisions 回顾
+
+- 主题 id `journal-notebook(-dark)`、`data-theme=journal-<id>`、DB 未知值回落 notebook 不回写——与 prd §关键决策一致，落地无偏差。
+- `nb-` 前缀组件类只消费主题别名变量，暗色随 token 自动切换——明暗两套验证通过。
+- SPEC-B 内置六态精确调色板按主题感知注入 stateUtils，自定义态仍走 generateMoodPalette 派生——9 个消费文件零改动达成。
+- 日期一律 `YYYY-MM-DD` 字符串无时区转换、时长/占比等派生值读时计算——全程遵守。
