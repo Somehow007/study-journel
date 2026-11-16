@@ -24,7 +24,8 @@ const PAGES = [
 const MOBILE = ['calendar', 'today', 'plan', 'goal', 'stats', 'learn-form'];
 const errs = [], rows = [];
 async function run(vw, vh, kind, list) {
-  const ctx = await browser.newContext({ viewport: { width: vw, height: vh } });
+  // 手机档按触屏设备开 context：命中 (hover: none) 规则，截图与真机一致（桌面悬停态不会混进来）
+  const ctx = await browser.newContext({ viewport: { width: vw, height: vh }, ...(kind === 'mobile' ? { hasTouch: true, isMobile: true } : {}) });
   const page = await ctx.newPage(); page.on('pageerror', (e) => errs.push(`${kind} ${page.url()} ${e.message}`));
   await page.goto(W + '/', { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
   if (kind === 'desktop' && (!ONLY || ONLY.includes('login'))) { await page.screenshot({ path: `${OUT}/impl/login-desktop.png` }); rows.push(['login', kind]); }
