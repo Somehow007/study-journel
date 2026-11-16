@@ -1,9 +1,9 @@
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
 import GoalCompleteSheet, { type GoalCompleteValues } from '../components/GoalCompleteSheet';
-import GoalProgressBar from '../components/GoalProgressBar';
+import { Pressable } from '../components/ui/Pressable';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import {
   addGoalTask,
@@ -17,18 +17,13 @@ import {
   upsertCheckIn,
 } from '../lib/goalApi';
 import { useGoal, invalidateAll } from '../lib/queries';
-import { weekStartOf } from '../lib/domain';
+import { progressCells, weekStartOf } from '../lib/domain';
 import { useApp } from '../context/AppContext';
-import { formatDate } from '../lib/dateUtils';
+import { formatDate, getCalendarDays } from '../lib/dateUtils';
+import { WEEKDAY_LABELS } from '../lib/constants';
 import { showToast } from '../lib/toast';
 import { askConfirm } from '../lib/confirm';
 import type { GoalCheckin, GoalTask } from '../lib/types/api';
-
-function daysInPeriod(period: string): string[] {
-  const [y, m] = period.split('-').map(Number);
-  const last = new Date(y, m, 0).getDate();
-  return Array.from({ length: last }, (_, i) => `${period}-${String(i + 1).padStart(2, '0')}`);
-}
 
 function taskWhen(task: GoalTask): string {
   if (task.dueDate) return task.dueDate.slice(5).replace('-', '/');
@@ -53,6 +48,7 @@ export default function GoalDetail() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskBind, setTaskBind] = useState<'none' | 'date' | 'week'>('none');
   const [taskDate, setTaskDate] = useState(formatDate(new Date()));
+  const [quickQty, setQuickQty] = useState('');
   const [sheet, setSheet] = useState<
     | { mode: 'count'; date: string; checkin?: GoalCheckin | null; suggested: number }
     | { mode: 'task'; task: GoalTask }
@@ -62,7 +58,8 @@ export default function GoalDetail() {
 
   const checkinMap = useMemo(() => {
     const map = new Map<string, GoalCheckin>();
-    goal?.checkins.forEach((c) => map.set(c.date, c));
+    // CHECKLIST 目标服务端返回 checkins: null
+    (goal?.checkins ?? []).forEach((c) => map.set(c.date, c));
     return map;
   }, [goal]);
 
@@ -72,8 +69,13 @@ export default function GoalDetail() {
   if (!goal) return null;
 
   const unit = goal.unit || '';
-  const days = daysInPeriod(goal.period);
+  const itemUnit = goal.type === 'CHECKLIST' ? '项' : unit;
+  const year = Number(goal.period.slice(0, 4));
+  const month = Number(goal.period.slice(5, 7)); // 1-based
+  const calDays = getCalendarDays(year, month - 1);
+  const monthStart = `${goal.period}-01`;
   const today = formatDate(new Date());
+  const typeLabel = goal.type === 'COUNT' ? '数量型' : '清单型';
 
   const refresh = () => invalidateAll(qc);
 
@@ -193,174 +195,259 @@ export default function GoalDetail() {
     })();
   };
 
+  const openCountSheet = (date: string, checkin: GoalCheckin | null, suggested: number) => {
+    setSheet({ mode: 'count', date, checkin, suggested });
+  };
+
+  const remaining = goal.remaining ?? Math.max(0, goal.totalValue - goal.actualValue);
+  const heroCells = progressCells(goal.percent, 40);
+
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => navigate('/plan')}
-        className="mb-4 inline-flex items-center gap-1 font-sans text-small text-[var(--ink-soft)] hover:text-[var(--ink)]"
-      >
-        <ArrowLeft size={16} />
-        月计划
-      </button>
+    <div className="nb-book">
+      {/* 左页：标题 / 大数字 / KV / 每周进度 / 备注 / 操作 */}
+      <div className="nb-page l nb-gridbg">
+        <button type="button" className="nb-back" onClick={() => navigate('/plan')}>
+          ‹ 计划 / {typeLabel}
+        </button>
 
-      <header className="mb-6">
-        <div className="mb-2 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full" style={{ background: goal.color }} />
-              <h1 className="font-sans text-h1 text-[var(--ink)]">{goal.title}</h1>
-            </div>
-            {goal.note && (
-              <p className="mt-2 font-sans text-small text-[var(--ink-soft)]">{goal.note}</p>
-            )}
+        <div className="nb-hero">
+          <h1 className="nb-hero-title">{goal.title}</h1>
+          <div className="nb-hero-row">
+            <span className="nb-hero-num">{goal.actualValue}</span>
+            <span className="nb-hero-den">
+              / {goal.totalValue}
+              {itemUnit ? ` ${itemUnit}` : ''}
+            </span>
+            <span className="nb-stamp">{goal.percent}%</span>
           </div>
-          <span className="shrink-0 font-mono text-num-lg text-[var(--ink)]">{goal.percent}%</span>
+          <div className="nb-meter nb-meter-hero">
+            {heroCells.map((f, i) => (
+              <span key={i} className={f ? 'f' : ''} />
+            ))}
+          </div>
         </div>
-        <GoalProgressBar percent={goal.percent} color={goal.color} reached={goal.reached} />
-        <p className="mt-3 font-sans text-small text-[var(--ink-soft)]">
-          {goal.type === 'COUNT'
-            ? `已完成 ${goal.actualValue} / ${goal.totalValue} ${unit}`
-            : `已完成 ${goal.actualValue} / ${goal.totalValue} 项`}
-        </p>
-      </header>
 
-      {goal.type === 'COUNT' && (
-        <>
-          <section className="card mb-6 rounded-xl p-5">
-            <p className="font-sans text-small text-[var(--ink-faint)]">按剩余追赶</p>
-            <p className="mt-1 font-sans text-title text-[var(--ink)]">
-              今日建议 {goal.suggestedDaily ?? 0} {unit}
-              <span className="mx-2 text-[var(--ink-faint)]">·</span>
-              本周建议 {goal.suggestedWeekly ?? 0} {unit}
-            </p>
-            <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">
-              计划节奏 {goal.plannedDaily ?? 0}
-              {unit}/天 · {goal.plannedWeekly ?? 0} {unit}/周
-            </p>
-          </section>
+        <div className="nb-kv">
+          <div>
+            <small>剩余</small>
+            <b>
+              {remaining}
+              {itemUnit ? ` ${itemUnit}` : ''}
+            </b>
+          </div>
+          <div>
+            <small>剩余天数</small>
+            <b>{goal.remainingDays != null ? `${goal.remainingDays} 天` : '—'}</b>
+          </div>
+          <div>
+            <small>计划日均</small>
+            <b>
+              {goal.plannedDaily != null
+                ? `${goal.plannedDaily}${unit || itemUnit}`
+                : '—'}
+            </b>
+          </div>
+          <div>
+            <small>按剩余追赶</small>
+            <b style={{ color: 'var(--brand)' }}>
+              {goal.suggestedDaily != null
+                ? `${goal.suggestedDaily}${unit || itemUnit}/天`
+                : '—'}
+            </b>
+          </div>
+        </div>
 
-          {goal.weeks.length > 0 && (
-            <section className="mb-6">
-              <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">每周进度</h2>
-              <div className="flex flex-col gap-2">
-                {goal.weeks.map((week, idx) => {
-                  const pct = week.planned > 0 ? Math.min(100, Math.round((week.actual / week.planned) * 100)) : 0;
+        {goal.type === 'COUNT' && (goal.weeks ?? []).length > 0 && (
+          <>
+            <div className="nb-sec">
+              每周进度
+              <span className="nb-sec-side">实际 / 计划</span>
+            </div>
+            <table className="nb-table">
+              <tbody>
+                {(goal.weeks ?? []).map((week, idx) => {
+                  const pct =
+                    week.planned > 0
+                      ? Math.min(100, Math.round((week.actual / week.planned) * 100))
+                      : 0;
+                  const cells = progressCells(pct, 15);
                   return (
-                    <div key={week.weekStart} className="card rounded-lg px-4 py-3">
-                      <div className="mb-2 flex items-center justify-between font-sans text-caption text-[var(--ink-soft)]">
-                        <span>第 {idx + 1} 周</span>
-                        <span className="font-mono">
-                          {week.actual}/{week.planned} {unit}
-                        </span>
-                      </div>
-                      <GoalProgressBar percent={pct} color={goal.color} reached={week.actual >= week.planned} />
-                    </div>
+                    <tr key={week.weekStart}>
+                      <td className="nb-ww">第 {idx + 1} 周</td>
+                      <td>
+                        <div className="nb-meter">
+                          {cells.map((f, i) => (
+                            <span key={i} className={f ? 'f' : ''} />
+                          ))}
+                        </div>
+                      </td>
+                      <td className="nb-m nb-ww-val">
+                        {week.actual} / {week.planned}
+                        {unit ? ` ${unit}` : ''}
+                        {week.actual >= week.planned && week.planned > 0 && (
+                          <span style={{ color: 'var(--brand)' }}> ✓</span>
+                        )}
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
-            </section>
-          )}
+              </tbody>
+            </table>
+          </>
+        )}
 
-          <section className="mb-6">
-            <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">打卡日历</h2>
-            <div className="grid grid-cols-7 gap-1.5">
-              {days.map((date) => {
-                const checkin = checkinMap.get(date);
-                const isToday = date === today;
+        {goal.note && (
+          <>
+            <div className="nb-sec">备注</div>
+            <div className="nb-note">{goal.note}</div>
+          </>
+        )}
+
+        <div className="nb-actions">
+          <button
+            type="button"
+            className="nb-btn"
+            onClick={() => void handleCarryOver()}
+            disabled={busy}
+          >
+            结转下月
+          </button>
+          <button
+            type="button"
+            className="nb-btn r"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => void handleDelete()}
+          >
+            删除目标
+          </button>
+        </div>
+      </div>
+
+      {/* 右页：COUNT=盖章打卡日历 / CHECKLIST=小目标清单 */}
+      <div className="nb-page r nb-gridbg">
+        {goal.type === 'COUNT' ? (
+          <>
+            <div className="nb-sec">
+              打卡日历
+              <span className="nb-sec-side">点日期打卡，点已打卡的日子可取消</span>
+            </div>
+            <div className="nb-cal h86">
+              {WEEKDAY_LABELS.map((w) => (
+                <div key={w} className="nb-cal-wk">
+                  {w}
+                </div>
+              ))}
+              {calDays.map((d) => {
+                if (!d.isCurrentMonth) {
+                  return d.dateStr < monthStart ? <div key={d.dateStr} /> : null;
+                }
+                const checkin = checkinMap.get(d.dateStr);
+                const isToday = d.dateStr === today;
+                const isFuture = d.dateStr > today;
+                if (isFuture) {
+                  return (
+                    <div key={d.dateStr} className="nb-cal-cell nb-cal-checkin future">
+                      {Number(d.dateStr.slice(8))}
+                    </div>
+                  );
+                }
                 return (
                   <button
-                    key={date}
+                    key={d.dateStr}
                     type="button"
+                    className={`nb-cal-cell nb-cal-checkin${isToday ? ' today' : ''}`}
                     onClick={() => {
                       if (checkin) {
-                        handleDeleteCheckin(date);
+                        handleDeleteCheckin(d.dateStr);
                         return;
                       }
-                      setSheet({
-                        mode: 'count',
-                        date,
-                        checkin: null,
-                        suggested: goal.suggestedDaily ?? 1,
-                      });
-                    }}
-                    className="flex flex-col items-center rounded-md py-2 font-mono text-caption transition-colors hover:bg-[var(--paper)]"
-                    style={{
-                      background: checkin ? `${goal.color}22` : isToday ? 'var(--brand-soft)' : undefined,
-                      color: checkin ? goal.color : 'var(--ink-soft)',
-                      fontWeight: checkin || isToday ? 600 : 400,
+                      openCountSheet(d.dateStr, null, goal.suggestedDaily ?? 1);
                     }}
                   >
-                    <span>{Number(date.slice(8))}</span>
-                    {checkin && <span className="mt-0.5 text-[10px]">{checkin.quantity}</span>}
+                    {Number(d.dateStr.slice(8))}
+                    {checkin && <span className="nb-stamp-circle">{checkin.quantity}</span>}
                   </button>
                 );
               })}
             </div>
-            <p className="mt-2 font-sans text-caption text-[var(--ink-faint)]">点日期打卡，点已打卡的日子可取消</p>
-          </section>
-        </>
-      )}
 
-      {goal.type === 'CHECKLIST' && (
-        <section className="mb-6">
-          <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">小目标</h2>
-          <div className="card mb-4 rounded-xl p-4">
-            <input
-              value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void handleAddTask();
-              }}
-              placeholder="加一条小目标，例如：学完知识库文件上传"
-              className="mb-3 w-full bg-transparent font-sans text-body text-[var(--ink)] outline-none"
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              {(['none', 'date', 'week'] as const).map((bind) => (
-                <button
-                  key={bind}
-                  type="button"
-                  onClick={() => setTaskBind(bind)}
-                  className="rounded-full px-3 py-1 font-sans text-caption"
-                  style={
-                    taskBind === bind
-                      ? { background: 'var(--brand-soft)', color: 'var(--brand)' }
-                      : { color: 'var(--ink-faint)', border: '1px solid var(--keyline)' }
-                  }
-                >
-                  {bind === 'none' ? '本月随时' : bind === 'date' ? '某日' : '某周'}
-                </button>
-              ))}
-              {taskBind !== 'none' && (
-                <input
-                  type="date"
-                  value={taskDate}
-                  onChange={(e) => setTaskDate(e.target.value)}
-                  className="rounded-md px-2 py-1 font-mono text-caption text-[var(--ink)]"
-                  style={{ border: '1px solid var(--keyline)' }}
-                />
-              )}
+            <div className="nb-checkin-bar">
+              <span className="nb-checkin-label">今日 {today.slice(5).replace('-', '.')} 打卡</span>
+              <input
+                className="nb-field num nb-checkin-qty"
+                value={quickQty}
+                onChange={(e) => setQuickQty(e.target.value.replace(/[^\d]/g, ''))}
+                inputMode="numeric"
+                placeholder={String(goal.suggestedDaily ?? 1)}
+              />
+              <span className="nb-checkin-unit">{unit || '题'}</span>
               <button
                 type="button"
-                onClick={() => void handleAddTask()}
-                disabled={!taskTitle.trim()}
-                className="ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1.5 font-sans text-small text-[var(--text-inverse)] disabled:opacity-40"
-                style={{ background: 'var(--brand)' }}
+                className="nb-btn p"
+                style={{ marginLeft: 'auto' }}
+                onClick={() =>
+                  openCountSheet(
+                    today,
+                    checkinMap.get(today) ?? null,
+                    Number(quickQty) || goal.suggestedDaily || 1,
+                  )
+                }
               >
-                <Plus size={14} />
-                添加
+                盖章
               </button>
             </div>
-          </div>
-
-          {goal.tasks.length === 0 ? (
-            <p className="py-8 text-center font-sans text-body text-[var(--ink-faint)]">还没有小目标，先拆一条</p>
-          ) : (
-            <div className="card divide-y divide-[var(--hairline)] rounded-xl">
-              {goal.tasks.map((task) => (
-                <div key={task.id} className="flex items-start gap-3 px-4 py-3">
+          </>
+        ) : (
+          <>
+            <div className="nb-sec">小目标</div>
+            <div className="nb-taskform">
+              <input
+                className="nb-field"
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handleAddTask();
+                }}
+                placeholder="加一条小目标，例如：学完知识库文件上传"
+              />
+              <div className="nb-taskform-row">
+                {(['none', 'date', 'week'] as const).map((bind) => (
                   <button
+                    key={bind}
                     type="button"
+                    className={`nb-chip${taskBind === bind ? ' on' : ''}`}
+                    onClick={() => setTaskBind(bind)}
+                  >
+                    {bind === 'none' ? '本月随时' : bind === 'date' ? '某日' : '某周'}
+                  </button>
+                ))}
+                {taskBind !== 'none' && (
+                  <input
+                    type="date"
+                    className="nb-field nb-task-date"
+                    value={taskDate}
+                    onChange={(e) => setTaskDate(e.target.value)}
+                  />
+                )}
+                <button
+                  type="button"
+                  className="nb-btn p"
+                  style={{ marginLeft: 'auto' }}
+                  onClick={() => void handleAddTask()}
+                  disabled={!taskTitle.trim()}
+                >
+                  添加
+                </button>
+              </div>
+            </div>
+
+            {(goal.tasks ?? []).length === 0 ? (
+              <p className="nb-empty-hint">还没有小目标，先拆一条</p>
+            ) : (
+              (goal.tasks ?? []).map((task) => (
+                <div key={task.id} className="nb-taskrow">
+                  <Pressable
+                    className="nb-taskcheck"
                     aria-label={task.done ? '取消完成' : '标记完成'}
                     onClick={() => {
                       if (task.done) {
@@ -369,61 +456,30 @@ export default function GoalDetail() {
                       }
                       setSheet({ mode: 'task', task });
                     }}
-                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
-                    style={{
-                      borderColor: task.done ? goal.color : 'var(--keyline)',
-                      background: task.done ? goal.color : 'transparent',
-                    }}
                   >
-                    {task.done && (
-                      <span className="block h-1.5 w-2.5 -translate-y-px rotate-[-50deg] border-b-2 border-l-2 border-white" />
-                    )}
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className="font-sans text-body text-[var(--ink)]"
-                      style={{ textDecoration: task.done ? 'line-through' : undefined, opacity: task.done ? 0.55 : 1 }}
-                    >
-                      {task.title}
-                    </p>
-                    <p className="mt-0.5 font-sans text-caption text-[var(--ink-faint)]">
+                    <span className={`nb-box${task.done ? ' on' : ''}`} />
+                  </Pressable>
+                  <div className="nb-taskbody">
+                    <p className={task.done ? 'done' : undefined}>{task.title}</p>
+                    <p className="nb-taskmeta">
                       {taskWhen(task)}
                       {task.doneAt ? ` · 完成于 ${formatDate(new Date(task.doneAt))}` : ''}
                     </p>
-                    {task.reflection && (
-                      <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">{task.reflection}</p>
-                    )}
+                    {task.reflection && <p className="nb-taskrefl">{task.reflection}</p>}
                   </div>
                   <button
                     type="button"
+                    className="nb-taskdel"
+                    aria-label="删除小目标"
                     onClick={() => handleDeleteTask(task)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-faint)] hover:bg-red-500/10 hover:text-red-400"
                   >
                     <Trash2 size={14} />
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      <div className="flex flex-wrap gap-2 pb-8">
-        <button
-          type="button"
-          onClick={() => void handleCarryOver()}
-          disabled={busy}
-          className="rounded-full border border-[var(--keyline)] px-4 py-2 font-sans text-small text-[var(--ink-soft)] hover:text-[var(--ink)]"
-        >
-          结转到下月
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleDelete()}
-          className="rounded-full border border-red-200 px-4 py-2 font-sans text-small text-red-400 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"
-        >
-          删除目标
-        </button>
+              ))
+            )}
+          </>
+        )}
       </div>
 
       {sheet && (
@@ -431,9 +487,13 @@ export default function GoalDetail() {
           mode={sheet.mode}
           title={sheet.mode === 'count' ? `${goal.title} · ${sheet.date}` : sheet.task.title}
           unit={goal.unit}
-          defaultQuantity={sheet.mode === 'count' ? (sheet.checkin?.quantity ?? sheet.suggested) : undefined}
+          defaultQuantity={
+            sheet.mode === 'count' ? (sheet.checkin?.quantity ?? sheet.suggested) : undefined
+          }
           defaultDurationMin={0}
-          defaultNote={sheet.mode === 'count' ? sheet.checkin?.note ?? '' : sheet.task.reflection ?? ''}
+          defaultNote={
+            sheet.mode === 'count' ? (sheet.checkin?.note ?? '') : sheet.task.reflection ?? ''
+          }
           onConfirm={handleCompleteConfirm}
           onClose={() => setSheet(null)}
         />

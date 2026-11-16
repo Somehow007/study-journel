@@ -894,3 +894,218 @@ textarea.nb-field {
   border-bottom: 1.5px solid var(--ink);
   padding-bottom: 10px;
 }
+
+/* ---------- 目标详情页 ---------- */
+/* 返回链 */
+.nb-back {
+  background: none;
+  border: 0;
+  padding: 0 0 10px;
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.nb-back:hover {
+  color: var(--ink);
+}
+/* 标题 + 大数字 + 印章百分比 */
+.nb-hero {
+  margin-top: 10px;
+}
+.nb-hero-title {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1.25;
+  color: var(--ink);
+  margin: 0;
+}
+.nb-hero-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 22px;
+}
+.nb-hero-num {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 72px;
+  line-height: 0.9;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.nb-hero-den {
+  font-family: var(--font-num);
+  font-size: 20px;
+  color: var(--ink-soft);
+  padding-bottom: 8px;
+}
+.nb-hero .nb-meter {
+  margin-top: 14px;
+}
+.nb-meter-hero > span {
+  height: 10px;
+}
+/* 每周进度表 */
+.nb-table .nb-ww {
+  width: 90px;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--ink-soft);
+  padding-top: 14px;
+  white-space: nowrap;
+}
+.nb-table .nb-ww-val {
+  width: 120px;
+  text-align: right;
+  font-family: var(--font-num);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding-top: 14px;
+  white-space: nowrap;
+}
+.nb-table td:has(> .nb-meter) {
+  width: 100%;
+}
+/* 底部操作行 */
+.nb-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+/* 打卡日历格（数量型右页） */
+.nb-cal-checkin {
+  cursor: pointer;
+  text-align: left;
+}
+.nb-cal-checkin.future {
+  cursor: default;
+}
+/* 今日打卡快捷条 */
+.nb-checkin-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 22px;
+}
+.nb-checkin-label {
+  font-family: var(--font-title);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.nb-checkin-qty {
+  width: 90px;
+  text-align: center;
+}
+.nb-checkin-unit {
+  font-family: var(--font-title);
+  font-size: 14px;
+  white-space: nowrap;
+}
+/* 清单型：加任务表单 + 任务行 */
+.nb-taskform {
+  margin-bottom: 8px;
+}
+.nb-taskform-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.nb-task-date {
+  width: 150px;
+  min-height: 32px;
+  font-family: var(--font-num);
+  font-size: 13px;
+}
+.nb-taskrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--rule-dash);
+}
+.nb-taskcheck {
+  margin-top: 3px;
+  flex: none;
+}
+.nb-taskbody {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+.nb-taskbody p {
+  margin: 0;
+}
+.nb-taskbody p.done {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--brand);
+}
+.nb-taskmeta {
+  margin-top: 3px !important;
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.nb-taskrefl {
+  margin-top: 4px !important;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.nb-taskdel {
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 4px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  display: inline-flex;
+}
+.nb-taskdel:hover {
+  color: var(--brand);
+}
+.nb-empty-hint {
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--ink-faint);
+  padding: 18px 0;
+  text-align: center;
+}
+@media (max-width: 767px) {
+  .nb-hero-title {
+    font-size: 28px;
+  }
+  .nb-hero-num {
+    font-size: 48px;
+  }
+  .nb-hero-den {
+    font-size: 16px;
+  }
+  .nb-kv b {
+    font-size: 20px;
+  }
+  .nb-cal-checkin {
+    font-size: 10px;
+    padding: 3px 4px;
+  }
+  .nb-stamp-circle {
+    inset: 14px 4px 3px;
+    font-size: 12px;
+    border-width: 1.5px;
+  }
+  .nb-checkin-bar {
+    flex-wrap: wrap;
+  }
+  .nb-actions {
+    flex-wrap: wrap;
+  }
+}
