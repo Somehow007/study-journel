@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useStates } from './queries';
+import { useApp } from '../context/AppContext';
+import type { ThemeId } from './theme';
 import type { JournalState } from './types/api';
 
 /** 深色模式三档色（由主色派生） */
@@ -57,7 +59,45 @@ export function generateMoodPalette(solid: string): {
   };
 }
 
-export function stateToConfig(s: JournalState): StateConfig {
+/** SPEC-B §2 内置态精确调色板：concept → builtinKey → 明暗两套 ink/tint/dark */
+interface StatePaletteSpec {
+  ink: string;
+  tint: string;
+  dark: StateDarkColors;
+}
+
+const CONCEPT_STATE_PALETTES: Record<string, Record<string, StatePaletteSpec>> = {
+  notebook: {
+    inspired: { ink: '#9C2814', tint: '#F8E1DB', dark: { solid: '#FF7A5C', ink: '#FFC2B3', tint: '#3A1F1A' } },
+    happy: { ink: '#8A3C10', tint: '#F7E6D8', dark: { solid: '#F29A5E', ink: '#F8D2B5', tint: '#38261A' } },
+    calm: { ink: '#163A78', tint: '#DEE6F4', dark: { solid: '#7FA2E6', ink: '#C9D7F4', tint: '#1C2740' } },
+    tired: { ink: '#5C616B', tint: '#ECEBE6', dark: { solid: '#8A92A2', ink: '#C9CDD5', tint: '#252B38' } },
+    anxious: { ink: '#7A540C', tint: '#F4EAD2', dark: { solid: '#E0B356', ink: '#F1DCAE', tint: '#352C18' } },
+    sad: { ink: '#403D63', tint: '#E6E4EF', dark: { solid: '#A29DD6', ink: '#D3D0EE', tint: '#262438' } },
+  },
+};
+
+/** theme → 概念键（notebook-dark → notebook），调色板按概念查 */
+function conceptOf(theme: ThemeId): string {
+  return theme.replace(/-dark$/, '');
+}
+
+export function stateToConfig(s: JournalState, theme: ThemeId = 'notebook'): StateConfig {
+  const spec = s.builtinKey
+    ? CONCEPT_STATE_PALETTES[conceptOf(theme)]?.[s.builtinKey]
+    : undefined;
+  if (spec) {
+    return {
+      id: s.id,
+      builtinKey: s.builtinKey,
+      label: s.label,
+      color: s.color,
+      polarity: s.polarity,
+      ink: spec.ink,
+      tint: spec.tint,
+      dark: spec.dark,
+    };
+  }
   const palette = generateMoodPalette(s.color);
   return {
     id: s.id,
@@ -78,21 +118,27 @@ function isActive(s: JournalState): boolean {
 /** 全部状态（含已归档）→ 展示/历史渲染用；归档态历史日仍要显示颜色 */
 export function useStateConfigs(): StateConfig[] {
   const { data: states } = useStates();
-  return useMemo(() => (states ?? []).map(stateToConfig), [states]);
+  const { theme } = useApp();
+  return useMemo(() => (states ?? []).map((s) => stateToConfig(s, theme)), [states, theme]);
 }
 
 /** 未归档状态 → 选择器用 */
 export function useActiveStateConfigs(): StateConfig[] {
   const { data: states } = useStates();
-  return useMemo(() => (states ?? []).filter(isActive).map(stateToConfig), [states]);
+  const { theme } = useApp();
+  return useMemo(
+    () => (states ?? []).filter(isActive).map((s) => stateToConfig(s, theme)),
+    [states, theme],
+  );
 }
 
 /** 自定义状态（builtinKey == null 且未归档）→ 设置页管理 */
 export function useCustomStateConfigs(): StateConfig[] {
   const { data: states } = useStates();
+  const { theme } = useApp();
   return useMemo(
-    () => (states ?? []).filter((s) => isActive(s) && s.builtinKey == null).map(stateToConfig),
-    [states],
+    () => (states ?? []).filter((s) => isActive(s) && s.builtinKey == null).map((s) => stateToConfig(s, theme)),
+    [states, theme],
   );
 }
 
@@ -106,10 +152,11 @@ export function useStateConfig(stateId: string | null | undefined): StateConfig 
 export function findStateConfig(
   states: JournalState[] | undefined,
   stateId: string | null | undefined,
+  theme: ThemeId = 'notebook',
 ): StateConfig | null {
   if (!stateId) return null;
   const s = (states ?? []).find((x) => x.id === stateId);
-  return s ? stateToConfig(s) : null;
+  return s ? stateToConfig(s, theme) : null;
 }
 
 /** 标签查重（仅未归档态，大小写不敏感；排除自身） */

@@ -5,20 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/book.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>学习手帐</title>
-    <meta name="theme-color" content="#F8F9FA" />
+    <meta name="theme-color" content="#F3F1EA" />
   </head>
   <body>
     <script>
       ;(function () {
-        var raw = localStorage.getItem('mysite_theme_v2') || 'classic-light'
-        var t = raw
-        try {
-          var parsed = JSON.parse(raw)
-          if (typeof parsed === 'string') t = parsed
-        } catch (e) {}
-        localStorage.removeItem('study-journal-theme')
-        document.documentElement.setAttribute('data-theme', t)
-        var d = String(t).indexOf('dark') !== -1 || t === 'aurora'
+        var t = localStorage.getItem('study-journal-theme') || 'notebook'
+        if (t !== 'notebook' && t !== 'notebook-dark') t = 'notebook'
+        document.documentElement.setAttribute('data-theme', 'journal-' + t)
+        var d = t === 'notebook-dark'
         document.documentElement.classList.toggle('dark', d)
         document.documentElement.style.colorScheme = d ? 'dark' : 'light'
       })()

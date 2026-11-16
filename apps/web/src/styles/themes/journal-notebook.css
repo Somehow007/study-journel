@@ -1,0 +1,85 @@
+/* ============================================================
+ * journal-notebook · B 格纸（SPEC-B.md §1）
+ * 米白纸面 / 墨蓝字 / 红笔批注 / 宋体标题 / 夜间墨蓝变体
+ * 只定义博客层变量 + journal 专有变量；组件类在 journal-b.css
+ * ============================================================ */
+
+/* ---------- 米白（默认） ---------- */
+[data-theme='journal-notebook'] {
+  /* 博客层变量映射（SPEC-B §1.1） */
+  --bg-primary: #F3F1EA;
+  --bg-secondary: #FBFAF6;
+  --bg-elevated: #FBFAF6;
+  --bg-code: #EEEBE2;
+  --bg-accent: #D23B2214;
+  --text-primary: #1B2433;
+  --text-secondary: #4A5363;
+  --text-muted: #8D919A;
+  --text-inverse: #FBFAF6;
+  --accent: #D23B22;
+  --accent-hover: #B32F19;
+  --accent-subtle: #D23B2233;
+  --border: #CFCABB;
+  --border-subtle: #E4E1D6;
+  --success: #2F6B4F;
+  --success-subtle: #2F6B4F1F;
+  --warning: #B07A12;
+  --warning-subtle: #B07A121F;
+  --danger: #B32F19;
+  --danger-subtle: #D23B221F;
+  --info: #1E4FA3;
+  --info-subtle: #1E4FA31F;
+  --shadow-color: rgba(27, 36, 51, 0.05);
+  --shadow-color-md: rgba(27, 36, 51, 0.09);
+
+  /* journal 专有变量（SPEC-B §1.2） */
+  --font-title: 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif;
+  --font-num: 'SF Mono', Menlo, monospace;
+  --rule-dash: #BDB8A9;
+  --margin-line: #E8A090;
+  --blue-pen: #1E4FA3;
+  --subject-math: #1E4FA3;
+  --subject-cs: #2F6B4F;
+  --subject-eng: #B07A12;
+  --subject-pol: #D23B22;
+  --grid-size: 20px;
+  --nb-hard-shadow: #1B2433;
+}
+
+/* ---------- 夜间墨蓝 ---------- */
+[data-theme='journal-notebook-dark'] {
+  --bg-primary: #141B29;
+  --bg-secondary: #1B2336;
+  --bg-elevated: #1B2336;
+  --bg-code: #222B40;
+  --bg-accent: #FF7A5C1F;
+  --text-primary: #E4E6EA;
+  --text-secondary: #A9B0BD;
+  --text-muted: #6E7686;
+  --text-inverse: #141B29;
+  --accent: #FF7A5C;
+  --accent-hover: #FF9478;
+  --accent-subtle: #FF7A5C33;
+  --border: #2E3850;
+  --border-subtle: #222B3E;
+  --success: #6FBF94;
+  --success-subtle: #6FBF9426;
+  --warning: #E0B356;
+  --warning-subtle: #E0B35626;
+  --danger: #FF7A5C;
+  --danger-subtle: #FF7A5C26;
+  --info: #7FA2E6;
+  --info-subtle: #7FA2E626;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-color-md: rgba(0, 0, 0, 0.45);
+
+  --rule-dash: #36405A;
+  --margin-line: #8A4A3C;
+  --blue-pen: #7FA2E6;
+  /* SPEC 未给暗色科目色：取状态暗色 ink 同族提亮值 */
+  --subject-math: #7FA2E6;
+  --subject-cs: #6FBF94;
+  --subject-eng: #E0B356;
+  --subject-pol: #FF8A70;
+  --nb-hard-shadow: #000000;
+}

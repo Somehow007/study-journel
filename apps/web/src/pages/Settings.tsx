@@ -114,7 +114,7 @@ export default function Settings() {
           })}
         </div>
         <p className="mt-3 font-sans text-caption text-[var(--ink-faint)]">
-          主题保存在本机浏览器（当前：{getThemeMeta(theme)?.name ?? theme}
+          主题保存在账号、跨设备同步（当前：{getThemeMeta(theme)?.name ?? theme}
           {isThemeDark(theme) ? ' · 暗色' : ''}）。
         </p>
       </section>

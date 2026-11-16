@@ -15,16 +15,7 @@ export default {
           'Microsoft YaHei',
           'sans-serif',
         ],
-        serif: [
-          'Inter',
-          'system-ui',
-          '-apple-system',
-          'Segoe UI',
-          'PingFang SC',
-          'Hiragino Sans GB',
-          'Microsoft YaHei',
-          'sans-serif',
-        ],
+        serif: ['Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', 'serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       fontSize: {
@@ -59,7 +50,7 @@ export default {
         full: '999px',
       },
       colors: {
-        // 中性色与品牌色唯一来源是 src/index.css 的 CSS 变量（晨园 / 夜色花房），
+        // 中性色与品牌色唯一来源是 src/index.css 的 CSS 变量（journal-notebook 明暗两套），
         // 此处仅 var() 引用，不留硬编码色值。
         paper: 'var(--paper)',
         card: 'var(--card)',

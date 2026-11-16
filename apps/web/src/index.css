@@ -1,18 +1,13 @@
 @import './styles/themes/tokens.css';
-@import './styles/themes/classic.css';
-@import './styles/themes/aurora.css';
-@import './styles/themes/rose-garden.css';
-@import './styles/themes/ocean-breeze.css';
-@import './styles/themes/warm-sunset.css';
-@import './styles/themes/liquid-glass.css';
-@import './styles/themes/glow.css';
+@import './styles/themes/journal-notebook.css';
+@import './styles/journal-b.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* Journal token aliases → blog data-theme variables */
+  /* Journal token aliases → data-theme="journal-*" 变量（journal-notebook.css） */
   :root {
     --paper: var(--bg-primary);
     --card: var(--bg-elevated);

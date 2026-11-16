@@ -1,12 +1,4 @@
-export type ThemeId =
-  | 'classic-light'
-  | 'classic-dark'
-  | 'aurora'
-  | 'rose-garden'
-  | 'ocean-breeze'
-  | 'warm-sunset'
-  | 'liquid-glass'
-  | 'liquid-glass-dark'
+export type ThemeId = 'notebook' | 'notebook-dark'
 
 export interface ThemeMeta {
   id: ThemeId
@@ -18,70 +10,30 @@ export interface ThemeMeta {
   preview: { bg: string; accent: string }
 }
 
-export const BLOG_THEME_KEY = 'mysite_theme_v2'
-const JOURNAL_THEME_KEY = 'study-journal-theme'
-const DEFAULT_THEME: ThemeId = 'classic-light'
+/**
+ * journal 主题体系（M6 B 格纸先行）：
+ * - setting.theme 存概念短 id（notebook / notebook-dark），DOM data-theme = `journal-${id}`
+ * - 与博客 key（mysite_theme_v2）完全脱钩；localStorage 仅作登录前首帧缓存
+ */
+export const THEME_CACHE_KEY = 'study-journal-theme'
+const DEFAULT_THEME: ThemeId = 'notebook'
 
 export const THEME_REGISTRY: ThemeMeta[] = [
   {
-    id: 'classic-light',
-    name: '经典·白',
-    group: 'classic',
+    id: 'notebook',
+    name: '格纸 · 米白',
+    group: 'notebook',
     hasDarkVariant: true,
-    darkVariant: 'classic-dark',
-    preview: { bg: '#F8F9FA', accent: '#4F46E5' },
+    darkVariant: 'notebook-dark',
+    preview: { bg: '#F3F1EA', accent: '#D23B22' },
   },
   {
-    id: 'classic-dark',
-    name: '经典·黑',
-    group: 'classic',
+    id: 'notebook-dark',
+    name: '格纸 · 夜间墨蓝',
+    group: 'notebook',
     hasDarkVariant: true,
-    lightVariant: 'classic-light',
-    preview: { bg: '#0B0F19', accent: '#818CF8' },
-  },
-  {
-    id: 'aurora',
-    name: '极光紫夜',
-    group: 'aurora',
-    hasDarkVariant: false,
-    preview: { bg: '#080D0E', accent: '#A655F6' },
-  },
-  {
-    id: 'rose-garden',
-    name: '玫瑰花园',
-    group: 'rose',
-    hasDarkVariant: false,
-    preview: { bg: '#FFF5F7', accent: '#FD7397' },
-  },
-  {
-    id: 'ocean-breeze',
-    name: '海风青韵',
-    group: 'ocean',
-    hasDarkVariant: false,
-    preview: { bg: '#F0FFFE', accent: '#01B8C2' },
-  },
-  {
-    id: 'warm-sunset',
-    name: '暖阳珊瑚',
-    group: 'sunset',
-    hasDarkVariant: false,
-    preview: { bg: '#FFF8F0', accent: '#E88A5A' },
-  },
-  {
-    id: 'liquid-glass',
-    name: 'Liquid Glass',
-    group: 'glass',
-    hasDarkVariant: true,
-    darkVariant: 'liquid-glass-dark',
-    preview: { bg: '#F2F2F7', accent: '#007AFF' },
-  },
-  {
-    id: 'liquid-glass-dark',
-    name: 'Liquid Glass·暗',
-    group: 'glass',
-    hasDarkVariant: true,
-    lightVariant: 'liquid-glass',
-    preview: { bg: '#000000', accent: '#0A84FF' },
+    lightVariant: 'notebook',
+    preview: { bg: '#141B29', accent: '#FF7A5C' },
   },
 ]
 
@@ -92,44 +44,34 @@ export function isThemeId(value: string | null | undefined): value is ThemeId {
 }
 
 export function isThemeDark(id: ThemeId): boolean {
-  return id.includes('dark') || id === 'aurora'
+  return id.includes('dark')
 }
 
-export function parseStoredThemeId(raw: string | null): ThemeId | null {
-  if (!raw) return null
-  let value = raw
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (typeof parsed === 'string') value = parsed
-  } catch {
-    /* VueUse string serializer stores a bare id */
-  }
-  return isThemeId(value) ? value : null
+/** setting.theme / 缓存值 → ThemeId；未知值（含 DB 默认 graphite）回落默认 */
+export function resolveThemeId(raw: string | null | undefined): ThemeId {
+  return isThemeId(raw) ? raw : DEFAULT_THEME
 }
 
-export function readStoredThemeId(): ThemeId {
+export function readThemeCache(): ThemeId {
   try {
-    localStorage.removeItem(JOURNAL_THEME_KEY)
+    return resolveThemeId(localStorage.getItem(THEME_CACHE_KEY))
   } catch {
-    /* ignore */
+    return DEFAULT_THEME
   }
+}
+
+export function writeThemeCache(id: ThemeId) {
   try {
-    const stored = parseStoredThemeId(localStorage.getItem(BLOG_THEME_KEY))
-    if (stored) return stored
+    localStorage.setItem(THEME_CACHE_KEY, id)
   } catch {
     /* ignore */
   }
-  return DEFAULT_THEME
-}
-
-export function writeStoredThemeId(id: ThemeId) {
-  localStorage.setItem(BLOG_THEME_KEY, id)
 }
 
 export function applyTheme(id: ThemeId) {
   if (typeof document === 'undefined') return
   const dark = isThemeDark(id)
-  document.documentElement.setAttribute('data-theme', id)
+  document.documentElement.setAttribute('data-theme', `journal-${id}`)
   document.documentElement.classList.toggle('dark', dark)
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
 }
@@ -155,15 +97,8 @@ export function pairedThemeId(id: ThemeId): ThemeId | null {
   return meta?.darkVariant ?? meta?.lightVariant ?? null
 }
 
-/** Grid entries: hide classic-dark; keep both glass variants. */
-export const THEME_PICKER_ITEMS = THEME_REGISTRY.filter(
-  (t) => !t.id.includes('-dark') || t.group === 'glass',
-)
+export const THEME_PICKER_ITEMS = THEME_REGISTRY
 
 export function isPickerThemeActive(current: ThemeId, item: ThemeMeta): boolean {
-  if (current === item.id) return true
-  if (item.darkVariant && current === item.darkVariant) {
-    return !THEME_PICKER_ITEMS.some((t) => t.id === item.darkVariant)
-  }
-  return false
+  return current === item.id
 }

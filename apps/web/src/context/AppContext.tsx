@@ -9,14 +9,14 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   type ThemeId,
-  BLOG_THEME_KEY,
+  THEME_CACHE_KEY,
   applyTheme,
   isThemeDark,
   pairedThemeId,
-  parseStoredThemeId,
-  readStoredThemeId,
+  readThemeCache,
+  resolveThemeId,
   transitionTheme,
-  writeStoredThemeId,
+  writeThemeCache,
 } from '../lib/theme';
 import { useMe, useSettings, qk } from '../lib/queries';
 import { patchSettings } from '../lib/api';
@@ -60,42 +60,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     year: now.getFullYear(),
     month: now.getMonth(),
   });
-  const [theme, setThemeState] = useState<ThemeId>(readStoredThemeId);
+  const [theme, setThemeState] = useState<ThemeId>(readThemeCache);
 
   const setCurrentMonth = useCallback((year: number, month: number) => {
     setCurrentMonthState({ year, month });
-  }, []);
-
-  const setTheme = useCallback((id: ThemeId) => {
-    writeStoredThemeId(id);
-    transitionTheme(id);
-    setThemeState(id);
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    setThemeState((prev) => {
-      const next = pairedThemeId(prev);
-      if (!next) return prev;
-      writeStoredThemeId(next);
-      transitionTheme(next);
-      return next;
-    });
-  }, []);
-
-  useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const onStorage = (event: StorageEvent) => {
-      if (event.key !== BLOG_THEME_KEY) return;
-      const next = parseStoredThemeId(event.newValue);
-      if (!next) return;
-      applyTheme(next);
-      setThemeState(next);
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   // settings 写入：乐观更新 + 失败回滚
@@ -115,6 +83,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
       qc.invalidateQueries({ queryKey: qk.settings });
     },
   });
+
+  // 主题：cache 先行保证登录前首帧，settings 到达后服务端为准；写路径同步 PATCH
+  const setTheme = useCallback(
+    (id: ThemeId) => {
+      writeThemeCache(id);
+      transitionTheme(id);
+      setThemeState(id);
+      if (settings) updateSettings.mutate({ theme: id });
+    },
+    [settings, updateSettings],
+  );
+
+  const toggleTheme = useCallback(() => {
+    const next = pairedThemeId(theme);
+    if (next) setTheme(next);
+  }, [theme, setTheme]);
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  // 服务端主题同步：settings.theme 为准；未知值（DB 默认 graphite 等）回落 notebook，不回写
+  const serverTheme = settings ? resolveThemeId(settings.theme) : null;
+  useEffect(() => {
+    if (!serverTheme || serverTheme === theme) return;
+    writeThemeCache(serverTheme);
+    applyTheme(serverTheme);
+    setThemeState(serverTheme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverTheme]);
+
+  // 跨标签页：另一窗口改了主题缓存时跟随（服务端值随后由 settings 同步校准）
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== THEME_CACHE_KEY) return;
+      const next = resolveThemeId(event.newValue);
+      applyTheme(next);
+      setThemeState(next);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const setDailyGoalMin = useCallback(
     (min: number) => {

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Layout from './components/Layout';
 import BookLoader from './components/BookLoader';
@@ -13,17 +13,6 @@ import Stats from './pages/Stats';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
 import AnnualReview from './pages/AnnualReview';
-
-function ThemeWrapper({ children }: { children: React.ReactNode }) {
-  const { theme } = useApp();
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    const dark = theme.includes('dark') || theme === 'aurora';
-    document.documentElement.classList.toggle('dark', dark);
-    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-  }, [theme]);
-  return <>{children}</>;
-}
 
 function AppShell() {
   const { user } = useApp();
@@ -74,9 +63,7 @@ function AppShell() {
 export default function App() {
   return (
     <AppProvider>
-      <ThemeWrapper>
-        <AppShell />
-      </ThemeWrapper>
+      <AppShell />
     </AppProvider>
   );
 }
