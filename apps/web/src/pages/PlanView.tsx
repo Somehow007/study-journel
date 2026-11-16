@@ -106,7 +106,7 @@ function ChecklistGoalBlock({
   period: string;
 }) {
   const qc = useQueryClient();
-  const { data: detail, isPending } = useGoal(goal.id);
+  const { data: detail, isPending, isError, refetch } = useGoal(goal.id);
   const [sheetTask, setSheetTask] = useState<GoalTask | null>(null);
   const tasks = detail?.tasks ?? [];
 
@@ -169,6 +169,13 @@ function ChecklistGoalBlock({
               <div className="h-4 w-2/3 bg-[var(--hairline)]" />
               <div className="h-4 w-1/2 bg-[var(--hairline)]" />
             </div>
+          ) : isError && !detail ? (
+            <p className="py-2 text-[13px]" style={{ color: 'var(--ink-faint)' }}>
+              子任务加载失败 ·{' '}
+              <button type="button" className="nb-sec-side red" onClick={() => void refetch()}>
+                重试
+              </button>
+            </p>
           ) : (
             tasks.map((t) => (
               <button
