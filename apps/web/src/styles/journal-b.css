@@ -53,6 +53,15 @@
     border-bottom: 1px solid var(--keyline);
     box-shadow: none;
   }
+  .nb-page .nb-date {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .nb-page .nb-date > .nb-states,
+  .nb-page .nb-date > div:has(> .nb-states) {
+    margin-left: 0 !important;
+    width: 100%;
+  }
   .nb-page.r {
     box-shadow: none;
   }
@@ -115,6 +124,14 @@
 }
 .nb-sec-side.red {
   color: var(--brand);
+}
+button.nb-sec-side,
+a.nb-sec-side {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 /* ---------- 表格（学习条目等） ---------- */
@@ -231,6 +248,18 @@
   color: var(--ink-faint);
   white-space: nowrap;
 }
+button.nb-todo {
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+button.nb-todo:active {
+  background: transparent;
+  transform: none;
+}
 
 /* ---------- 横线纸（备注/日记） ---------- */
 .nb-note {
@@ -308,6 +337,14 @@
   background: var(--card);
   outline: 2px solid var(--brand);
   outline-offset: -2px;
+}
+button.nb-cal-cell {
+  background: transparent;
+  border-top: 0;
+  border-left: 0;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
 }
 .nb-cal-cell.future {
   color: var(--ink-faint);

@@ -79,3 +79,4 @@
   - **横线纸不动**：四组件无笔记面；`.diary-paper`/`.diary-content` 行高对齐归 P4 页面期
   - **验证**：verify.sh 绿；playwright 冒烟 14 项全过（Sheet 桌面 540px/墨线/硬阴影、手机贴底无阴影、遮罩色、ConfirmDialog 宋体标题+墨线+双 nb-btn 墨底确认钮）
   - **下一步 P4**：页面逐页换装（today→…→login 对照 shots/）
+- 2026-11-16 | **P4-1 今日页完成**：TodayDetail 改 nb-book 对开（左=日期大标题+状态选择+今日学习 nb-table+nb-sum 荧光笔合计+待办+横线纸小结；右=本月 nb-cal 小日历 MiniMonthCal（新组件，useDayMarks 驱动，点格进当天）+本月目标 nb-goal 行）；联动换装 MoodSelector(nb-state)/LearningRecordCard(nb-table tr)/DiaryEditor(nb-note+nb-chip)/TodayGoalsSection(nb-goal+nb-todo，逻辑零改)/Layout /day/ 栏宽 1240px；journal-b.css 补 button.nb-sec-side/nb-cal-cell/nb-todo 重置+手机 nb-date 折行；diary-content 行高 32→30 对齐横线；每日一句+SproutBadge 卡片按 SPEC 移除（装饰性，streak 并入日期 meta）；verify.sh 绿+playwright 16 项全过（双页并排/单列/宋体/等宽/横线 30px/状态 .on 红椭圆） | → 本提交

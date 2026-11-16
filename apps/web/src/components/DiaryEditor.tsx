@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { marked } from 'marked';
 import { Eye, Pencil } from 'lucide-react';
-import { Pressable } from './ui/Pressable';
 
 marked.setOptions({
   breaks: true,
@@ -101,57 +100,48 @@ export default function DiaryEditor({ value, onSave }: DiaryEditorProps) {
 
   return (
     <div className="relative">
-      <div className="card diary-paper relative overflow-hidden rounded-xl">
-        <div
-          className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full px-1 py-0.5 backdrop-blur-sm"
-          style={{ background: 'color-mix(in srgb, var(--card) 78%, transparent)' }}
+      <div className="absolute right-1 top-1 z-10 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setIsPreview(false)}
+          className={`nb-chip${!isPreview ? ' on' : ''}`}
+          title="编辑"
+          aria-label="编辑"
         >
-          <Pressable
-            variant="icon"
-            onClick={() => setIsPreview(false)}
-            className={`flex items-center justify-center rounded-full ${
-              !isPreview
-                ? 'bg-[var(--paper)] text-[var(--ink)]'
-                : 'text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink-soft)]'
-            }`}
-            title="编辑"
-            aria-label="编辑"
-          >
-            <Pencil size={14} strokeWidth={1.75} />
-          </Pressable>
-          <Pressable
-            variant="icon"
-            onClick={() => setIsPreview(true)}
-            className={`flex items-center justify-center rounded-full ${
-              isPreview
-                ? 'bg-[var(--paper)] text-[var(--ink)]'
-                : 'text-[var(--ink-faint)] hover:bg-[var(--paper)] hover:text-[var(--ink-soft)]'
-            }`}
-            title="预览"
-            aria-label="预览"
-          >
-            <Eye size={14} strokeWidth={1.75} />
-          </Pressable>
-        </div>
-
-        {isPreview ? (
-          <div
-            className="diary-content min-h-[200px] p-5 pr-12 font-sans text-diary text-[var(--ink)]"
-            dangerouslySetInnerHTML={{ __html: renderedHtml }}
-          />
-        ) : (
-          <textarea
-            ref={textareaRef}
-            value={displayValue}
-            onChange={handleChange}
-            onBlur={() => {
-              void flush();
-            }}
-            placeholder="随手写点什么… 今天完成了什么？"
-            className="min-h-[220px] w-full resize-none bg-transparent p-5 pr-12 font-sans text-diary text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
-          />
-        )}
+          <Pencil size={12} strokeWidth={1.75} />
+          写
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsPreview(true)}
+          className={`nb-chip${isPreview ? ' on' : ''}`}
+          title="预览"
+          aria-label="预览"
+        >
+          <Eye size={12} strokeWidth={1.75} />
+          看
+        </button>
       </div>
+
+      {isPreview ? (
+        <div
+          className="nb-note diary-content min-h-[200px]"
+          style={{ paddingRight: '4.5rem' }}
+          dangerouslySetInnerHTML={{ __html: renderedHtml }}
+        />
+      ) : (
+        <textarea
+          ref={textareaRef}
+          value={displayValue}
+          onChange={handleChange}
+          onBlur={() => {
+            void flush();
+          }}
+          placeholder="随手写点什么… 今天完成了什么？"
+          className="nb-note w-full resize-none bg-transparent outline-none placeholder:text-[var(--ink-faint)]"
+          style={{ paddingRight: '4.5rem', minHeight: '220px' }}
+        />
+      )}
 
       <div className="mt-2 flex h-5 items-center justify-end px-1">
         {saveStatus === 'saving' && (

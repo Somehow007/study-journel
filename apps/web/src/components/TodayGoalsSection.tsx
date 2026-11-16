@@ -9,9 +9,8 @@ import {
 } from '../lib/goalApi';
 import { showToast } from '../lib/toast';
 import { useTodayGoals, qk, invalidateAll } from '../lib/queries';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import GoalCompleteSheet, { type GoalCompleteValues } from './GoalCompleteSheet';
-import GoalProgressBar from './GoalProgressBar';
 import { Pressable } from './ui/Pressable';
 import { QueryError } from './QueryState';
 import type { GoalCheckin, GoalTask, TodayGoalItem, TodayGoals } from '../lib/types/api';
@@ -33,7 +32,6 @@ function patchItems(
 }
 
 export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const { data, isPending, error, refetch } = useTodayGoals(date);
   const [sheet, setSheet] = useState<
@@ -43,42 +41,7 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
   >(null);
 
   const items = data?.items ?? [];
-  if (isPending && !data) {
-    return (
-      <section className="card mb-6 rounded-xl p-6">
-        <h2 className="mb-2 font-sans text-h2 text-[var(--ink)]">今日任务</h2>
-        <div className="animate-pulse space-y-2 py-2">
-          <div className="h-4 w-2/3 rounded bg-[var(--hairline)]" />
-          <div className="h-4 w-1/2 rounded bg-[var(--hairline)]" />
-        </div>
-      </section>
-    );
-  }
-  if (error && !data) {
-    return (
-      <section className="card mb-6 rounded-xl p-6">
-        <h2 className="mb-2 font-sans text-h2 text-[var(--ink)]">今日任务</h2>
-        <QueryError message={error.message} onRetry={() => void refetch()} />
-      </section>
-    );
-  }
-  if (items.length === 0) {
-    return (
-      <section className="card mb-6 rounded-xl p-6">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-sans text-h2 text-[var(--ink)]">今日任务</h2>
-          <Pressable
-            variant="pill"
-            onClick={() => navigate('/plan')}
-            className="font-sans text-caption text-[var(--brand)]"
-          >
-            去制定
-          </Pressable>
-        </div>
-        <p className="font-sans text-body text-[var(--ink-faint)]">今天没有待办任务</p>
-      </section>
-    );
-  }
+  const doneCount = items.filter((i) => i.reached).length;
 
   const setTodayData = (updater: (cur: TodayGoals | undefined) => TodayGoals | undefined) => {
     qc.setQueryData<TodayGoals | undefined>(qk.todayGoals(date), updater);
@@ -148,78 +111,111 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
   };
 
   return (
-    <section className="card mb-6 rounded-xl p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-sans text-h2 text-[var(--ink)]">今日任务</h2>
-        <Pressable
-          variant="pill"
-          onClick={() => navigate('/plan')}
-          className="font-sans text-caption text-[var(--brand)]"
-        >
-          月计划
-        </Pressable>
+    <div>
+      <div className="nb-sec">
+        待办
+        {items.length > 0 ? (
+          <Link to="/plan" className="nb-sec-side">
+            来自月计划 · {doneCount} / {items.length} →
+          </Link>
+        ) : (
+          <Link to="/plan" className="nb-sec-side red">
+            去制定 →
+          </Link>
+        )}
       </div>
 
-      <div className="flex flex-col gap-4">
-        {items.map((item) => (
-          <div key={item.goalId}>
-            <Pressable
-              onClick={() => navigate(`/plan/${item.goalId}`)}
-              className="mb-2 flex w-full items-center justify-between text-left"
-            >
-              <span className="flex items-center gap-2 font-sans text-title text-[var(--ink)]">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />
-                {item.title}
+      {isPending && !data ? (
+        <div className="animate-pulse space-y-2 py-2" aria-busy="true">
+          <div className="h-4 w-2/3 bg-[var(--hairline)]" />
+          <div className="h-4 w-1/2 bg-[var(--hairline)]" />
+        </div>
+      ) : error && !data ? (
+        <QueryError message={error.message} onRetry={() => void refetch()} />
+      ) : items.length === 0 ? (
+        <p className="py-1 text-[13px]" style={{ color: 'var(--ink-faint)' }}>
+          今天没有待办任务
+        </p>
+      ) : (
+        items.map((item) => {
+          const pct = Math.min(100, Math.max(0, item.percent));
+          const filled = Math.round(pct / 5);
+          const taskDone = item.todayTasks.filter((t) => t.done).length;
+          return (
+            <div className="nb-goal" key={item.goalId}>
+              <span className="flex min-w-0 items-baseline gap-2">
+                <i
+                  aria-hidden
+                  className="flex-none self-center"
+                  style={{ width: 8, height: 8, background: item.color }}
+                />
+                <Link
+                  to={`/plan/${item.goalId}`}
+                  className="truncate hover:underline"
+                  style={{ color: 'inherit' }}
+                >
+                  {item.title}
+                </Link>
               </span>
-              <span className="font-mono text-caption text-[var(--ink-faint)]">{item.percent}%</span>
-            </Pressable>
-            <GoalProgressBar percent={item.percent} color={item.color} reached={item.reached} />
+              <span className="nb-goal-val">{item.percent}%</span>
+              <span className="nb-meter">
+                {Array.from({ length: 20 }, (_, i) => (
+                  <span key={i} className={i < filled ? 'f' : ''} />
+                ))}
+              </span>
+              <small>
+                {item.type === 'COUNT'
+                  ? `今日建议 ${item.suggestedToday ?? 0} ${item.unit || ''}`
+                  : `${taskDone} / ${item.todayTasks.length} 项今日任务`}
+              </small>
 
-            {item.type === 'COUNT' && (
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="font-sans text-small text-[var(--ink-soft)]">
-                  {item.todayCheckin
-                    ? `今天已记 ${item.todayCheckin.quantity} ${item.unit || ''}`
-                    : `今日建议 ${item.suggestedToday ?? 0} ${item.unit || ''}`}
-                  {item.remaining != null && !item.reached ? ` · 还剩 ${item.remaining}` : ''}
-                </p>
-                {item.todayCheckin ? (
-                  <Pressable
-                    variant="pill"
-                    onClick={() => {
-                      setTodayData((cur) =>
-                        patchItems(cur, item.goalId, (it) => ({ ...it, todayCheckin: null })),
-                      );
-                      void deleteCheckIn(item.goalId, date)
-                        .then(() => invalidateAll(qc))
-                        .catch((err) => {
-                          invalidateAll(qc);
-                          showToast(err instanceof Error ? err.message : '取消失败');
-                        });
-                    }}
-                    className="rounded-full border border-[var(--keyline)] px-3 py-1 font-sans text-caption text-[var(--ink-soft)]"
-                  >
-                    取消
-                  </Pressable>
-                ) : (
-                  <Pressable
-                    variant="pill"
-                    onClick={() => setSheet({ item, mode: 'count' })}
-                    className="rounded-full px-3 py-1 font-sans text-caption text-[var(--text-inverse)]"
-                    style={{ background: item.color }}
-                  >
-                    完成
-                  </Pressable>
-                )}
-              </div>
-            )}
+              {item.type === 'COUNT' && (
+                <div
+                  className="flex items-center justify-between gap-3"
+                  style={{ gridColumn: '1 / 3', paddingBottom: 8 }}
+                >
+                  <span className="text-[12px]" style={{ color: 'var(--ink-faint)' }}>
+                    {item.todayCheckin
+                      ? `今天已记 ${item.todayCheckin.quantity} ${item.unit || ''}`
+                      : ''}
+                    {item.remaining != null && !item.reached ? `还剩 ${item.remaining}` : ''}
+                  </span>
+                  {item.todayCheckin ? (
+                    <button
+                      type="button"
+                      className="nb-btn"
+                      onClick={() => {
+                        setTodayData((cur) =>
+                          patchItems(cur, item.goalId, (it) => ({ ...it, todayCheckin: null })),
+                        );
+                        void deleteCheckIn(item.goalId, date)
+                          .then(() => invalidateAll(qc))
+                          .catch((err) => {
+                            invalidateAll(qc);
+                            showToast(err instanceof Error ? err.message : '取消失败');
+                          });
+                      }}
+                    >
+                      取消
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="nb-btn p"
+                      onClick={() => setSheet({ item, mode: 'count' })}
+                    >
+                      完成
+                    </button>
+                  )}
+                </div>
+              )}
 
-            {item.type === 'CHECKLIST' && (
-              <ul className="mt-3 space-y-2">
-                {item.todayTasks.map((task) => (
-                  <li key={task.id} className="flex items-start gap-2.5">
+              {item.type === 'CHECKLIST' && (
+                <div style={{ gridColumn: '1 / 3' }}>
+                  {item.todayTasks.map((task) => (
                     <Pressable
-                      variant="icon"
+                      key={task.id}
+                      className={`nb-todo${task.done ? ' on' : ''}`}
                       aria-label={task.done ? '取消完成' : '标记完成'}
                       onClick={() => {
                         if (task.done) {
@@ -241,32 +237,27 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
                         }
                         setSheet({ item, mode: 'task', task });
                       }}
-                      className="mt-0.5 flex shrink-0 items-center justify-center rounded-full border"
-                      style={{
-                        borderColor: task.done ? item.color : 'var(--keyline)',
-                        background: task.done ? item.color : 'transparent',
-                      }}
                     >
-                      {task.done && (
-                        <span className="block h-1.5 w-2.5 -translate-y-px rotate-[-50deg] border-b-2 border-l-2 border-white" />
-                      )}
+                      <span className={`nb-box${task.done ? ' on' : ''}`} />
+                      <span>
+                        {task.title}
+                        {task.dueDate && task.dueDate < date && !task.done ? (
+                          <span
+                            className="ml-1.5 text-[12px]"
+                            style={{ color: 'var(--ink-faint)' }}
+                          >
+                            过期
+                          </span>
+                        ) : null}
+                      </span>
                     </Pressable>
-                    <span
-                      className="font-sans text-small text-[var(--ink)]"
-                      style={{ textDecoration: task.done ? 'line-through' : undefined, opacity: task.done ? 0.55 : 1 }}
-                    >
-                      {task.title}
-                      {task.dueDate && task.dueDate < date && !task.done ? (
-                        <span className="ml-1 text-[var(--ink-faint)]">过期</span>
-                      ) : null}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })
+      )}
 
       {sheet && (
         <GoalCompleteSheet
@@ -286,6 +277,6 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
           onClose={() => setSheet(null)}
         />
       )}
-    </section>
+    </div>
   );
 }

@@ -15,39 +15,34 @@ export function formatDurationHM(min: number): string {
   return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
+/** 学习条目 = nb-table 行：科目（彩字）/ 内容+备注 / 时长+删除 */
 export default function LearningRecordCard({ item, onEdit, onDelete }: LearningRecordCardProps) {
-  const title = item.title || item.subjectName;
-  const showSubject = item.subjectName && item.subjectName !== title;
+  const heading = item.title || item.note || item.subjectName;
+  const note = item.note && item.note !== heading ? item.note : null;
   return (
-    <div className="group flex w-full items-center gap-2 px-1 py-1">
-      <Pressable
-        onClick={onEdit}
-        className="flex min-w-0 flex-1 items-center gap-3.5 rounded-lg px-1 py-3 text-left sm:py-[15px]"
-      >
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: item.subjectColor }} />
-        <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          {showSubject && (
-            <span className="shrink-0 font-sans text-caption text-[var(--ink-faint)]">
-              {item.subjectName}
-            </span>
-          )}
-          <span className="truncate font-sans text-title text-[var(--ink)]">{title}</span>
-          {item.note && item.note !== title && (
-            <span className="hidden truncate font-sans text-small text-[var(--ink-soft)] sm:block">
-              {item.note}
-            </span>
-          )}
-        </div>
-        <span className="shrink-0 font-mono text-num text-[var(--ink)]">{formatDurationHM(item.durationMin)}</span>
-      </Pressable>
-      <Pressable
-        variant="icon"
-        onClick={onDelete}
-        aria-label={`删除 ${title}`}
-        className="flex shrink-0 items-center justify-center rounded-full text-[var(--ink-faint)] opacity-0 hover:bg-[var(--danger-subtle)] hover:text-[var(--danger)] group-hover:opacity-100 touch-visible"
-      >
-        <X size={16} strokeWidth={1.75} />
-      </Pressable>
-    </div>
+    <tr>
+      <td className="nb-k" style={{ color: item.subjectColor }}>
+        {item.subjectName}
+      </td>
+      <td>
+        <button type="button" onClick={onEdit} className="block w-full text-left">
+          <b>{heading}</b>
+          {note && <small>{note}</small>}
+        </button>
+      </td>
+      <td className="nb-m">
+        <span className="inline-flex items-center justify-end gap-2">
+          {formatDurationHM(item.durationMin)}
+          <Pressable
+            variant="icon"
+            onClick={onDelete}
+            aria-label={`删除 ${heading}`}
+            className="text-[var(--ink-faint)] hover:text-[var(--danger)]"
+          >
+            <X size={14} strokeWidth={1.75} />
+          </Pressable>
+        </span>
+      </td>
+    </tr>
   );
 }

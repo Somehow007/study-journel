@@ -1,5 +1,4 @@
-import { useParams } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
 import { useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,36 +8,38 @@ import {
   patchDay,
   updateEntry,
 } from '../lib/api';
-import { useDay, useStreak, useSubjects, qk, invalidateAll } from '../lib/queries';
-import { useStateConfig, useStateConfigs } from '../lib/stateUtils';
+import {
+  useDay,
+  useDayMarks,
+  useGoalsByPeriod,
+  useStreak,
+  useSubjects,
+  qk,
+  invalidateAll,
+} from '../lib/queries';
+import { useApp } from '../context/AppContext';
 import { showToast } from '../lib/toast';
+import { monthBounds } from '../lib/domain';
+import { formatDuration, getWeekdayChinese } from '../lib/dateUtils';
+import { MONTH_LABELS } from '../lib/constants';
 import MoodSelector from '../components/MoodSelector';
 import LearningRecordCard, { formatDurationHM } from '../components/LearningRecordCard';
 import LearningFormModal, { type EntryDraft } from '../components/LearningFormModal';
 import DiaryEditor from '../components/DiaryEditor';
-import SproutBadge from '../components/SproutBadge';
+import MiniMonthCal from '../components/MiniMonthCal';
 import TodayGoalsSection from '../components/TodayGoalsSection';
 import { QueryError, QueryLoading } from '../components/QueryState';
-import { Pressable } from '../components/ui/Pressable';
 import type { DayDetail, Entry } from '../lib/types/api';
 
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
-
-const QUOTES = [
-  '记下今天，明天才有据可查。',
-  '进度不靠感觉，靠一条条记录。',
-  '短短几分钟，也值得写下来。',
-  '连续比完美更重要。',
-  '把心情和学习放在同一页。',
-  '不必每天都盛满，写下来就好。',
-  '台账属于愿意打开它的人。',
-  '今天的一行字，是明天的线索。',
+const EN_MONTHS = [
+  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
 ];
 
-function dailyQuote(dateStr: string): string {
-  let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) >>> 0;
-  return QUOTES[hash % QUOTES.length];
+function meterCells(percent: number, total = 20): boolean[] {
+  const pct = Math.min(100, Math.max(0, percent));
+  const filled = Math.round((pct / 100) * total);
+  return Array.from({ length: total }, (_, i) => i < filled);
 }
 
 export default function TodayDetail() {
@@ -51,6 +52,7 @@ export default function TodayDetail() {
   const { data: day, isPending, error, refetch } = useDay(date ?? '', !!date);
   const { data: streakResult } = useStreak();
   const { data: subjects } = useSubjects();
+  const { dailyGoalMin } = useApp();
   const activeSubjects = useMemo(
     () => (subjects ?? []).filter((s) => s.archivedAt == null),
     [subjects],
@@ -61,8 +63,20 @@ export default function TodayDetail() {
   const diary = day?.diary ?? '';
   const totalMin = day?.totalMin ?? 0;
 
-  const stateConfig = useStateConfig(stateId);
-  const allStates = useStateConfigs();
+  const period = date?.slice(0, 7) ?? '';
+  const [markFrom, markTo] = period ? monthBounds(period) : ['', ''];
+  const { data: marks } = useDayMarks(markFrom, markTo, !!period);
+  const { data: monthGoals } = useGoalsByPeriod(period, !!period);
+
+  const monthMeta = useMemo(() => {
+    const list = marks ?? [];
+    return {
+      days: list.filter(
+        (m) => m.totalMin > 0 || m.stateId != null || m.entryCount > 0 || m.diaryPreview,
+      ).length,
+      minutes: list.reduce((s, m) => s + m.totalMin, 0),
+    };
+  }, [marks]);
 
   const dateObj = useMemo(() => {
     if (!date) return null;
@@ -70,11 +84,10 @@ export default function TodayDetail() {
     return new Date(y, m - 1, d);
   }, [date]);
 
-  const formattedDate = dateObj
-    ? `${dateObj.getMonth() + 1}月${dateObj.getDate()}日`
-    : date || '';
-  const weekday = dateObj ? `星期${WEEKDAYS[dateObj.getDay()]}` : '';
-  const quote = date ? dailyQuote(date) : '';
+  const monthIdx = dateObj ? dateObj.getMonth() : 0;
+  const dayNum = dateObj ? dateObj.getDate() : 0;
+  const year = dateObj ? dateObj.getFullYear() : 0;
+  const weekday = dateObj ? getWeekdayChinese(dateObj) : '';
   const streak = streakResult?.streak ?? 0;
 
   /** day 相关局部失效：明细 + 月历 marks + 统计 + 搜索（不动 goals/today-goals） */
@@ -210,70 +223,59 @@ export default function TodayDetail() {
     return <QueryError message={error.message} onRetry={() => void refetch()} />;
   }
 
+  const monthGoalsList = monthGoals?.goals ?? [];
+
   return (
-    <div>
-      <header className="mb-6">
-        <div className="mb-1 flex items-end justify-between gap-4">
-          <div>
-            <h1 className="font-sans text-h1 text-[var(--ink)]">{formattedDate}</h1>
-            <p className="mt-2 font-sans text-caption text-[var(--ink-faint)]">{weekday}</p>
+    <div className="nb-book">
+      {/* 左页：日期 / 状态 / 今日学习 / 待办 / 小结 */}
+      <div className="nb-page l nb-gridbg">
+        <div className="nb-date">
+          <span className="nb-date-num">
+            {monthIdx + 1}.{dayNum}
+          </span>
+          <span className="nb-date-meta">
+            {weekday} · {year}
+            <br />
+            {streak > 0 ? `第 ${streak} 天连续` : '从这里开始记录'}
+          </span>
+          <div style={{ marginLeft: 'auto' }}>
+            <MoodSelector selected={stateId} onSelect={handleStateSelect} />
           </div>
-          <SproutBadge days={streak} />
         </div>
 
-        <div
-          className="mt-4 border-l-[3px] py-1.5 pl-[22px] pr-3"
-          style={{ borderColor: 'var(--brand)' }}
-        >
-          <p className="font-sans text-[17px] leading-relaxed text-[var(--ink-soft)]">「{quote}」</p>
-          <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">每日一句</p>
-        </div>
-      </header>
+        {writeError && (
+          <p className="mt-3 text-[13px]" style={{ color: 'var(--brand)' }}>
+            {writeError}
+          </p>
+        )}
 
-      {writeError && (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 font-sans text-small text-red-600 dark:bg-red-950/40 dark:text-red-300">
-          {writeError}
-        </p>
-      )}
-
-      <section className="card mb-6 rounded-xl p-6 sm:p-8">
-        <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">今天是什么状态？</h2>
-        <MoodSelector selected={stateId} onSelect={handleStateSelect} />
-        <p className="mt-4 font-sans text-caption text-[var(--ink-faint)]">
-          {stateConfig ? `已记：${stateConfig.label}` : allStates.length > 0 ? '点选状态，记下今天' : '还没有可选状态'}
-        </p>
-      </section>
-
-      {date && <TodayGoalsSection date={date} />}
-
-      <section className="card mb-6 rounded-xl p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-sans text-h2 text-[var(--ink)]">今日学习</h2>
-          <Pressable
-            variant="pill"
-            onClick={openAdd}
-            className="inline-flex items-center gap-1 rounded-full border border-[var(--keyline)] px-3 py-1.5 font-sans text-small text-[var(--ink-soft)]"
-          >
-            <Plus size={14} strokeWidth={1.75} />
-            添加
-          </Pressable>
+        <div className="nb-sec">
+          今日学习
+          <button type="button" className="nb-sec-side red" onClick={openAdd}>
+            + 补一条
+          </button>
         </div>
 
         {entries.length === 0 ? (
-          <Pressable
+          <button
+            type="button"
             onClick={openAdd}
-            className="w-full rounded-lg border border-dashed border-[var(--hairline)] py-8 text-center"
+            className="w-full py-8 text-center text-[14px]"
+            style={{
+              border: '1px dashed var(--rule-dash)',
+              color: 'var(--ink-faint)',
+              background: 'none',
+              cursor: 'pointer',
+            }}
           >
-            <span className="font-sans text-body text-[var(--ink-faint)]">＋ 记下今天的第一段学习</span>
-          </Pressable>
+            ＋ 记下今天的第一段学习
+          </button>
         ) : (
-          <div>
-            {entries.map((item, idx) => (
-              <div
-                key={item.id}
-                className={idx < entries.length - 1 ? 'border-b border-[var(--hairline)]' : ''}
-              >
+          <table className="nb-table">
+            <tbody>
+              {entries.map((item) => (
                 <LearningRecordCard
+                  key={item.id}
                   item={item}
                   onEdit={() => {
                     setEditingItem(item);
@@ -283,20 +285,97 @@ export default function TodayDetail() {
                     void handleDeleteEntry(item.id);
                   }}
                 />
-              </div>
-            ))}
-            <div className="flex items-center justify-end gap-2.5 pt-5">
-              <span className="font-sans text-small text-[var(--ink-soft)]">合计</span>
-              <span className="font-mono text-num-lg text-[var(--ink)]">{formatDurationHM(totalMin)}</span>
-            </div>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
-      </section>
 
-      <section>
-        <h2 className="mb-3 font-sans text-h2 text-[var(--ink)]">今日想法</h2>
+        <div className="nb-sum">
+          合计
+          <span
+            className="nb-hl"
+            style={{
+              fontFamily: 'var(--font-num)',
+              fontSize: 22,
+              fontWeight: 600,
+              color: 'var(--ink)',
+            }}
+          >
+            {formatDurationHM(totalMin)}
+          </span>
+          {dailyGoalMin > 0 && <span>/ 目标 {formatDuration(dailyGoalMin)}</span>}
+        </div>
+
+        {date && <TodayGoalsSection date={date} />}
+
+        <div className="nb-sec">
+          今日小结
+          <span className="nb-sec-side">Markdown</span>
+        </div>
         <DiaryEditor value={diary} onSave={handleDiarySave} />
-      </section>
+      </div>
+
+      {/* 右页：本月小日历 + 本月目标 */}
+      <div className="nb-page r nb-gridbg">
+        <div className="nb-date">
+          <span className="nb-date-num sm">{MONTH_LABELS[monthIdx]}</span>
+          <span className="nb-date-meta">
+            {EN_MONTHS[monthIdx]} · {year}
+            <br />
+            本月 {monthMeta.days} 天 · {formatDuration(monthMeta.minutes)}
+          </span>
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <MiniMonthCal date={date} />
+        </div>
+
+        <div className="nb-sec">
+          本月目标
+          <Link to="/plan" className="nb-sec-side">
+            查看计划 →
+          </Link>
+        </div>
+
+        {monthGoalsList.length === 0 ? (
+          <p className="text-[13px]" style={{ color: 'var(--ink-faint)' }}>
+            本月还没有目标
+          </p>
+        ) : (
+          monthGoalsList.map((g) => {
+            const cells = meterCells(g.percent ?? 0);
+            const val =
+              g.type === 'COUNT' && g.totalValue
+                ? `${g.actualValue}/${g.totalValue}${g.unit ? ` ${g.unit}` : ''}`
+                : `${g.percent}%`;
+            return (
+              <div className="nb-goal" key={g.id}>
+                <span className="flex min-w-0 items-baseline gap-2">
+                  <i
+                    aria-hidden
+                    className="flex-none self-center"
+                    style={{ width: 8, height: 8, background: g.color }}
+                  />
+                  <Link
+                    to={`/plan/${g.id}`}
+                    className="truncate hover:underline"
+                    style={{ color: 'inherit' }}
+                  >
+                    {g.title}
+                  </Link>
+                </span>
+                <span className="nb-goal-val">{val}</span>
+                <span className="nb-meter">
+                  {cells.map((f, i) => (
+                    <span key={i} className={f ? 'f' : ''} />
+                  ))}
+                </span>
+                <small>{g.note || (g.carriedFrom ? '含上月结转' : '')}</small>
+              </div>
+            );
+          })
+        )}
+      </div>
 
       {showForm && (
         <LearningFormModal
