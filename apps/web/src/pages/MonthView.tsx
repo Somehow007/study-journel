@@ -24,7 +24,7 @@ export default function MonthView() {
   const period = formatPeriod(year, month);
   const [from, to] = monthBounds(period);
   const { data: marks, isPending, error, refetch } = useDayMarks(from, to);
-  const { data: goalMonth, isPending: goalsPending } = useGoalsByPeriod(period);
+  const { data: goalMonth } = useGoalsByPeriod(period);
   const allStates = useStateConfigs();
 
   const todayStr = formatDate(new Date());
@@ -173,7 +173,8 @@ export default function MonthView() {
 
         <div className="nb-sec">本月待办</div>
         <p style={{ fontSize: 14, color: 'var(--ink-soft)' }}>
-          {goalsPending && !goalMonth ? (
+          {/* 加载中与查询失败都显「—」，不把错误显示成真 0 */}
+          {!goalMonth ? (
             '—'
           ) : (
             <>
