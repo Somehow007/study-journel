@@ -7,6 +7,7 @@ import { formatPeriod } from '../lib/goalApi';
 import { monthBounds } from '../lib/domain';
 import { formatDuration, formatDate, getCalendarDays } from '../lib/dateUtils';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
+import LearningHeatmap from '../components/LearningHeatmap';
 import type { JournalState } from '../lib/types/api';
 
 /** 「正」字 tally：每 5 天一「正」，余数 用 一/丅/下/止 */
@@ -202,6 +203,8 @@ export default function Stats() {
                 </span>
               ))}
             </div>
+
+            <LearningHeatmap />
           </>
         )}
       </div>

@@ -12,6 +12,7 @@ import {
   listStates,
   listSubjects,
   searchJournal,
+  statsHeatmap,
   statsMonth,
   statsYear,
   exportAllData,
@@ -48,6 +49,7 @@ export const qk = {
   search: (keyword: string, type: string) => ['search', keyword, type] as const,
   statsMonth: (period: string) => ['stats', 'month', period] as const,
   statsYear: (year: number) => ['stats', 'year', year] as const,
+  heatmap: (from: string, to: string) => ['heatmap', from, to] as const,
   streak: ['streak'] as const,
   exportAll: ['export'] as const,
 };
@@ -107,6 +109,10 @@ export function useStatsMonth(period: string, enabled = true): UseQueryResult<St
 
 export function useStatsYear(year: number, enabled = true): UseQueryResult<StatsYear> {
   return useQuery({ queryKey: qk.statsYear(year), queryFn: () => statsYear(year), enabled });
+}
+
+export function useHeatmap(from: string, to: string, enabled = true) {
+  return useQuery({ queryKey: qk.heatmap(from, to), queryFn: () => statsHeatmap(from, to), enabled });
 }
 
 export function useStreak(enabled = true): UseQueryResult<StreakResult> {
