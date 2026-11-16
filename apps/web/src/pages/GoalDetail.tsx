@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trash2 } from 'lucide-react';
 import GoalCompleteSheet, { type GoalCompleteValues } from '../components/GoalCompleteSheet';
+import GoalFormModal from '../components/GoalFormModal';
 import { Pressable } from '../components/ui/Pressable';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import {
@@ -14,6 +15,7 @@ import {
   deleteGoalTask,
   getGoal,
   uncompleteGoalTask,
+  updateGoal,
   upsertCheckIn,
 } from '../lib/goalApi';
 import { useGoal, invalidateAll } from '../lib/queries';
@@ -43,6 +45,7 @@ export default function GoalDetail() {
     | null
   >(null);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const checkinMap = useMemo(() => {
     const map = new Map<string, GoalCheckin>();
@@ -295,6 +298,9 @@ export default function GoalDetail() {
         )}
 
         <div className="nb-actions">
+          <button type="button" className="nb-btn" onClick={() => setEditing(true)}>
+            编辑
+          </button>
           <button
             type="button"
             className="nb-btn"
@@ -494,6 +500,28 @@ export default function GoalDetail() {
           }
           onConfirm={handleCompleteConfirm}
           onClose={() => setSheet(null)}
+        />
+      )}
+      {editing && (
+        <GoalFormModal
+          period={goal.period}
+          initial={goal}
+          onClose={() => setEditing(false)}
+          onSubmit={async (p) => {
+            try {
+              await updateGoal(goal.id, {
+                title: p.title,
+                ...(goal.type === 'COUNT' ? { targetValue: p.targetValue, unit: p.unit } : {}),
+                subjectId: p.subjectId ?? null,
+                note: p.note ?? '',
+                ...(p.color ? { color: p.color } : {}),
+              });
+              setEditing(false);
+              refresh();
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : '保存失败');
+            }
+          }}
         />
       )}
     </div>

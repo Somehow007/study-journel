@@ -5,12 +5,14 @@ import { SUBJECT_COLORS } from '../lib/constants';
 import { previewCountSplit } from '../lib/domain';
 import { useSubjects } from '../lib/queries';
 import { useApp } from '../context/AppContext';
-import type { GoalType } from '../lib/types/api';
+import type { GoalSummary, GoalType } from '../lib/types/api';
 import Sheet, { useSheetClose } from './ui/Sheet';
 import { Pressable } from './ui/Pressable';
 
 interface GoalFormModalProps {
   period: string;
+  /** 传入即编辑模式：预填字段、类型锁定（已有任务/打卡不可换型），颜色仅在改动时提交 */
+  initial?: GoalSummary;
   onClose: () => void;
   onSubmit: (payload: {
     id: string;
@@ -20,7 +22,7 @@ interface GoalFormModalProps {
     targetValue?: number;
     unit?: string;
     subjectId?: string;
-    color: string;
+    color?: string;
     note?: string;
   }) => Promise<void>;
 }
@@ -41,7 +43,7 @@ function CloseButton() {
   );
 }
 
-export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormModalProps) {
+export default function GoalFormModal({ period, initial, onClose, onSubmit }: GoalFormModalProps) {
   const { settings } = useApp();
   const weekStartsOn = settings?.weekStartsOn ?? 1;
   const { data: subjects } = useSubjects();
@@ -50,13 +52,15 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
     [subjects],
   );
 
-  const [type, setType] = useState<GoalType>('COUNT');
-  const [title, setTitle] = useState('');
-  const [targetValue, setTargetValue] = useState(300);
-  const [unit, setUnit] = useState('词');
-  const [subjectChoice, setSubjectChoice] = useState(NO_SUBJECT);
-  const [color, setColor] = useState(SUBJECT_COLORS[0]);
-  const [note, setNote] = useState('');
+  const editing = initial != null;
+  const [type, setType] = useState<GoalType>(initial?.type ?? 'COUNT');
+  const [title, setTitle] = useState(initial?.title ?? '');
+  const [targetValue, setTargetValue] = useState(initial?.targetValue ?? 300);
+  const [unit, setUnit] = useState(initial ? (initial.unit ?? '') : '词');
+  const [subjectChoice, setSubjectChoice] = useState(initial?.subjectId ?? NO_SUBJECT);
+  const [color, setColor] = useState(initial?.color ?? SUBJECT_COLORS[0]);
+  const [colorTouched, setColorTouched] = useState(false);
+  const [note, setNote] = useState(initial?.note ?? '');
   const [submitting, setSubmitting] = useState(false);
 
   const subjectId = subjectChoice === NO_SUBJECT ? '' : subjectChoice;
@@ -69,7 +73,15 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
   const handleSubjectChange = (id: string) => {
     setSubjectChoice(id);
     const subject = activeSubjects.find((s) => s.id === id);
-    if (subject) setColor(subject.color);
+    if (subject) {
+      setColor(subject.color);
+      setColorTouched(true);
+    }
+  };
+
+  const pickColor = (c: string) => {
+    setColor(c);
+    setColorTouched(true);
   };
 
   const handleSubmit = async () => {
@@ -78,14 +90,14 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
     setSubmitting(true);
     try {
       await onSubmit({
-        id: nanoid(),
+        id: initial?.id ?? nanoid(),
         period,
         title: title.trim(),
         type,
         targetValue: type === 'COUNT' ? targetValue : undefined,
         unit: type === 'COUNT' ? unit.trim() || '个' : undefined,
         subjectId: subjectId || undefined,
-        color,
+        color: !editing || colorTouched ? color : undefined,
         note: note.trim() || undefined,
       });
     } finally {
@@ -94,10 +106,17 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
   };
 
   return (
-    <Sheet title="立一个月目标" onClose={onClose} as="form" onSubmit={() => void handleSubmit()}>
+    <Sheet
+      title={editing ? '编辑目标' : '立一个月目标'}
+      onClose={onClose}
+      as="form"
+      onSubmit={() => void handleSubmit()}
+    >
       <div className="px-5 pb-2 pt-3 md:px-6 md:pb-6 md:pt-6">
         <CloseButton />
-        <div className="nb-dialog-h mb-5 pr-8">立一个 {period.slice(5)} 月目标</div>
+        <div className="nb-dialog-h mb-5 pr-8">
+          {editing ? '编辑目标' : `立一个 ${period.slice(5)} 月目标`}
+        </div>
 
         <label className="nb-flab">类型</label>
         <div className="mb-5 flex flex-wrap gap-2">
@@ -106,16 +125,18 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
               ['COUNT', '数量型 · 刷题 / 单词 / 套卷'],
               ['CHECKLIST', '清单型 · 章节 / 知识点'],
             ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={`nb-chip${type === value ? ' on' : ''}`}
-              onClick={() => setType(value)}
-            >
-              {label}
-            </button>
-          ))}
+          )
+            .filter(([value]) => !editing || value === type)
+            .map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={`nb-chip${type === value ? ' on' : ''}`}
+                onClick={() => setType(value)}
+              >
+                {label}
+              </button>
+            ))}
         </div>
 
         <label className="nb-flab">标题</label>
@@ -201,7 +222,7 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
             <button
               key={c}
               type="button"
-              onClick={() => setColor(c)}
+              onClick={() => pickColor(c)}
               aria-label={`颜色 ${c}`}
               className="nb-swatch"
               style={{
@@ -215,7 +236,7 @@ export default function GoalFormModal({ period, onClose, onSubmit }: GoalFormMod
         <div className="flex justify-end gap-2">
           <SheetCancel />
           <button type="submit" disabled={!title.trim() || submitting} className="nb-btn p">
-            {submitting ? '保存中…' : '立下'}
+            {submitting ? '保存中…' : editing ? '保存' : '立下'}
           </button>
         </div>
       </div>
