@@ -657,6 +657,19 @@ textarea.nb-field {
   resize: vertical;
   line-height: 1.7;
 }
+/* 原生控件规整：number 去上下箭头；date 去原生日历图标（点字段本身仍可唤起选择器） */
+.nb-field[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.nb-field[type='number']::-webkit-inner-spin-button,
+.nb-field[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.nb-field[type='date']::-webkit-calendar-picker-indicator {
+  display: none;
+}
 
 .nb-flab {
   font-family: var(--font-title);

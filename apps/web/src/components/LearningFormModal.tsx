@@ -130,9 +130,9 @@ export default function LearningFormModal({ item, subjects, onConfirm, onClose }
             <label className="nb-flab">科目颜色</label>
             <div className="mb-5 flex flex-wrap gap-2">
               {SUBJECT_COLORS.map((c) => (
-                <Pressable
+                <button
                   key={c}
-                  variant="icon"
+                  type="button"
                   onClick={() => setNewSubjectColor(c)}
                   aria-label={`颜色 ${c}`}
                   className="nb-swatch"

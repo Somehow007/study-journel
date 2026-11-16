@@ -143,9 +143,9 @@ export default function StateEditModal({ onClose, editState }: StateEditModalPro
         <label className="nb-flab">颜色</label>
         <div className="mb-5 flex flex-wrap gap-2">
           {SUBJECT_COLORS.map((c) => (
-            <Pressable
+            <button
               key={c}
-              variant="icon"
+              type="button"
               onClick={() => setColor(c)}
               aria-label={`颜色 ${c}`}
               className="nb-swatch"
