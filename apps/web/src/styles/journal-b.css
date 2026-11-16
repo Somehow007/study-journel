@@ -535,10 +535,15 @@ button.nb-cal-cell {
   height: 2px;
   background: var(--ink);
 }
-/* 打卡盖章圈（goal 页） */
+/* 打卡盖章圈（goal 页）：固定正圆 + 按日期伪随机旋转（--rot 由内联 style 给） */
 .nb-stamp-circle {
   position: absolute;
-  inset: 22px 8px 8px;
+  inset: auto;
+  left: 50%;
+  top: calc(50% + 6px);
+  transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+  width: min(calc(100% - 12px), calc(var(--nb-cal-h) - 30px));
+  aspect-ratio: 1;
   display: grid;
   place-items: center;
   font-family: var(--font-num);
@@ -1165,7 +1170,6 @@ textarea.nb-field {
     font-size: 11px;
   }
   .nb-stamp-circle {
-    inset: 18px 4px 3px;
     font-size: 12px;
     border-width: 1.5px;
   }

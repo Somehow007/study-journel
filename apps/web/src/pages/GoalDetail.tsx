@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trash2 } from 'lucide-react';
@@ -253,7 +253,7 @@ export default function GoalDetail() {
             </div>
             <table className="nb-table">
               <tbody>
-                {(goal.weeks ?? []).map((week, idx) => {
+                {(goal.weeks ?? []).map((week) => {
                   const pct =
                     week.planned > 0
                       ? Math.min(100, Math.round((week.actual / week.planned) * 100))
@@ -261,7 +261,10 @@ export default function GoalDetail() {
                   const cells = progressCells(pct, 15);
                   return (
                     <tr key={week.weekStart}>
-                      <td className="nb-ww">第 {idx + 1} 周</td>
+                      <td className="nb-ww">
+                        {week.weekStart.slice(5).replace('-', '.')}–
+                        {week.weekEnd.slice(5).replace('-', '.')}
+                      </td>
                       <td>
                         <div className="nb-meter">
                           {cells.map((f, i) => (
@@ -353,7 +356,14 @@ export default function GoalDetail() {
                     }}
                   >
                     <span className="nb-cal-d">{Number(d.dateStr.slice(8))}</span>
-                    {checkin && <span className="nb-stamp-circle">{checkin.quantity}</span>}
+                    {checkin && (
+                      <span
+                        className="nb-stamp-circle"
+                        style={{ '--rot': `${((d.day * 37) % 21) - 10}deg` } as CSSProperties}
+                      >
+                        {checkin.quantity}
+                      </span>
+                    )}
                   </button>
                 );
               })}
