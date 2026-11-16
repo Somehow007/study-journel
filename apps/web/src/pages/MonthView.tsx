@@ -1,7 +1,7 @@
 import { useApp } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
-import { useDayMarks, useGoalsByPeriod } from '../lib/queries';
+import { useDay, useDayMarks, useGoalsByPeriod } from '../lib/queries';
 import { stateTextColor, useStateConfigs } from '../lib/stateUtils';
 import { formatPeriod } from '../lib/goalApi';
 import { monthBounds } from '../lib/domain';
@@ -29,6 +29,16 @@ export default function MonthView() {
 
   const todayStr = formatDate(new Date());
   const now = new Date();
+  const isCurrentMonth = todayStr.startsWith(period);
+  // 手机当日小计块：与今日页共用 day 缓存；只在当月拉取
+  const { data: todayDay } = useDay(todayStr, isCurrentMonth);
+  const todaySubjects = useMemo(() => {
+    const seen = new Map<string, { name: string; color: string }>();
+    for (const e of todayDay?.entries ?? []) {
+      if (!seen.has(e.subjectId)) seen.set(e.subjectId, { name: e.subjectName, color: e.subjectColor });
+    }
+    return [...seen.values()];
+  }, [todayDay]);
 
   const prevMonth = () => {
     const d = new Date(year, month - 1, 1);
@@ -133,6 +143,27 @@ export default function MonthView() {
           底部横线长度 = 当日时长 / 8h · 右上角为当日状态 · 点格子进入当天
           {(marks?.length ?? 0) === 0 ? ' · 这个月还没有记录' : ''}
         </p>
+
+        {/* 手机专用：日历下的当日小计（桌面右页已有本月小计，不重复） */}
+        {isCurrentMonth && (
+          <Link to={`/day/${todayStr}`} className="nb-mtoday">
+            <span className="nb-sec">
+              {todayStr.slice(5).replace('-', '.')} · 今天
+              <span className="nb-sec-side nb-mono">
+                {todayDay ? formatHM(todayDay.totalMin) : '—'}
+              </span>
+            </span>
+            <span className="nb-mtoday-subj">
+              {todaySubjects.length > 0
+                ? todaySubjects.map((s) => (
+                    <span key={s.name} style={{ color: s.color }}>
+                      {s.name}
+                    </span>
+                  ))
+                : todayDay && <span className="nb-mtoday-empty">今天还没有记录 · 去记一笔 →</span>}
+            </span>
+          </Link>
+        )}
       </div>
 
       {/* 右页：本月小计 + 状态图例 + 本月待办 */}
