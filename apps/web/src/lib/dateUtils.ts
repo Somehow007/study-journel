@@ -1,5 +1,6 @@
 /** 日期工具函数 */
 import type { GoalTask } from './types/api';
+import { addDays } from './domain';
 
 /** 格式化为 YYYY-MM-DD */
 export function formatDate(date: Date): string {
@@ -105,11 +106,8 @@ export function totalDuration(learnings: { durationMin: number }[]): number {
 export function taskWhenLabel(task: Pick<GoalTask, 'dueDate' | 'weekStart'>): string {
   if (task.dueDate) return task.dueDate.slice(5).replace('-', '/');
   if (task.weekStart) {
-    const end = new Date(task.weekStart);
-    end.setDate(end.getDate() + 6);
-    const mm = String(end.getMonth() + 1).padStart(2, '0');
-    const dd = String(end.getDate()).padStart(2, '0');
-    return `${task.weekStart.slice(5).replace('-', '/')}–${mm}/${dd}`;
+    const end = addDays(task.weekStart, 6);
+    return `${task.weekStart.slice(5).replace('-', '/')}–${end.slice(5).replace('-', '/')}`;
   }
   return '本月随时';
 }
