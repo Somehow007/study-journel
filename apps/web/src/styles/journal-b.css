@@ -1145,3 +1145,20 @@ textarea.nb-field {
     width: 56px;
   }
 }
+
+/* ---------- 目标表单（goal-form Sheet） ---------- */
+/* 拆分预览虚线框 */
+.nb-split {
+  margin-top: 18px;
+  padding: 10px 14px;
+  border: 1.5px dashed var(--ink);
+  font-family: var(--font-title);
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.nb-flab-hint {
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin: 0 0 18px;
+}
