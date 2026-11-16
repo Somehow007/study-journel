@@ -878,6 +878,20 @@ textarea.nb-field {
   gap: 22px;
   margin-left: auto;
 }
+/* 窄桌面 / 平板（768–1023）：顶栏收起装饰副文案、收紧间距，防全页横滚 */
+@media (max-width: 1023px) {
+  .nb-topnav {
+    gap: 20px;
+    padding: 14px 24px;
+  }
+  .nb-topnav .nb-brand small,
+  .nb-topnav .nb-stamp small {
+    display: none;
+  }
+  .nb-topnav-right {
+    gap: 16px;
+  }
+}
 
 /* 手机头（每页顶部 品牌+搜索/设置+印章；P4 起换各页 mTop 标题） */
 .nb-mhead {
