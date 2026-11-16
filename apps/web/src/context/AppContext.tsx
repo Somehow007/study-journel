@@ -42,6 +42,8 @@ interface AppContextValue {
   toggleTheme: () => void;
   dailyGoalMin: number;
   setDailyGoalMin: (min: number) => void;
+  /** 通用 settings 写入（乐观更新+失败回滚），供设置页等处补丁任意字段 */
+  patchSettings: (patch: SettingsPatch) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -165,6 +167,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toggleTheme,
         dailyGoalMin,
         setDailyGoalMin,
+        patchSettings: updateSettings.mutate,
       }}
     >
       {children}
