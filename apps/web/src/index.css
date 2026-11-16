@@ -110,6 +110,7 @@
   }
 
   .journal-sheet-backdrop {
+    background: rgba(27, 36, 51, 0.33);
     opacity: 0;
     transition: opacity var(--duration-sheet-out) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
@@ -125,10 +126,8 @@
     border-left: none;
     border-right: none;
     border-bottom: none;
-    border-top: 1px solid var(--keyline);
-    border-radius: 20px 20px 0 0;
+    border-top: 1.5px solid var(--ink);
     padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
-    box-shadow: var(--shadow-4);
     transform: translate3d(0, 100%, 0);
     opacity: 1;
     transition:
@@ -146,9 +145,9 @@
   @media (min-width: 768px) {
     .journal-sheet-panel {
       width: 100%;
-      max-width: 28rem;
-      border: 1px solid var(--keyline);
-      border-radius: 20px;
+      max-width: 540px;
+      border: 1.5px solid var(--ink);
+      box-shadow: 8px 8px 0 var(--nb-hard-shadow);
       padding-bottom: 1.5rem;
       transform: translate3d(0, 12px, 0);
       opacity: 0;

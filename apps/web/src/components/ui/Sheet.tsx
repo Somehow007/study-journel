@@ -126,7 +126,7 @@ export default function Sheet({
   const node = (
     <div className="journal-sheet fixed inset-0 z-[60] flex items-end justify-center md:items-center">
       <div
-        className="journal-sheet-backdrop absolute inset-0 bg-black/40"
+        className="journal-sheet-backdrop absolute inset-0"
         data-state={state}
         onClick={requestClose}
       />
@@ -147,7 +147,7 @@ export default function Sheet({
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           >
-            <span className="h-1 w-10 rounded-full bg-[var(--keyline)]" />
+            <span className="h-1 w-10 bg-[var(--ink)]" />
           </div>
           {inner}
         </SheetCloseContext.Provider>

@@ -717,3 +717,13 @@ textarea.nb-field {
     display: flex;
   }
 }
+
+/* ---------- 弹层标题（Sheet/ConfirmDialog 共用） ---------- */
+.nb-dialog-h {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 10px;
+}

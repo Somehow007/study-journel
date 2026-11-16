@@ -24,3 +24,4 @@
 - 2026-11-16 | M6 开工：B 格纸 UI 换装立项（roadmap M6，D5 已定）；P1 基础层=journal-notebook 主题+服务端 setting.theme+SPEC 状态色调色板，博客 8 主题移除；新功能归 M7 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
 - 2026-11-16 | M6 P1 基础层完成（未提交）：journal-notebook 明暗主题+nb- 组件类全量、setting.theme 服务端存储脱钩博客 key（index.html pre-paint 脚本同步改+修缓存清除 bug）、SPEC-B 六态调色板+科目色、博客 8 主题删除；verify.sh 绿+playwright 双主题冒烟过 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
 - 2026-11-16 | M6 P2 外壳完成（未提交）：NotebookNav（桌面顶栏 考研手记+文字链接+印章 D-xxx / 手机页头+5 宋体 Tab 红下划线）、删 SiteTopBar 博客联动条+Sidebar（功能归 Settings）、verify 绿+playwright 27 项冒烟过 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
+- 2026-11-16 | M6 P3 原子组件完成（未提交）：Sheet 直角墨线纸卡（手机顶墨线/桌面540px硬阴影）、ConfirmDialog nb-dialog-h+nb-btn、QueryState 方角化+宋体空态标题；Pressable/横线纸归 P4 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`

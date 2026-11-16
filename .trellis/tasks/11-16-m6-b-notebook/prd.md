@@ -69,3 +69,13 @@
   - **手机端无入口页核对**：搜索/设置=页头链接、年度=Stats 页按钮（与桌面一致）、表单=页内 Modal——无孤儿路由
   - **验证**：verify.sh 绿；playwright 冒烟 27 项全过（1440/390：顶栏/Tab 显隐、7 链接序、激活态红下划线 rgb(210,59,34)、印章 D-34+考研 rotate(-2deg)、宋体 Tab、零 pageerror）
   - **下一步 P3**：原子组件 Sheet/Pressable/ConfirmDialog/QueryState 换 nb- 规则
+- 2026-11-16 **P3 完成（未提交）**：
+  - `index.css` `.journal-sheet-panel`：手机=顶部 1.5px 墨线+直角+无阴影（对齐原型 .sheet）；桌面≥768=540px 直角纸卡 1.5px 墨线+`8px 8px 0` 硬阴影（原 28rem/圆角20px/软阴影）；`.journal-sheet-backdrop` 底色收进 CSS（`rgba(27,36,51,.33)` 同 nb-scrim），JSX 去掉 bg-black/40
+  - `Sheet.tsx`：拖拽柄 rounded-full→方条 `bg-ink`
+  - `journal-b.css` 新增 `.nb-dialog-h`（宋体20px/700+1.5px 墨线下划）
+  - `ConfirmDialog`：标题→nb-dialog-h；按钮→`nb-btn`（取消）/`nb-btn p`（确认）/`nb-btn r`（danger），去 rounded-full/rounded-md/内联色
+  - `QueryState`：骨架块去圆角、错误卡去 rounded-xl、重试→`nb-btn p`、空态虚线框改方框+标题 nb-serif
+  - **Pressable 不动**：行为原语（scale/触达），视觉由消费方类名决定，圆角残留归 P4 页面期逐个清
+  - **横线纸不动**：四组件无笔记面；`.diary-paper`/`.diary-content` 行高对齐归 P4 页面期
+  - **验证**：verify.sh 绿；playwright 冒烟 14 项全过（Sheet 桌面 540px/墨线/硬阴影、手机贴底无阴影、遮罩色、ConfirmDialog 宋体标题+墨线+双 nb-btn 墨底确认钮）
+  - **下一步 P4**：页面逐页换装（today→…→login 对照 shots/）

@@ -21,8 +21,8 @@ function ConfirmBody({
   const close = useSheetClose();
   return (
     <div className="px-5 pb-2 pt-3 md:px-6 md:pb-6 md:pt-6">
-      <h3 className="font-sans text-title text-[var(--ink)]">{title}</h3>
-      <p className="mt-2 whitespace-pre-line font-sans text-small leading-relaxed text-[var(--ink-soft)]">{message}</p>
+      <h3 className="nb-dialog-h">{title}</h3>
+      <p className="mt-3 whitespace-pre-line font-sans text-small leading-relaxed text-[var(--ink-soft)]">{message}</p>
       <div className="mt-6 flex justify-end gap-2">
         <Pressable
           variant="pill"
@@ -30,7 +30,7 @@ function ConfirmBody({
             onPick(false);
             close();
           }}
-          className="rounded-full border border-[var(--keyline)] px-4 py-2 font-sans text-small text-[var(--ink-soft)]"
+          className="nb-btn"
         >
           {cancelLabel}
         </Pressable>
@@ -40,8 +40,7 @@ function ConfirmBody({
             onPick(true);
             close();
           }}
-          className="rounded-md px-5 py-2 font-sans text-small text-[var(--text-inverse)]"
-          style={{ background: danger ? 'var(--danger)' : 'var(--brand)' }}
+          className={danger ? 'nb-btn r' : 'nb-btn p'}
         >
           {confirmLabel}
         </Pressable>
