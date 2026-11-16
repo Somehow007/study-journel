@@ -44,3 +44,10 @@
 `feat(web): 今日页待办改平铺勾选清单+日记工具条移出正文+条目删除悬停显示`
 
 ## 执行记录
+
+2026-11-16 执行。整卡 diff 233 行 > ~200 阈值，按卡面拆 S7a / S7b 两 commit：
+
+- **S7a `bcaae55`** `TodayGoalsSection.tsx`：待办改平铺——CHECKLIST 按 `todayTasks` 每任务一行（`todayTasks` 为空的目标不出行）、COUNT 一行（未打卡 `{title} · 今日 {suggestedToday} {unit}` / 已打卡 `{title} · 已记 {quantity} {unit}`）；行结构 `nb-todo`+`nb-box`+`span`+`em`（任务行 em=目标名，COUNT 行 em 留空）；点击分支原样抽为 `handleCountToggle`/`handleTaskToggle`（逻辑逐行未改）；头部 done/total 改**行**计数，`rows=0` 时显示「今天没有待办任务」+「去制定 →」（原 `items.length>0` 判据改为 `rows.length>0`，避免「0 / 0」）；删除每目标 `nb-goal`/`nb-meter`/百分比/`<small>`/完成·取消 `nb-btn`。
+- **S7b `8cb795b`** `DiaryEditor.tsx` + `LearningRecordCard.tsx` + `journal-b.css`：写/看工具条去 `absolute right-1 top-1 z-10` 改普通流式 `mb-1 flex justify-end gap-1` 置于文本区上方，textarea/预览去 `paddingRight:'4.5rem'`（chip 尺寸不变）；删除钮加 `nb-row-del`，CSS `@media (hover:hover)` 下默认 `opacity:0`、`tr:hover`/`tr:focus-within` 时 `opacity:1`，触屏（hover:none）常显。
+- **验证**：`./scripts/verify.sh` 全绿；`./scripts/visual.sh today,learn-form` 零 pageerror / 零横向溢出（报告 `/tmp/sj-visual.Kv8upi/report.html`，截图在 `impl/`）；DOM 探针 **48/48 PASS**（临时库 8091 + vite 5176，同 visual.sh 口径，探针用后已删）：4 行结构与文案逐行核对、头部「3 / 4」= DOM 勾选行数、无 `nb-goal`/`nb-meter`/`nb-btn`/「项今日任务」、马原 0 行、工具条 computed `position:static` 且在文本区上方、编辑+预览 `paddingRight=2px`、删除钮桌面 0→悬停 1→移开 0 / 手机常显 1、交互四项（未勾任务出「记下完成」Sheet 且副标题=任务名、已勾任务取消去 `on`、COUNT 取消打卡「已记→今日」再点出 Sheet 副标题=目标名）；1440/390 均零横向溢出零 pageerror。
+- **遗留**：① COUNT 行勾选态整行删除线含目标名（文案同一 span，`nb-todo.on` 统一口径，概念稿无此行型，收尾轮可定夺是否把标题挪出删除线）；② `rows=0` 空态分支（全清单目标当日无任务 / 无任何目标）种子未覆盖，代码路径与改前一致仅判据由 `items` 改 `rows`；③ learn-form 截图经 visual.sh 核对零报错（本卡未动表单）。

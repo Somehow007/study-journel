@@ -105,6 +105,12 @@ S0 必须最先做；S1 第二。S3–S7 互不依赖，可任意顺序，但**�
 - **观察项（不改，记录）**：真·0 任务清单目标 val 显示「0%」（`totalValue=0` → percent 回退分支），与改前 `GoalRow` 清单分支同口径，非回归；块仍正常渲染 0 任务 + 「+ 加一条子任务」。每清单目标一次 `/goals/:id` 请求（卡面已认可 ≤4）。
 - 遗留：无新增；收尾轮未决项不变。
 
+### 走查补记（2026-11-16 · S7 后走查）
+
+- 覆盖：`visual.sh today,learn-form`（报告 `/tmp/sj-visual.Kv8upi/report.html`）零 pageerror / 零横向溢出；DOM 探针 48 项断言全过（1440+390，临时库同 visual.sh 口径，探针用后已删，截图 `impl/`）。
+- **S7 验证**：待办 4 行平铺（2 COUNT 已记 + 408 两任务一勾一未勾，任务行 em=目标名；马原 0 行不出行）；头部「3 / 4」与 DOM 勾选行数一致；无 `nb-goal`/`nb-meter`/`nb-btn`/「项今日任务」；日记工具条 computed `position:static` 置于文本区上方、编辑/预览 `paddingRight=2px`；删除钮桌面 `opacity 0→tr:hover/focus-within 1→移开 0`、390 常显 1；交互四项全过（任务行出「记下完成」Sheet 副标题=任务名、已勾任务取消去 `on`、COUNT 取消打卡「已记→今日」再点出 Sheet 副标题=目标名）。
+- **观察项（不改，记录）**：COUNT 行勾选态整行删除线含目标名（`nb-todo.on` 统一口径）；`rows=0` 空态分支种子未覆盖（判据 `items`→`rows`，路径同改前）。
+
 ## 验收（整体）
 
 - 12 页 × 1440 与 6 页 × 390 对照报告：无竖排折行、无数字重叠、无横向溢出、零 pageerror。
