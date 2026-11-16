@@ -1447,6 +1447,9 @@ button.nb-swatch:active {
   color: var(--ink-faint);
 }
 @media (max-width: 767px) {
+  .nb-memory {
+    padding-left: 20px;
+  }
   .nb-memory::before {
     display: none;
   }

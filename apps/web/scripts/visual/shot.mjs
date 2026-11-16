@@ -21,7 +21,7 @@ const PAGES = [
   ['learn-form', `/day/${today}`, async (p) => { await p.getByText(/补一条/).first().click(); await p.waitForTimeout(500); }],
   ['goal-form', '/plan', async (p) => { await p.getByText(/新目标/).first().click(); await p.waitForTimeout(500); }],
 ].filter(([n]) => !ONLY || ONLY.includes(n));
-const MOBILE = ['calendar', 'today', 'plan', 'goal', 'stats', 'learn-form'];
+const MOBILE = ['calendar', 'today', 'plan', 'goal', 'memory', 'stats', 'learn-form'];
 const errs = [], rows = [];
 async function run(vw, vh, kind, list) {
   // 手机档按触屏设备开 context：命中 (hover: none) 规则，截图与真机一致（桌面悬停态不会混进来）
