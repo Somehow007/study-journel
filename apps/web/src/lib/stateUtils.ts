@@ -111,6 +111,11 @@ export function stateToConfig(s: JournalState, theme: ThemeId = 'notebook'): Sta
   };
 }
 
+/** B 格纸：状态文字色按极性——积极/中性=红笔，消极=浅墨（SPEC-B §2）。A/C 主题接入时在此分支。 */
+export function stateTextColor(cfg: Pick<StateConfig, 'polarity'> | null | undefined): string {
+  return cfg != null && cfg.polarity < 0 ? 'var(--ink-faint)' : 'var(--brand)';
+}
+
 function isActive(s: JournalState): boolean {
   return s.archivedAt == null;
 }

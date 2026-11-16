@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useDayMarks, useStatsMonth, useStates } from '../lib/queries';
-import { findStateConfig, type StateConfig } from '../lib/stateUtils';
+import { findStateConfig, stateTextColor, type StateConfig } from '../lib/stateUtils';
 import { formatPeriod } from '../lib/goalApi';
 import { monthBounds } from '../lib/domain';
 import { formatDuration, formatDate, getCalendarDays } from '../lib/dateUtils';
@@ -262,14 +262,13 @@ export default function Stats() {
               <tbody>
                 {(stats?.stateBreakdown ?? []).map((s) => {
                   const cfg = stateCfgById.get(s.stateId);
-                  const neg = cfg ? cfg.polarity < 0 : false;
                   return (
                     <tr key={s.stateId}>
                       <td
                         className="nb-k"
                         style={{
                           width: 90,
-                          color: neg ? 'var(--ink-faint)' : 'var(--brand)',
+                          color: stateTextColor(cfg),
                           fontWeight: 700,
                         }}
                       >

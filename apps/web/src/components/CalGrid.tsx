@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStateConfigs } from '../lib/stateUtils';
+import { stateTextColor, useStateConfigs } from '../lib/stateUtils';
 import { formatDate, getCalendarDays } from '../lib/dateUtils';
 import { WEEKDAY_LABELS } from '../lib/constants';
 import type { DayMark } from '../lib/types/api';
@@ -73,7 +73,7 @@ export default function CalGrid({ period, marks, highlightDate, heightClass = 'h
           >
             <span className="nb-cal-d">{d.day}</span>
             {cfg && !isFuture && (
-              <span className="nb-cal-state" style={{ color: cfg.ink }}>
+              <span className="nb-cal-state" style={{ color: stateTextColor(cfg) }}>
                 {cfg.label}
               </span>
             )}

@@ -2,7 +2,7 @@ import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useDayMarks } from '../lib/queries';
-import { useStateConfigs } from '../lib/stateUtils';
+import { stateTextColor, useStateConfigs } from '../lib/stateUtils';
 import { formatPeriod } from '../lib/goalApi';
 import { monthBounds } from '../lib/domain';
 import { formatDate } from '../lib/dateUtils';
@@ -163,7 +163,7 @@ export default function MonthView() {
         <div className="nb-sec">状态图例</div>
         {allStates.map((cfg) => (
           <div className="nb-legend" key={cfg.id}>
-            <span style={{ color: cfg.ink }}>{cfg.label}</span>
+            <span style={{ color: stateTextColor(cfg) }}>{cfg.label}</span>
             <span className="nb-zheng" style={{ fontSize: 14 }}>
               {zheng(stateCounts.get(cfg.id) ?? 0) || '—'}
             </span>

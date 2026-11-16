@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExportData, useStates } from '../lib/queries';
-import { findStateConfig, type StateConfig } from '../lib/stateUtils';
+import { findStateConfig, stateTextColor, type StateConfig } from '../lib/stateUtils';
 import { parseDate, formatDuration } from '../lib/dateUtils';
 import { WEEKDAY_LABELS } from '../lib/constants';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
@@ -171,7 +171,6 @@ export default function Memory() {
         ) : (
           visible.map((record) => {
             const cfg = record.stateId ? stateCfgMap.get(record.stateId) : undefined;
-            const neg = cfg ? cfg.polarity < 0 : false;
             const date = parseDate(record.date);
             const weekdayIndex = (date.getDay() + 6) % 7;
             const weekday = `周${WEEKDAY_LABELS[weekdayIndex]}`;
@@ -203,7 +202,7 @@ export default function Memory() {
                     {cfg && (
                       <span
                         className="nb-mem-state"
-                        style={{ color: neg ? 'var(--ink-faint)' : 'var(--brand)' }}
+                        style={{ color: stateTextColor(cfg) }}
                       >
                         {cfg.label}
                       </span>

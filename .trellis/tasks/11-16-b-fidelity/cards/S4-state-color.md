@@ -37,3 +37,22 @@ rg -n "cfg\.ink|\.ink\b|polarity" apps/web/src --glob '*.tsx'
 `refactor(web): 状态文字色收口 stateTextColor——全站按极性红笔/浅墨（SPEC-B §2）`
 
 ## 执行记录
+
+2026-11-16 执行（Devin）：
+
+**消费点 grep**（卡要求先跑）：`rg -n "cfg\.ink|\.ink\b|polarity" apps/web/src` —— `cfg.ink` 仅 CalGrid L76、MonthView L166 两处；内联 polarity 仅 Memory L174/206、Stats L265/272；`StateEditModal`/`Settings` 的 polarity 为编辑字段、`state.color` 为色块（不改）；`MoodSelector` 用 `.nb-state`/`.on` CSS 类（未选中继承 `--ink-faint` 灰、选中 `--brand` 红+椭圆圈，SPEC-B 符合），零改动。
+
+**改动**（5 文件，均在卡范围内）：
+- `apps/web/src/lib/stateUtils.ts`：新增 `stateTextColor(cfg)`。
+- `CalGrid.tsx` / `MonthView.tsx`：`cfg.ink` → `stateTextColor(cfg)`（图例「正」字列 `.nb-zheng` 未动，仍红）。
+- `Memory.tsx` / `Stats.tsx`：删 `neg` 中间变量，内联三元 → `stateTextColor(cfg)`。
+
+**与卡面的一处偏差（如实记录）**：卡建议签名 `cfg: Pick<StateConfig,'polarity'>`；实际放宽为 `| null | undefined`——Stats 的 `stateCfgById.get()` 可 undefined，卡又要求「无 cfg 视为非负→红笔」兜底，收进 helper 一处表达（`cfg != null && cfg.polarity < 0 ? faint : brand`），四处调用点零三元。行为与原 `cfg ? … : false` 完全一致。
+
+**验收实测**：
+- `./scripts/verify.sh` 全绿（tsc + vitest 46 + build + go vet/test + sqlc 一致性）。
+- `./scripts/visual.sh calendar,today,memory,stats`：**零 pageerror / 零横向溢出**（报告 `/tmp/sj-visual.9IBhf9/report.html`）。
+- 截图无法目检（本模型无视觉），改用 playwright computed-style 探针直读渲染色（比目检更强）：亮色主题下日历格 16 处 + 图例 6 态 + 时光 17 条 + 统计状态记数——专注/顺利/平稳 = `rgb(210,59,34)`（#D23B22 brand 红笔），疲惫/焦虑/低落 = `rgb(141,145,154)`（#8D919A ink-faint 浅墨），全中；`PATCH settings theme=notebook-dark` 后重测——`rgb(255,122,92)`（#FF7A5C）/ `rgb(110,118,134)`（#6E7686）暗色可读，测后已还原 notebook。
+- 注意：探针跑在 S3 遗留的临时实例（`/tmp/sj-visual.DppOZ1`，8091/5176 仍在监听，非本卡进程、未动）上——同一工作区源码 + 同款种子，结论有效；本卡自起的 server/vite 因端口被占 bind 失败已自行退出，无残留。
+
+遗留：无。提示——8091/5176 被旧实例占用，下一张卡跑 `visual.sh` 前需先释放（`kill` 对应 pid 或重启该实例）。
