@@ -211,6 +211,10 @@ func TestGoalProgressAndCheckin(t *testing.T) {
 	if g0["actualValue"].(float64) != 80 || g0["percent"].(float64) != 27 {
 		t.Fatalf("progress = %v", g0)
 	}
+	wantPace, _ := domain.PaceCount(300, 80, period, today)
+	if g0["pace"] == nil || int(g0["pace"].(float64)) != wantPace {
+		t.Fatalf("pace = %v, want %d", g0["pace"], wantPace)
+	}
 	// dayMarks has today with total=1 done=1
 	dm := gm["dayMarks"].(map[string]any)
 	if dm[today].(map[string]any)["total"].(float64) != 1 {
@@ -230,6 +234,17 @@ func TestGoalProgressAndCheckin(t *testing.T) {
 		`{"title":"做一套卷子","dueDate":"`+today+`"}`, cookie)
 	td := data(t, rec.Body.String())
 	taskID := td["id"].(string)
+	// CHECKLIST pace = −逾期数：今天到期不算逾期 → 0；today 接口同值带出
+	rec = doJSON(t, h, "GET", "/api/v1/goals/"+cid, "", cookie)
+	if p := data(t, rec.Body.String())["pace"]; p == nil || p.(float64) != 0 {
+		t.Fatalf("checklist pace = %v", p)
+	}
+	rec = doJSON(t, h, "GET", "/api/v1/goals/today?date="+today, "", cookie)
+	for _, it := range data(t, rec.Body.String())["items"].([]any) {
+		if it.(map[string]any)["pace"] == nil {
+			t.Fatalf("today item missing pace: %v", it)
+		}
+	}
 	rec = doJSON(t, h, "POST", "/api/v1/tasks/"+taskID+"/complete",
 		`{"durationMin":60,"createEntry":true}`, cookie)
 	if rec.Code != http.StatusOK {

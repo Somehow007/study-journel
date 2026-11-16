@@ -37,6 +37,7 @@ type goalSummaryDTO struct {
 	SuggestedWeekly *int    `json:"suggestedWeekly"`
 	Remaining       *int    `json:"remaining"`
 	RemainingDays   *int    `json:"remainingDays"`
+	Pace            *int    `json:"pace"` // COUNT: actual−均摊期望；CHECKLIST: −逾期任务数
 	CreatedAt       int64   `json:"createdAt"`
 	UpdatedAt       int64   `json:"updatedAt"`
 }
@@ -111,13 +112,20 @@ func computeSummary(g db.Goal, wso int, today string,
 		out.PlannedWeekly = intPtr(p.PlannedWeekly)
 		out.SuggestedDaily = intPtr(p.SuggestedDaily)
 		out.SuggestedWeekly = intPtr(p.SuggestedWeekly)
+		if pace, err := domain.PaceCount(target, actual, g.Period, asOf); err == nil {
+			out.Pace = intPtr(pace)
+		}
 	} else {
-		done, total := 0, len(tasks)
+		done, total, overdue := 0, len(tasks), 0
 		for _, t := range tasks {
 			if t.Done {
 				done++
 			}
+			if od, err := domain.TaskOverdue(t.Done, derefStr(t.DueDate), derefStr(t.WeekStart), asOf); err == nil && od {
+				overdue++
+			}
 		}
+		out.Pace = intPtr(-overdue)
 		p := domain.GoalProgressChecklist(done, total)
 		out.ActualValue, out.TotalValue = p.Actual, p.Total
 		out.Percent, out.Reached = p.Percent, p.Reached
@@ -703,6 +711,7 @@ func (d *Deps) todayGoals(w http.ResponseWriter, r *http.Request) {
 		ActualValue    *int        `json:"actualValue"`
 		Remaining      *int        `json:"remaining"`
 		SuggestedToday *int        `json:"suggestedToday"`
+		Pace           *int        `json:"pace"`
 		TodayCheckin   *checkinDTO `json:"todayCheckin"`
 		TodayTasks     []taskDTO   `json:"todayTasks"`
 	}
@@ -721,6 +730,7 @@ func (d *Deps) todayGoals(w http.ResponseWriter, r *http.Request) {
 		it.ActualValue = &av
 		it.Remaining = sum.Remaining
 		it.SuggestedToday = sum.SuggestedDaily
+		it.Pace = sum.Pace
 		for i := range checkins {
 			if checkins[i].Date == date {
 				c := checkins[i]

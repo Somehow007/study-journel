@@ -244,6 +244,13 @@ export function goalProgressCount(
   };
 }
 
+/** COUNT 目标节奏：actual − floor(target × 已过天数 / 当月天数)；asOf 钳进本月（对齐 Go PaceCount）。 */
+export function paceCount(target: number, actual: number, period: string, asOf: string): number {
+  const [first] = monthBounds(period);
+  const elapsed = daysBetween(first, asOfForPeriod(period, asOf)) + 1;
+  return actual - Math.floor((Math.max(0, target) * elapsed) / daysInMonth(period));
+}
+
 /** CHECKLIST 目标进度（计划字段恒 0，与 Go 一致）。 */
 export function goalProgressChecklist(done: number, total: number): Progress {
   const remaining = Math.max(0, total - done);

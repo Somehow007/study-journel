@@ -164,3 +164,30 @@ func PreviewCountSplit(target int, period string, weekStartsOn int) (days, plann
 	}
 	return days, SuggestedQuota(target, days), SuggestedQuota(target, weeksInMonth), nil
 }
+
+// PaceCount is the COUNT goal's schedule delta: actual minus the even-split
+// expectation through asOf (inclusive). >0 ahead, 0 on plan, <0 behind.
+// asOf is clamped into the period, so past months compare against the full
+// target and future months against day 1.
+func PaceCount(target, actual int, period, asOf string) (int, error) {
+	first, _, err := MonthBounds(period)
+	if err != nil {
+		return 0, err
+	}
+	asOf, err = AsOfForPeriod(period, asOf)
+	if err != nil {
+		return 0, err
+	}
+	days, err := DaysInMonth(period)
+	if err != nil {
+		return 0, err
+	}
+	elapsed, err := DaysBetween(first, asOf)
+	if err != nil {
+		return 0, err
+	}
+	if target < 0 {
+		target = 0
+	}
+	return actual - target*(elapsed+1)/days, nil
+}

@@ -33,3 +33,34 @@ func TestTaskRelevantOn(t *testing.T) {
 		}
 	}
 }
+
+func TestTaskOverdue(t *testing.T) {
+	// 2026-11-16 is a Monday; weekStart rows use that week (ends 11-22).
+	cases := []struct {
+		name                     string
+		done                     bool
+		dueDate, weekStart, asOf string
+		want                     bool
+	}{
+		{"undone due yesterday", false, "2026-11-17", "", "2026-11-18", true},
+		{"undone due today", false, "2026-11-18", "", "2026-11-18", false},
+		{"undone due future", false, "2026-11-25", "", "2026-11-18", false},
+		{"done past due", true, "2026-11-10", "", "2026-11-18", false},
+		{"week not ended (last day)", false, "", "2026-11-16", "2026-11-22", false},
+		{"week ended", false, "", "2026-11-16", "2026-11-23", true},
+		{"dueDate wins over weekStart", false, "2026-11-25", "2026-11-09", "2026-11-18", false},
+		{"no schedule", false, "", "", "2026-11-30", false},
+	}
+	for _, c := range cases {
+		got, err := TaskOverdue(c.done, c.dueDate, c.weekStart, c.asOf)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if got != c.want {
+			t.Errorf("%s: got %v want %v", c.name, got, c.want)
+		}
+	}
+	if _, err := TaskOverdue(false, "", "", "bad"); err == nil {
+		t.Error("invalid asOf: want error")
+	}
+}

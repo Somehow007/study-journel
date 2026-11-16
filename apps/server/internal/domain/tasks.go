@@ -30,3 +30,26 @@ func TaskRelevantOn(done bool, dueDate, weekStart, date string, weekStartsOn int
 	}
 	return weekStart != "" && ws == weekStart, nil
 }
+
+// TaskOverdue reports whether an undone task is past its schedule as of asOf:
+// dueDate < asOf, or (no dueDate) its weekStart week ended before asOf.
+// Tasks with neither date are never overdue. dueDate/weekStart are "" when NULL.
+func TaskOverdue(done bool, dueDate, weekStart, asOf string) (bool, error) {
+	if !ValidateDate(asOf) {
+		return false, fmt.Errorf("invalid date %q", asOf)
+	}
+	if done {
+		return false, nil
+	}
+	if dueDate != "" {
+		return dueDate < asOf, nil
+	}
+	if weekStart == "" {
+		return false, nil
+	}
+	weekEnd, err := AddDays(weekStart, 6)
+	if err != nil {
+		return false, err
+	}
+	return weekEnd < asOf, nil
+}

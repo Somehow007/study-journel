@@ -14,6 +14,7 @@ import {
   goalProgressChecklist,
   goalProgressCount,
   monthBounds,
+  paceCount,
   percent,
   phaseFraction,
   phaseTicks,
@@ -88,6 +89,10 @@ function runCase(c: DomainCase): unknown {
         weekStartsOn: number;
       };
       return goalProgressCount(i.target, i.actual, i.period, i.asOf, i.weekStartsOn);
+    }
+    case 'paceCount': {
+      const i = c.input as { target: number; actual: number; period: string; asOf: string };
+      return { pace: paceCount(i.target, i.actual, i.period, i.asOf) };
     }
     case 'goalProgressChecklist': {
       const i = c.input as { done: number; total: number };

@@ -148,6 +148,8 @@ export interface GoalSummary {
   suggestedWeekly: number | null;
   remaining: number | null;
   remainingDays: number | null;
+  /** 节奏：COUNT = actual − 均摊期望（>0 领先 / 0 按计划 / <0 落后）；CHECKLIST = −逾期任务数 */
+  pace: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -184,6 +186,7 @@ export interface TodayGoalItem {
   actualValue: number | null;
   remaining: number | null;
   suggestedToday: number | null;
+  pace: number | null;
   todayCheckin: GoalCheckin | null;
   todayTasks: GoalTask[];
 }

@@ -145,6 +145,48 @@
       }
     },
     {
+      "name": "paceCount：月初 1 号即计 1 天份额 → 落后 10",
+      "fn": "paceCount",
+      "input": {"target": 300, "actual": 0, "period": "2026-11", "asOf": "2026-11-01"},
+      "want": {"pace": -10}
+    },
+    {
+      "name": "paceCount：月中领先 1000×16/30=533 → +9",
+      "fn": "paceCount",
+      "input": {"target": 1000, "actual": 542, "period": "2026-11", "asOf": "2026-11-16"},
+      "want": {"pace": 9}
+    },
+    {
+      "name": "paceCount：月中落后 300×15/30=150 → -50",
+      "fn": "paceCount",
+      "input": {"target": 300, "actual": 100, "period": "2026-11", "asOf": "2026-11-15"},
+      "want": {"pace": -50}
+    },
+    {
+      "name": "paceCount：月末恰好完成 → 按计划 0",
+      "fn": "paceCount",
+      "input": {"target": 300, "actual": 300, "period": "2026-11", "asOf": "2026-11-30"},
+      "want": {"pace": 0}
+    },
+    {
+      "name": "paceCount：期望向下取整 100×7/30=23 → 0",
+      "fn": "paceCount",
+      "input": {"target": 100, "actual": 23, "period": "2026-11", "asOf": "2026-11-07"},
+      "want": {"pace": 0}
+    },
+    {
+      "name": "paceCount：asOf 在月初之前→钳到1号",
+      "fn": "paceCount",
+      "input": {"target": 31, "actual": 0, "period": "2026-11", "asOf": "2026-10-20"},
+      "want": {"pace": -1}
+    },
+    {
+      "name": "paceCount：asOf 过了月末→钳到月末（2 月 28 天对比满额）",
+      "fn": "paceCount",
+      "input": {"target": 280, "actual": 200, "period": "2026-02", "asOf": "2026-03-05"},
+      "want": {"pace": -80}
+    },
+    {
       "name": "goalProgressChecklist：6/9",
       "fn": "goalProgressChecklist",
       "input": {"done": 6, "total": 9},

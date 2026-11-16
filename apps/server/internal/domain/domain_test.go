@@ -130,6 +130,20 @@ func runDomainCase(t *testing.T, c domainCase) any {
 		}
 		return p
 
+	case "paceCount":
+		var in struct {
+			Target int    `json:"target"`
+			Actual int    `json:"actual"`
+			Period string `json:"period"`
+			AsOf   string `json:"asOf"`
+		}
+		decodeCaseInput(t, c, &in)
+		pace, err := PaceCount(in.Target, in.Actual, in.Period, in.AsOf)
+		if err != nil {
+			t.Fatalf("%s: %v", c.Name, err)
+		}
+		return map[string]any{"pace": pace}
+
 	case "goalProgressChecklist":
 		var in struct {
 			Done  int `json:"done"`
