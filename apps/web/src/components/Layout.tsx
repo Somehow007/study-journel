@@ -3,18 +3,11 @@ import { TopNav, MobileHead } from './NotebookNav';
 import BottomNav from './BottomNav';
 import ToastHost from './ToastHost';
 import ConfirmHost from './ui/ConfirmDialog';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function Layout() {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
-
-  const maxWidth = useMemo(() => {
-    const path = location.pathname;
-    if (path === '/' || path.startsWith('/day/') || path === '/plan') return '1240px';
-    if (path === '/memory') return '720px';
-    return '880px';
-  }, [location.pathname]);
 
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0 });
@@ -26,7 +19,7 @@ export default function Layout() {
       <TopNav />
       <main ref={mainRef} className="flex-1 overflow-y-auto pb-[var(--journal-bottom-nav)] md:pb-0">
         <MobileHead />
-        <div className="mx-auto px-5 py-7 md:px-7 md:pb-10" style={{ maxWidth }}>
+        <div className="mx-auto" style={{ maxWidth: 1600 }}>
           <Outlet />
         </div>
       </main>

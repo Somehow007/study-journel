@@ -44,3 +44,4 @@
 - 2026-11-16 | M7 全量页面走查（归档后补记）：9 路由×1440 + 9 路由×390 共 48 项全过——登录/顶栏/日历标记/今日状态条目日记/计划进度/目标盖章/时光时间线/统计 KV+柱图+热力+学科+状态+正字/年度 12 月热力块/搜索/设置 8 行/移动端零横向溢出，零 pageerror；隔离库种子：18 条目+COUNT 目标 5/20+3 天日记状态 | → `.trellis/tasks/archive/2026-11/11-16-m7-features/prd.md` 走查补记
 - 2026-11-16 | B 格纸还原度评审 + 修复开工计划：同种子 1440/390 逐页对照（组件 85–90%、整页 50–60%，根因 Layout 按路由限宽）；拍板状态色按极性、本月待办按子任务去重等 7 项；拆 S0–S9 十张任务卡（S0 视觉对照脚本 ref 已实测跑通），交便宜模型逐卡执行 | → `.trellis/tasks/11-16-b-fidelity/prd.md`
 - 2026-11-16 | S0 视觉对照脚本落地：apps/web/scripts/visual/{seed,shot}.mjs + scripts/visual.sh（临时库 8091 + vite 5176 + 1440/390 并排报告）；vite.config 两处 env 覆盖；全量跑通零 pageerror/零横向溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S0-visual-script.md`
+- 2026-11-16 | S1 桌面容器去限宽：Layout 删按路由 maxWidth，统一 mx-auto+1600，留白归 .nb-book margin；实测 1440 书宽 1368 / 1920 书宽 1528 全页一致，visual 零报错零溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S1-desktop-container.md`

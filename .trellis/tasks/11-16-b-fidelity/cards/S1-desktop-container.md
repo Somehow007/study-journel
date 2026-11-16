@@ -29,3 +29,11 @@
 `fix(web): 去掉 Layout 按路由限宽——书页按概念稿铺满桌面（统计/年度/目标页竖排折行根治）`
 
 ## 执行记录
+
+2026-11-16 执行（SWE-2 Flash）：
+
+- `Layout.tsx`：删 `maxWidth` useMemo（连带 `useMemo` import），容器改 `mx-auto` + `maxWidth: 1600`，留白全交 `.nb-book` margin。`journal-b.css` 未动（桌面 margin 已是 `28px 36px 36px`，无需改）。
+- 验收：`./scripts/verify.sh` 全绿。临时实例 + playwright 探针实测：**1440 下 9 页 `.nb-book` 全为 1368px**（验收 ±4 内）；**1920 下全为 1528px**（=1600−2×36），mx-auto 居中、两侧桌面底色正常。标题折行启发式抽查未检出多行（统计/年度/目标/计划标题在宽容器下不再逐字竖排）。`visual.sh` 全量：零 pageerror / 零横向溢出。
+- 截图对比（无法目检，按尺寸/体积代理）：stats 1086→960px、annual 1208→1006px、settings 1498→1235px、goal 1168→960px——内容不再被挤成高窄列，方向正确；memory 时间线仍全页长图（符合概念稿）。
+- **对手机的实际影响（与卡面「不该影响手机」的预期有出入，如实记录）**：容器 `px-5` 移除后，390 下书页左右各只剩 `.nb-book` 的 12px margin（原 20+12=32px），书页变宽 ~40px。截图体积普遍 +5~20%，无横向溢出/报错，属向 S2 整屏纸面过渡的预期变化，非回退。
+- 遗留：`QueryLoading`/`QueryError` 在 `.nb-book` 之外（各页 early return），宽容器下骨架块/错误卡会通栏——瞬态且文字居中可读，先记录，S8 细节卡再评估是否要限宽；移动端余 12px margin 由 S2 处理。
