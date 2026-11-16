@@ -1,13 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useExportData, useStates } from '../lib/queries';
 import { findStateConfig, type StateConfig } from '../lib/stateUtils';
 import { parseDate, formatDuration } from '../lib/dateUtils';
-import { WEEKDAY_LABELS, MONTH_LABELS } from '../lib/constants';
-import { useIsDark } from '../lib/useIsDark';
+import { WEEKDAY_LABELS } from '../lib/constants';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
-import { Pressable } from '../components/ui/Pressable';
 import type { ExportData, JournalState } from '../lib/types/api';
 
 const DIARY_ONLY_KEY = 'study-journal-memory-diary-only';
@@ -82,25 +79,8 @@ function buildMemItems(data: ExportData): MemItem[] {
   return items.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-function groupByMonth(items: MemItem[]): { key: string; label: string; items: MemItem[] }[] {
-  const map = new Map<string, MemItem[]>();
-  for (const r of items) {
-    const key = r.date.slice(0, 7);
-    const list = map.get(key) ?? [];
-    list.push(r);
-    map.set(key, list);
-  }
-  return Array.from(map.entries())
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([key, groupItems]) => {
-      const monthIdx = parseInt(key.slice(5, 7), 10) - 1;
-      return { key, label: MONTH_LABELS[monthIdx] ?? key, items: groupItems };
-    });
-}
-
 export default function Memory() {
   const navigate = useNavigate();
-  const isDark = useIsDark();
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [diaryOnly, setDiaryOnly] = useState(readDiaryOnly);
@@ -110,8 +90,7 @@ export default function Memory() {
 
   const items = useMemo(() => {
     if (!exportData) return [] as MemItem[];
-    const all = buildMemItems(exportData);
-    return all.filter((r) => r.date.startsWith(`${viewYear}-`));
+    return buildMemItems(exportData).filter((r) => r.date.startsWith(`${viewYear}-`));
   }, [exportData, viewYear]);
 
   const stateCfgMap = useMemo(() => {
@@ -124,10 +103,10 @@ export default function Memory() {
     return map;
   }, [states, exportData]);
 
-  const groups = useMemo(() => {
-    const source = diaryOnly ? items.filter((r) => r.diary.trim()) : items;
-    return groupByMonth(source);
-  }, [items, diaryOnly]);
+  const visible = useMemo(
+    () => (diaryOnly ? items.filter((r) => r.diary.trim()) : items),
+    [items, diaryOnly],
+  );
 
   const toggleDiaryOnly = () => {
     setDiaryOnly((prev) => {
@@ -145,155 +124,110 @@ export default function Memory() {
   if (error && !exportData) return <QueryError message={error.message} onRetry={() => void refetch()} />;
 
   return (
-    <div>
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-sans text-h1 text-[var(--ink)]">时光</h1>
-          <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">按时间线回顾每一天</p>
+    <div className="nb-book nb-single">
+      <div className="nb-page single nb-gridbg nb-memory">
+        <div className="nb-date nb-memory-head">
+          <span className="nb-date-num">时光</span>
+          <span className="nb-date-meta">按时间线回顾每一天</span>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 18, alignItems: 'center' }}>
+            <button
+              type="button"
+              className={`nb-chip${diaryOnly ? ' on' : ''}`}
+              onClick={toggleDiaryOnly}
+              aria-pressed={diaryOnly}
+            >
+              只看有想法
+            </button>
+            <span className="nb-pager">
+              <button
+                type="button"
+                onClick={() => setViewYear((y) => y - 1)}
+                aria-label="上一年"
+              >
+                ‹
+              </button>
+              <b>{viewYear}</b>
+              <button
+                type="button"
+                onClick={() => setViewYear((y) => Math.min(now.getFullYear(), y + 1))}
+                disabled={viewYear >= now.getFullYear()}
+                aria-label="下一年"
+              >
+                ›
+              </button>
+            </span>
+          </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Pressable
-            variant="pill"
-            role="switch"
-            aria-checked={diaryOnly}
-            aria-label="只看有想法"
-            onClick={toggleDiaryOnly}
-            className={`rounded-full border px-3 py-1.5 font-sans text-caption ${
+
+        {visible.length === 0 ? (
+          <QueryEmpty
+            title={diaryOnly ? '这一年还没有写过今日想法' : '这一年还没有记录'}
+            hint={
               diaryOnly
-                ? 'border-transparent bg-[var(--brand-soft)] text-[var(--brand)]'
-                : 'border-[var(--keyline)] text-[var(--ink-soft)]'
-            }`}
-          >
-            只看有想法
-          </Pressable>
-          <div className="flex items-center gap-2">
-            <Pressable
-              variant="icon"
-              onClick={() => setViewYear((y) => y - 1)}
-              className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
-              aria-label="上一年"
-            >
-              <ChevronLeft size={16} />
-            </Pressable>
-            <span className="min-w-[64px] text-center font-sans text-small text-[var(--ink)]">{viewYear}</span>
-            <Pressable
-              variant="icon"
-              onClick={() => setViewYear((y) => Math.min(now.getFullYear(), y + 1))}
-              disabled={viewYear >= now.getFullYear()}
-              className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
-              aria-label="下一年"
-            >
-              <ChevronRight size={16} />
-            </Pressable>
-          </div>
-        </div>
-      </header>
-
-      {groups.length > 0 ? (
-        <div className="flex flex-col gap-10">
-          {groups.map((group) => (
-            <section key={group.key}>
-              <h2 className="mb-4 font-sans text-title text-[var(--ink-soft)]">
-                {viewYear} 年 {group.label}
-              </h2>
-              <div className="relative flex flex-col gap-4 md:gap-[26px]">
-                <div
-                  className="absolute bottom-0 left-[78px] top-0 hidden w-px md:block"
-                  style={{ background: 'var(--hairline)' }}
-                  aria-hidden="true"
-                />
-                {group.items.map((record) => {
-                  const cfg = record.stateId ? stateCfgMap.get(record.stateId) : undefined;
-                  const date = parseDate(record.date);
-                  const month = date.getMonth() + 1;
-                  const day = date.getDate();
-                  const weekdayIndex = (date.getDay() + 6) % 7;
-                  const weekday = `周${WEEKDAY_LABELS[weekdayIndex]}`;
-                  const dayLabel = `${month}/${day}`;
-                  const solid = cfg ? (isDark ? cfg.dark.solid : cfg.color) : 'var(--keyline)';
-                  const tint = cfg ? (isDark ? cfg.dark.tint : cfg.tint) : 'transparent';
-                  const extraEntries = Math.max(0, record.entries.length - 3);
-                  const visibleEntries = record.entries.slice(0, 3);
-                  const diaryText = record.diary ? stripMarkdown(record.diary) : '';
-
-                  return (
-                    <article key={record.date} className="relative flex items-start">
-                      <div className="hidden w-14 shrink-0 pt-[22px] pr-4 text-right md:block">
-                        <div className="font-mono text-num text-[var(--ink)]">{dayLabel}</div>
-                        <div className="mt-0.5 font-sans text-caption text-[var(--ink-faint)]">{weekday}</div>
-                      </div>
-                      <div className="relative z-10 hidden w-11 shrink-0 justify-center pt-[22px] md:flex">
-                        <span
-                          className="block h-2 w-2 rounded-full"
-                          style={{ background: solid, boxShadow: cfg ? `0 0 0 4px ${tint}` : undefined }}
-                          aria-hidden="true"
-                        />
-                      </div>
-                      <Pressable
-                        variant="card"
-                        onClick={() => navigate(`/day/${record.date}`)}
-                        className="card flex-1 rounded-xl px-4 py-4 text-left md:px-6 md:py-5"
+                ? '关掉「只看有想法」，可以回顾状态和学习记录'
+                : '从今天开始写，这里会按时间线排开'
+            }
+          />
+        ) : (
+          visible.map((record) => {
+            const cfg = record.stateId ? stateCfgMap.get(record.stateId) : undefined;
+            const neg = cfg ? cfg.polarity < 0 : false;
+            const date = parseDate(record.date);
+            const weekdayIndex = (date.getDay() + 6) % 7;
+            const weekday = `周${WEEKDAY_LABELS[weekdayIndex]}`;
+            const diaryText = record.diary ? stripMarkdown(record.diary) : '';
+            // 当日去重科目（保持出现顺序）
+            const subs: { name: string; color: string }[] = [];
+            const seen = new Set<string>();
+            for (const e of record.entries) {
+              if (!seen.has(e.subjectName)) {
+                seen.add(e.subjectName);
+                subs.push({ name: e.subjectName, color: e.subjectColor });
+              }
+            }
+            return (
+              <button
+                key={record.date}
+                type="button"
+                className="nb-mem-item"
+                onClick={() => navigate(`/day/${record.date}`)}
+              >
+                <span className="nb-mem-date">
+                  <b>
+                    {String(date.getMonth() + 1).padStart(2, '0')}.{String(date.getDate()).padStart(2, '0')}
+                  </b>
+                  <span>{weekday}</span>
+                </span>
+                <span className="nb-mem-body">
+                  <span className="nb-mem-meta">
+                    {cfg && (
+                      <span
+                        className="nb-mem-state"
+                        style={{ color: neg ? 'var(--ink-faint)' : 'var(--brand)' }}
                       >
-                        <div className="flex items-center gap-2">
-                          <div className="md:hidden">
-                            <div className="font-mono text-num text-[var(--ink)]">{dayLabel}</div>
-                            <div className="font-sans text-caption text-[var(--ink-faint)]">{weekday}</div>
-                          </div>
-                          {cfg && (
-                            <span
-                              className="inline-flex items-center rounded-full px-2.5 py-1 font-sans text-caption"
-                              style={{
-                                background: isDark ? cfg.dark.tint : cfg.tint,
-                                color: isDark ? cfg.dark.ink : cfg.ink,
-                              }}
-                            >
-                              {cfg.label}
-                            </span>
-                          )}
-                          {record.totalMin > 0 && (
-                            <span className="ml-auto shrink-0 font-mono text-caption text-[var(--ink-faint)]">
-                              {formatDuration(record.totalMin)}
-                            </span>
-                          )}
-                        </div>
-                        {diaryText && (
-                          <p className="mt-3 line-clamp-3 font-sans text-small leading-[1.8] text-[var(--ink-soft)]">
-                            {diaryText}
-                          </p>
-                        )}
-                        {visibleEntries.length > 0 && (
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            {visibleEntries.map((l) => (
-                              <span
-                                key={l.id}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--keyline)] bg-[var(--card)] px-2.5 py-1 font-sans text-caption text-[var(--ink-soft)]"
-                              >
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: l.subjectColor }} />
-                                <span className="max-w-[9rem] truncate">{l.subjectName}</span>
-                                <span className="font-mono text-caption text-[var(--ink-faint)]">
-                                  {formatDuration(l.durationMin)}
-                                </span>
-                              </span>
-                            ))}
-                            {extraEntries > 0 && (
-                              <span className="font-sans text-caption text-[var(--ink-faint)]">+{extraEntries}</span>
-                            )}
-                          </div>
-                        )}
-                      </Pressable>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-        </div>
-      ) : (
-        <QueryEmpty
-          title={diaryOnly ? '这一年还没有写过今日想法' : '这一年还没有记录'}
-          hint={diaryOnly ? '关掉「只看有想法」，可以回顾状态和学习记录' : '从今天开始写，这里会按月份排成时间线'}
-        />
-      )}
+                        {cfg.label}
+                      </span>
+                    )}
+                    {record.totalMin > 0 && (
+                      <span className="nb-mem-dur">{formatDuration(record.totalMin)}</span>
+                    )}
+                    {subs.map((s) => (
+                      <span key={s.name} className="nb-mem-subj" style={{ color: s.color }}>
+                        {s.name}
+                      </span>
+                    ))}
+                  </span>
+                  {diaryText ? (
+                    <span className="nb-note nb-mem-note">{diaryText}</span>
+                  ) : (
+                    <span className="nb-mem-empty">（这天没写想法）</span>
+                  )}
+                </span>
+              </button>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

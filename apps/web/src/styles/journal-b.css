@@ -1235,3 +1235,122 @@ textarea.nb-field {
     height: 140px;
   }
 }
+
+/* ---------- 时光页（时间线） ---------- */
+.nb-memory {
+  padding-left: 0;
+}
+.nb-memory::before {
+  content: '';
+  position: absolute;
+  left: 150px;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+.nb-memory-head {
+  padding-left: 180px;
+}
+/* 时间线条目：150px 日期列 | 内容列 */
+.nb-mem-item {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  width: 100%;
+  padding: 18px 0;
+  border: 0;
+  border-bottom: 1px dashed var(--rule-dash);
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.nb-mem-item:active {
+  background: transparent;
+  transform: none;
+}
+.nb-mem-date {
+  display: block;
+  text-align: right;
+  padding-right: 22px;
+}
+.nb-mem-date b {
+  display: block;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--ink);
+}
+.nb-mem-date span {
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.nb-mem-body {
+  display: block;
+  padding: 0 30px;
+  min-width: 0;
+}
+.nb-mem-meta {
+  display: flex;
+  gap: 6px 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.nb-mem-state {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 15px;
+}
+.nb-mem-dur {
+  font-family: var(--font-num);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.nb-mem-subj {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 13px;
+}
+.nb-mem-note {
+  display: block;
+  margin-top: 6px;
+}
+.nb-mem-empty {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+@media (max-width: 767px) {
+  .nb-memory::before {
+    display: none;
+  }
+  .nb-memory-head {
+    padding-left: 0;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .nb-mem-item {
+    grid-template-columns: 1fr;
+    padding: 14px 0;
+  }
+  .nb-mem-date {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: 6px;
+  }
+  .nb-mem-date b {
+    font-size: 18px;
+  }
+  .nb-mem-body {
+    padding: 0;
+  }
+}
