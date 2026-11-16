@@ -99,8 +99,8 @@ export default function DiaryEditor({ value, onSave }: DiaryEditorProps) {
   }, [displayValue]);
 
   return (
-    <div className="relative">
-      <div className="absolute right-1 top-1 z-10 flex items-center gap-1">
+    <div>
+      <div className="mb-1 flex justify-end gap-1">
         <button
           type="button"
           onClick={() => setIsPreview(false)}
@@ -126,7 +126,6 @@ export default function DiaryEditor({ value, onSave }: DiaryEditorProps) {
       {isPreview ? (
         <div
           className="nb-note diary-content min-h-[200px]"
-          style={{ paddingRight: '4.5rem' }}
           dangerouslySetInnerHTML={{ __html: renderedHtml }}
         />
       ) : (
@@ -139,7 +138,7 @@ export default function DiaryEditor({ value, onSave }: DiaryEditorProps) {
           }}
           placeholder="随手写点什么… 今天完成了什么？"
           className="nb-note w-full resize-none bg-transparent outline-none placeholder:text-[var(--ink-faint)]"
-          style={{ paddingRight: '4.5rem', minHeight: '220px' }}
+          style={{ minHeight: '220px' }}
         />
       )}
 

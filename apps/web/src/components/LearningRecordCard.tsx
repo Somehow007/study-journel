@@ -37,7 +37,7 @@ export default function LearningRecordCard({ item, onEdit, onDelete }: LearningR
             variant="icon"
             onClick={onDelete}
             aria-label={`删除 ${heading}`}
-            className="text-[var(--ink-faint)] hover:text-[var(--danger)]"
+            className="nb-row-del text-[var(--ink-faint)] hover:text-[var(--danger)]"
           >
             <X size={14} strokeWidth={1.75} />
           </Pressable>

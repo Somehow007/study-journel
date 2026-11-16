@@ -200,6 +200,18 @@ a.nb-sec-side {
   white-space: nowrap;
 }
 
+/* 行内删除：桌面悬停/聚焦行时显示，触屏常显 */
+@media (hover: hover) {
+  .nb-row-del {
+    opacity: 0;
+    transition: opacity var(--duration-press) var(--ease-smooth);
+  }
+  tr:hover .nb-row-del,
+  tr:focus-within .nb-row-del {
+    opacity: 1;
+  }
+}
+
 /* ---------- 合计 / 荧光笔 ---------- */
 .nb-sum {
   display: flex;
