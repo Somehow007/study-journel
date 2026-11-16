@@ -196,7 +196,7 @@ export default function Search() {
                 <HitCard
                   key={`e-${h.hit.id}`}
                   date={h.hit.date}
-                  tag={`条目 · ${h.hit.subjectName}`}
+                  tag={`学习记录 · ${h.hit.subjectName}`}
                   tagColor={h.hit.subjectColor}
                   text={
                     h.hit.note && h.hit.note !== (h.hit.title || h.hit.subjectName)
