@@ -19,6 +19,10 @@ interface TodayGoalsSectionProps {
   date: string;
 }
 
+type TodoRow =
+  | { kind: 'count'; key: string; item: TodayGoalItem }
+  | { kind: 'task'; key: string; item: TodayGoalItem; task: GoalTask };
+
 function patchItems(
   data: TodayGoals | undefined,
   goalId: string,
@@ -41,7 +45,14 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
   >(null);
 
   const items = data?.items ?? [];
-  const doneCount = items.filter((i) => i.reached).length;
+  const rows: TodoRow[] = items.flatMap((item): TodoRow[] =>
+    item.type === 'CHECKLIST'
+      ? item.todayTasks.map((task) => ({ kind: 'task', key: task.id, item, task }))
+      : [{ kind: 'count', key: item.goalId, item }],
+  );
+  const doneRows = rows.filter((row) =>
+    row.kind === 'count' ? row.item.todayCheckin != null : row.task.done,
+  ).length;
 
   const setTodayData = (updater: (cur: TodayGoals | undefined) => TodayGoals | undefined) => {
     qc.setQueryData<TodayGoals | undefined>(qk.todayGoals(date), updater);
@@ -110,13 +121,50 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
     }
   };
 
+  const handleCountToggle = (item: TodayGoalItem) => {
+    if (item.todayCheckin) {
+      setTodayData((cur) =>
+        patchItems(cur, item.goalId, (it) => ({ ...it, todayCheckin: null })),
+      );
+      void deleteCheckIn(item.goalId, date)
+        .then(() => invalidateAll(qc))
+        .catch((err) => {
+          invalidateAll(qc);
+          showToast(err instanceof Error ? err.message : '取消失败');
+        });
+      return;
+    }
+    setSheet({ item, mode: 'count' });
+  };
+
+  const handleTaskToggle = (item: TodayGoalItem, task: GoalTask) => {
+    if (task.done) {
+      setTodayData((cur) =>
+        patchItems(cur, item.goalId, (it) => ({
+          ...it,
+          todayTasks: it.todayTasks.map((t) =>
+            t.id === task.id ? { ...t, done: false } : t,
+          ),
+        })),
+      );
+      void uncompleteGoalTask(task.id)
+        .then(() => invalidateAll(qc))
+        .catch((err) => {
+          invalidateAll(qc);
+          showToast(err instanceof Error ? err.message : '更新失败');
+        });
+      return;
+    }
+    setSheet({ item, mode: 'task', task });
+  };
+
   return (
     <div>
       <div className="nb-sec">
         待办
-        {items.length > 0 ? (
+        {rows.length > 0 ? (
           <Link to="/plan" className="nb-sec-side">
-            来自月计划 · {doneCount} / {items.length} →
+            来自月计划 · {doneRows} / {rows.length} →
           </Link>
         ) : (
           <Link to="/plan" className="nb-sec-side red">
@@ -132,129 +180,53 @@ export default function TodayGoalsSection({ date }: TodayGoalsSectionProps) {
         </div>
       ) : error && !data ? (
         <QueryError message={error.message} onRetry={() => void refetch()} />
-      ) : items.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p className="py-1 text-[13px]" style={{ color: 'var(--ink-faint)' }}>
           今天没有待办任务
         </p>
       ) : (
-        items.map((item) => {
-          const pct = Math.min(100, Math.max(0, item.percent));
-          const filled = Math.round(pct / 5);
-          const taskDone = item.todayTasks.filter((t) => t.done).length;
+        rows.map((row) => {
+          const { item } = row;
+          if (row.kind === 'count') {
+            const checkin = item.todayCheckin;
+            const on = checkin != null;
+            return (
+              <Pressable
+                key={row.key}
+                className={`nb-todo${on ? ' on' : ''}`}
+                aria-label={on ? '取消打卡' : '记一笔'}
+                onClick={() => handleCountToggle(item)}
+              >
+                <span className={`nb-box${on ? ' on' : ''}`} />
+                <span>
+                  {on
+                    ? `${item.title} · 已记 ${checkin.quantity} ${item.unit || ''}`
+                    : `${item.title} · 今日 ${item.suggestedToday ?? 0} ${item.unit || ''}`}
+                </span>
+                <em />
+              </Pressable>
+            );
+          }
+          const { task } = row;
+          const on = task.done;
           return (
-            <div className="nb-goal" key={item.goalId}>
-              <span className="flex min-w-0 items-baseline gap-2">
-                <i
-                  aria-hidden
-                  className="flex-none self-center"
-                  style={{ width: 8, height: 8, background: item.color }}
-                />
-                <Link
-                  to={`/plan/${item.goalId}`}
-                  className="truncate hover:underline"
-                  style={{ color: 'inherit' }}
-                >
-                  {item.title}
-                </Link>
-              </span>
-              <span className="nb-goal-val">{item.percent}%</span>
-              <span className="nb-meter">
-                {Array.from({ length: 20 }, (_, i) => (
-                  <span key={i} className={i < filled ? 'f' : ''} />
-                ))}
-              </span>
-              <small>
-                {item.type === 'COUNT'
-                  ? `今日建议 ${item.suggestedToday ?? 0} ${item.unit || ''}`
-                  : `${taskDone} / ${item.todayTasks.length} 项今日任务`}
-              </small>
-
-              {item.type === 'COUNT' && (
-                <div
-                  className="flex items-center justify-between gap-3"
-                  style={{ gridColumn: '1 / 3', paddingBottom: 8 }}
-                >
-                  <span className="text-[12px]" style={{ color: 'var(--ink-faint)' }}>
-                    {item.todayCheckin
-                      ? `今天已记 ${item.todayCheckin.quantity} ${item.unit || ''}`
-                      : ''}
-                    {item.remaining != null && !item.reached ? `还剩 ${item.remaining}` : ''}
+            <Pressable
+              key={row.key}
+              className={`nb-todo${on ? ' on' : ''}`}
+              aria-label={on ? '取消完成' : '标记完成'}
+              onClick={() => handleTaskToggle(item, task)}
+            >
+              <span className={`nb-box${on ? ' on' : ''}`} />
+              <span>
+                {task.title}
+                {task.dueDate && task.dueDate < date && !task.done ? (
+                  <span className="ml-1.5 text-[12px]" style={{ color: 'var(--ink-faint)' }}>
+                    过期
                   </span>
-                  {item.todayCheckin ? (
-                    <button
-                      type="button"
-                      className="nb-btn"
-                      onClick={() => {
-                        setTodayData((cur) =>
-                          patchItems(cur, item.goalId, (it) => ({ ...it, todayCheckin: null })),
-                        );
-                        void deleteCheckIn(item.goalId, date)
-                          .then(() => invalidateAll(qc))
-                          .catch((err) => {
-                            invalidateAll(qc);
-                            showToast(err instanceof Error ? err.message : '取消失败');
-                          });
-                      }}
-                    >
-                      取消
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="nb-btn p"
-                      onClick={() => setSheet({ item, mode: 'count' })}
-                    >
-                      完成
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {item.type === 'CHECKLIST' && (
-                <div style={{ gridColumn: '1 / 3' }}>
-                  {item.todayTasks.map((task) => (
-                    <Pressable
-                      key={task.id}
-                      className={`nb-todo${task.done ? ' on' : ''}`}
-                      aria-label={task.done ? '取消完成' : '标记完成'}
-                      onClick={() => {
-                        if (task.done) {
-                          setTodayData((cur) =>
-                            patchItems(cur, item.goalId, (it) => ({
-                              ...it,
-                              todayTasks: it.todayTasks.map((t) =>
-                                t.id === task.id ? { ...t, done: false } : t,
-                              ),
-                            })),
-                          );
-                          void uncompleteGoalTask(task.id)
-                            .then(() => invalidateAll(qc))
-                            .catch((err) => {
-                              invalidateAll(qc);
-                              showToast(err instanceof Error ? err.message : '更新失败');
-                            });
-                          return;
-                        }
-                        setSheet({ item, mode: 'task', task });
-                      }}
-                    >
-                      <span className={`nb-box${task.done ? ' on' : ''}`} />
-                      <span>
-                        {task.title}
-                        {task.dueDate && task.dueDate < date && !task.done ? (
-                          <span
-                            className="ml-1.5 text-[12px]"
-                            style={{ color: 'var(--ink-faint)' }}
-                          >
-                            过期
-                          </span>
-                        ) : null}
-                      </span>
-                    </Pressable>
-                  ))}
-                </div>
-              )}
-            </div>
+                ) : null}
+              </span>
+              <em>{item.title}</em>
+            </Pressable>
           );
         })
       )}
