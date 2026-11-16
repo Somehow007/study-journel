@@ -128,6 +128,19 @@ S0 必须最先做；S1 第二。S3–S7 互不依赖，可任意顺序，但**�
 - **新发现**：无。S8 全为 CSS/展示层小修，无版式回归。
 - 遗留照旧：收尾轮未决项（手机日历底部块、搜索页语义、目标编辑入口、时光页长滚、768–855px 顶栏、长状态名边界）+ S8 卡内 3 条（`.nb-date-meta` nowrap、Firefox date 图标、`.nb-swatch:active` 反馈）。
 
+### 终验（2026-11-16 · S1–S8 完成，S9 延后）
+
+- **范围合规**：`e20167f..HEAD` 共 26 commit，作者均为用户本人、零 `Co-authored-by`；改动仅 `apps/web/src`、`apps/web/scripts/visual`、`scripts/visual.sh`、`.trellis`，另 `vite.config.ts`（S0 visual 用 env 覆盖代理/关自动打开，默认行为不变）与 `AGENTS.md`（S0 登记 visual.sh）；未动后端/`db/`/`deploy/`、无新依赖、无硬编码色值新增；`new Date('YYYY-MM-DD')` 违例已清零。
+- **验证**：`./scripts/verify.sh` 全绿（web tsc+build、server gofmt/vet/test、sqlc 一致）；`./scripts/visual.sh` 全量 12×1440 + 6×390 **零 pageerror / 零横向溢出**（`/tmp/sj-visual.JXOtPz/report.html`）。
+- **目检（本轮由有视觉的模型逐图看过，补此前「无视觉、以 DOM 断言代替」的缺口）**：
+  - 验收 1 无竖排/重叠/溢出：统计、年度（「二〇二六」单行）、目标详情（盖章正圆、周标签日期段）、搜索、设置整页铺开；手机整屏方格纸、头在纸内、KV 两列正常 ✓
+  - 验收 2 日历「本月待办 3 / 7」= 计划页 408「2 / 5」+ 马原「1 / 2」✓；计划页清单子任务展开 + 「+ 加一条子任务」✓
+  - 验收 3 状态色全站极性一致（日历格/图例/今日选择/统计记数：专注顺利平稳红笔，疲惫焦虑低落浅墨）✓
+  - S3 日期号左上、手机隐藏状态字无重叠 ✓；S7 今日待办平铺、日记写/看在文上方 ✓；S8 表单色块 26px ✓
+- **截图口径说明**：手机今日页仅末行显示删除 ×——shot.mjs 的 390 context 未设 `hasTouch`，Chromium 仍匹配 `(hover: hover)`，× 显示的是鼠标所在行的悬停态；真机触屏走 `hover: none` 常显。非缺陷，可选在收尾轮给 mobile context 加 `hasTouch/isMobile` 让截图贴近真机。
+- **新发现 → 留收尾轮**：统计页「近 26 周学习热力」首列月份标签与次列相撞（「5月6月」粘连，1440/390 均现）；M7 存量，非本任务回归。
+- **结论**：S1–S8 验收通过，整页还原度达到 prd 目标。任务**不归档**——待 S9（可选，较强模型或 owner 复核契约 diff）与收尾轮完成后再补 `## Resolution` 并归档。
+
 ## 验收（整体）
 
 - 12 页 × 1440 与 6 页 × 390 对照报告：无竖排折行、无数字重叠、无横向溢出、零 pageerror。
