@@ -1,14 +1,17 @@
 import type { ReactNode } from 'react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search as SearchIcon, ArrowRight } from 'lucide-react';
 import { useSearch } from '../lib/queries';
-import { useStateConfigs, type StateConfig } from '../lib/stateUtils';
-import { formatDuration, parseDate, getWeekdayChinese } from '../lib/dateUtils';
-import { useIsDark } from '../lib/useIsDark';
+import { parseDate, getWeekdayChinese } from '../lib/dateUtils';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
-import { Pressable } from '../components/ui/Pressable';
-import type { Entry, SearchDayHit } from '../lib/types/api';
+
+type SearchType = 'all' | 'diary' | 'entry';
+const TYPE_CHIPS: { key: SearchType; label: string }[] = [
+  { key: 'all', label: '全部' },
+  { key: 'diary', label: '日记' },
+  { key: 'entry', label: '学习记录' },
+];
+const ROTATIONS = [-0.6, 0.4, -0.3];
 
 function formatSearchDate(dateStr: string): string {
   const date = parseDate(dateStr);
@@ -45,8 +48,7 @@ function highlightSnippet(text: string, keyword: string): ReactNode {
     parts.push(
       <mark
         key={key++}
-        className="rounded-sm px-0.5 text-ink"
-        style={{ background: 'color-mix(in srgb, var(--brand) 20%, transparent)' }}
+        className="nb-hit-mark"
       >
         {remaining.slice(matchIdx, matchIdx + kw.length)}
       </mark>,
@@ -56,99 +58,50 @@ function highlightSnippet(text: string, keyword: string): ReactNode {
   return <>{parts}</>;
 }
 
-function StateChip({ cfg, isDark }: { cfg: StateConfig; isDark: boolean }) {
+function HitCard({
+  date,
+  tag,
+  tagColor,
+  text,
+  keyword,
+  rotate,
+  onOpen,
+}: {
+  date: string;
+  tag: string;
+  tagColor?: string;
+  text: string;
+  keyword: string;
+  rotate: number;
+  onOpen: () => void;
+}) {
   return (
-    <span
-      className="rounded-full px-2 py-0.5 font-sans text-caption"
-      style={{
-        background: isDark ? cfg.dark.tint : cfg.tint,
-        color: isDark ? cfg.dark.ink : cfg.ink,
-      }}
+    <button
+      type="button"
+      className="nb-hit-card"
+      style={{ transform: `rotate(${rotate}deg)` }}
+      onClick={onOpen}
     >
-      {cfg.label}
-    </span>
-  );
-}
-
-function DiaryHitCard({
-  hit,
-  cfg,
-  isDark,
-  keyword,
-  onOpen,
-}: {
-  hit: SearchDayHit;
-  cfg: StateConfig | null;
-  isDark: boolean;
-  keyword: string;
-  onOpen: () => void;
-}) {
-  return (
-    <Pressable variant="card" onClick={onOpen} className="card group w-full rounded-xl p-4 text-left">
-      <div className="mb-2 flex items-center gap-3">
-        <span
-          className="h-2.5 w-2.5 rounded-full"
-          style={{
-            background: cfg ? (isDark ? cfg.dark.solid : cfg.color) : 'var(--keyline)',
-          }}
-        />
-        <span className="font-mono text-num text-ink">{formatSearchDate(hit.date)}</span>
-        {cfg && <StateChip cfg={cfg} isDark={isDark} />}
-        <ArrowRight size={16} className="ml-auto text-ink-faint opacity-0 transition-opacity group-hover:opacity-100" />
-      </div>
-      <p className="line-clamp-3 font-sans text-small leading-relaxed text-ink-soft">
-        {highlightSnippet(hit.diary, keyword)}
-      </p>
-    </Pressable>
-  );
-}
-
-function EntryHitCard({
-  entry,
-  keyword,
-  onOpen,
-}: {
-  entry: Entry;
-  keyword: string;
-  onOpen: () => void;
-}) {
-  const title = entry.title || entry.subjectName;
-  const hitText = entry.note && entry.note !== title ? `${title} · ${entry.note}` : title;
-  return (
-    <Pressable variant="card" onClick={onOpen} className="card group w-full rounded-xl p-4 text-left">
-      <div className="mb-2 flex items-center gap-3">
-        <span className="font-mono text-num text-ink">{formatSearchDate(entry.date)}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--keyline)] px-2 py-0.5 font-sans text-caption text-ink-soft">
-          <span className="h-2 w-2 rounded-full" style={{ background: entry.subjectColor }} />
-          {entry.subjectName}
+      <span className="nb-hit-head">
+        <span className="nb-mono">{formatSearchDate(date)}</span>
+        <span className="nb-hit-tag" style={tagColor ? { color: tagColor } : undefined}>
+          {tag}
         </span>
-        <span className="ml-auto font-mono text-caption text-ink-faint">
-          {formatDuration(entry.durationMin)}
-        </span>
-        <ArrowRight size={16} className="text-ink-faint opacity-0 transition-opacity group-hover:opacity-100" />
-      </div>
-      <p className="line-clamp-2 font-sans text-small leading-relaxed text-ink-soft">
-        {highlightSnippet(hitText, keyword)}
-      </p>
-    </Pressable>
+      </span>
+      <span className="nb-note nb-hit-note">{highlightSnippet(text, keyword)}</span>
+    </button>
   );
 }
 
 export default function Search() {
   const navigate = useNavigate();
-  const isDark = useIsDark();
   const [keyword, setKeyword] = useState('');
   const [debounced, setDebounced] = useState('');
+  const [type, setType] = useState<SearchType>('all');
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data, isPending, isFetching, error, refetch } = useSearch(debounced);
-  const stateConfigs = useStateConfigs();
-  const cfgById = useMemo(() => {
-    const map = new Map<string, StateConfig>();
-    for (const c of stateConfigs) map.set(c.id, c);
-    return map;
-  }, [stateConfigs]);
+  const { data, isPending, isFetching, error, refetch } = useSearch(debounced, type);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -173,75 +126,94 @@ export default function Search() {
   const total = dayHits.length + entryHits.length;
   const loading = hasSearched && (isPending || (isFetching && !data));
 
-  return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-6">
-        <h1 className="font-sans text-h1 text-ink">搜索</h1>
-        <p className="mt-1 font-sans text-caption text-ink-faint">日记、科目、备注</p>
-      </div>
+  // 结果卡片统一序列（先日记后条目），旋转角按序循环
+  const hits = useMemo(
+    () => [
+      ...dayHits.map((h) => ({ kind: 'day' as const, hit: h })),
+      ...entryHits.map((e) => ({ kind: 'entry' as const, hit: e })),
+    ],
+    [dayHits, entryHits],
+  );
 
-      <div className="mb-6">
-        <div className="relative">
-          <SearchIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint" />
+  return (
+    <div className="nb-book nb-single">
+      <div className="nb-page single nb-gridbg">
+        <div className="nb-date">
+          <span className="nb-date-num">搜索</span>
+          <span className="nb-date-meta">日记、学科、备注</span>
+        </div>
+
+        <div className="nb-search-bar">
+          <span className="nb-search-label">查：</span>
           <input
             ref={inputRef}
             type="text"
             value={keyword}
             onChange={handleInput}
-            placeholder="搜索日记、科目或备注…"
-            className="card w-full rounded-xl py-3.5 pl-11 pr-4 font-sans text-body text-ink outline-none placeholder:text-ink-faint transition-all focus:border-brand"
-            style={{ boxShadow: 'none' }}
+            placeholder="日记、科目或备注…"
+            className="nb-field nb-search-input"
           />
+          {hasSearched && !loading && total > 0 && (
+            <span className="nb-search-count nb-mono">共 {total} 处</span>
+          )}
         </div>
+
+        <div className="nb-search-types">
+          {TYPE_CHIPS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              className={`nb-chip${type === t.key ? ' on' : ''}`}
+              onClick={() => setType(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {!hasSearched ? (
+          <QueryEmpty title="输入关键词开始搜索" hint="会同时匹配日记、学科名称和备注" />
+        ) : loading ? (
+          <QueryLoading />
+        ) : error ? (
+          <QueryError message={error.message} onRetry={() => void refetch()} />
+        ) : total === 0 ? (
+          <QueryEmpty title="没有找到相关记录" hint="换个关键词试试？" />
+        ) : (
+          <div className="nb-hit-grid">
+            {hits.map((h, idx) =>
+              h.kind === 'day' ? (
+                <HitCard
+                  key={`d-${h.hit.date}`}
+                  date={h.hit.date}
+                  tag="日记"
+                  text={h.hit.diary}
+                  keyword={debounced}
+                  rotate={ROTATIONS[idx % 3]}
+                  onOpen={() => navigate(`/day/${h.hit.date}`)}
+                />
+              ) : (
+                <HitCard
+                  key={`e-${h.hit.id}`}
+                  date={h.hit.date}
+                  tag={`条目 · ${h.hit.subjectName}`}
+                  tagColor={h.hit.subjectColor}
+                  text={
+                    h.hit.note && h.hit.note !== (h.hit.title || h.hit.subjectName)
+                      ? `${h.hit.title || h.hit.subjectName} · ${h.hit.note}`
+                      : h.hit.title || h.hit.subjectName
+                  }
+                  keyword={debounced}
+                  rotate={ROTATIONS[idx % 3]}
+                  onOpen={() => navigate(`/day/${h.hit.date}`)}
+                />
+              ),
+            )}
+          </div>
+        )}
+
+        <p className="nb-search-foot">会同时匹配日记、学科名称和备注。</p>
       </div>
-
-      {!hasSearched ? (
-        <QueryEmpty title="输入关键词开始搜索" hint="会同时匹配日记、科目名称和备注" />
-      ) : loading ? (
-        <QueryLoading />
-      ) : error ? (
-        <QueryError message={error.message} onRetry={() => void refetch()} />
-      ) : total === 0 ? (
-        <QueryEmpty title="没有找到相关记录" hint="换个关键词试试？" />
-      ) : (
-        <div className="space-y-6">
-          <p className="font-sans text-caption text-ink-faint">找到 {total} 条记录</p>
-
-          {dayHits.length > 0 && (
-            <section>
-              <h2 className="mb-3 font-sans text-small text-ink-faint">日记</h2>
-              <div className="space-y-3">
-                {dayHits.map((hit) => (
-                  <DiaryHitCard
-                    key={`d-${hit.date}`}
-                    hit={hit}
-                    cfg={cfgById.get(hit.stateId) ?? null}
-                    isDark={isDark}
-                    keyword={debounced}
-                    onOpen={() => navigate(`/day/${hit.date}`)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {entryHits.length > 0 && (
-            <section>
-              <h2 className="mb-3 font-sans text-small text-ink-faint">学习记录</h2>
-              <div className="space-y-3">
-                {entryHits.map((entry) => (
-                  <EntryHitCard
-                    key={entry.id}
-                    entry={entry}
-                    keyword={debounced}
-                    onOpen={() => navigate(`/day/${entry.date}`)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
     </div>
   );
 }

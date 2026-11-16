@@ -1443,3 +1443,114 @@ textarea.nb-field {
     gap: 16px 14px;
   }
 }
+
+/* ---------- 搜索页 ---------- */
+.nb-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 28px;
+}
+.nb-search-label {
+  font-family: var(--font-title);
+  font-size: 16px;
+  color: var(--ink-soft);
+  flex: none;
+}
+.nb-search-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-title);
+  font-size: 22px;
+  min-height: 0;
+  padding: 6px 10px;
+}
+.nb-search-input::placeholder {
+  color: var(--ink-faint);
+  font-size: 16px;
+}
+.nb-search-count {
+  font-family: var(--font-num);
+  font-size: 13px;
+  color: var(--ink-faint);
+  flex: none;
+  white-space: nowrap;
+}
+.nb-search-types {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.nb-hit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-top: 28px;
+}
+.nb-hit-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  padding: 18px 20px;
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--nb-hard-shadow) 13%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+}
+.nb-hit-card:active {
+  transform: none;
+}
+.nb-hit-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 8px;
+}
+.nb-hit-head .nb-mono {
+  font-family: var(--font-num);
+  font-size: 13px;
+  color: var(--ink);
+}
+.nb-hit-tag {
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-align: right;
+}
+.nb-hit-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+}
+.nb-hit-mark {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  color: var(--ink);
+  padding: 0 1px;
+}
+.nb-search-foot {
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin-top: 28px;
+}
+@media (max-width: 767px) {
+  .nb-search-bar {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .nb-search-input {
+    font-size: 18px;
+    flex-basis: 100%;
+    order: 3;
+  }
+  .nb-hit-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 20px;
+  }
+}
