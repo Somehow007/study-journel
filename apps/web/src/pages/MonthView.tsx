@@ -1,7 +1,7 @@
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
-import { useDayMarks } from '../lib/queries';
+import { useDayMarks, useGoalsByPeriod } from '../lib/queries';
 import { stateTextColor, useStateConfigs } from '../lib/stateUtils';
 import { formatPeriod } from '../lib/goalApi';
 import { monthBounds } from '../lib/domain';
@@ -24,6 +24,7 @@ export default function MonthView() {
   const period = formatPeriod(year, month);
   const [from, to] = monthBounds(period);
   const { data: marks, isPending, error, refetch } = useDayMarks(from, to);
+  const { data: goalMonth, isPending: goalsPending } = useGoalsByPeriod(period);
   const allStates = useStateConfigs();
 
   const todayStr = formatDate(new Date());
@@ -71,12 +72,12 @@ export default function MonthView() {
   }, [marks]);
 
   const taskTotals = useMemo(() => {
-    const list = marks ?? [];
+    const checklist = (goalMonth?.goals ?? []).filter((g) => g.type === 'CHECKLIST');
     return {
-      done: list.reduce((s, m) => s + m.taskDone, 0),
-      total: list.reduce((s, m) => s + m.taskTotal, 0),
+      done: checklist.reduce((s, g) => s + g.actualValue, 0),
+      total: checklist.reduce((s, g) => s + g.totalValue, 0),
     };
-  }, [marks]);
+  }, [goalMonth]);
 
   const formatHM = (min: number) => {
     const h = Math.floor(min / 60);
@@ -172,14 +173,20 @@ export default function MonthView() {
 
         <div className="nb-sec">本月待办</div>
         <p style={{ fontSize: 14, color: 'var(--ink-soft)' }}>
-          完成{' '}
-          <b
-            className="nb-hl"
-            style={{ fontFamily: 'var(--font-num)', fontWeight: 700, fontSize: 17 }}
-          >
-            {taskTotals.done}
-          </b>{' '}
-          / {taskTotals.total} 项
+          {goalsPending && !goalMonth ? (
+            '—'
+          ) : (
+            <>
+              完成{' '}
+              <b
+                className="nb-hl"
+                style={{ fontFamily: 'var(--font-num)', fontWeight: 700, fontSize: 17 }}
+              >
+                {taskTotals.done}
+              </b>{' '}
+              / {taskTotals.total} 项
+            </>
+          )}
         </p>
       </div>
     </div>
