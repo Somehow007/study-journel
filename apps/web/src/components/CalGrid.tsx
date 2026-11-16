@@ -1,27 +1,31 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDayMarks } from '../lib/queries';
 import { useStateConfigs } from '../lib/stateUtils';
-import { monthBounds } from '../lib/domain';
 import { formatDate, getCalendarDays } from '../lib/dateUtils';
 import { WEEKDAY_LABELS } from '../lib/constants';
+import type { DayMark } from '../lib/types/api';
 
-interface MiniMonthCalProps {
-  /** YYYY-MM-DD：决定展示哪一月；格子点击进入当天 */
-  date: string;
+export type CalHeight = 'h60' | 'h72' | 'h86' | 'h112';
+
+interface CalGridProps {
+  /** YYYY-MM：决定展示哪一月 */
+  period: string;
+  /** 当月 DayMark（页面已取数则传入，避免重复请求） */
+  marks?: DayMark[];
+  /** 高亮格（.today 描边）：今日页传查看日期，日历页传真实今天 */
+  highlightDate: string;
+  /** 格子高度档，默认 h72；手机端统一压到 56px */
+  heightClass?: CalHeight;
 }
 
 /**
- * 月内小日历（nb-cal）：格子 = 日期 + 右上状态 + 左下时长 + 底部时长条。
- * 今日页右页"本月"用；日历页后续可复用。
+ * nb-cal 月历格：日期 + 右上状态 + 左下时长 + 底部时长条（宽=时长/8h）。
+ * 点格进入当天。今日页右栏小日历与日历页大月历共用。
  */
-export default function MiniMonthCal({ date }: MiniMonthCalProps) {
+export default function CalGrid({ period, marks, highlightDate, heightClass = 'h72' }: CalGridProps) {
   const navigate = useNavigate();
-  const period = date.slice(0, 7);
   const year = Number(period.slice(0, 4));
   const month = Number(period.slice(5, 7)); // 1-based
-  const [from, to] = monthBounds(period);
-  const { data: marks } = useDayMarks(from, to, true);
   const stateConfigs = useStateConfigs();
   const realToday = formatDate(new Date());
 
@@ -38,7 +42,7 @@ export default function MiniMonthCal({ date }: MiniMonthCalProps) {
   const monthStart = `${period}-01`;
 
   return (
-    <div className="nb-cal">
+    <div className={`nb-cal ${heightClass}`}>
       {WEEKDAY_LABELS.map((w) => (
         <div key={w} className="nb-cal-wk">
           {w}
@@ -54,7 +58,7 @@ export default function MiniMonthCal({ date }: MiniMonthCalProps) {
         const isFuture = d.dateStr > realToday;
         const cls = [
           'nb-cal-cell',
-          d.dateStr === date ? 'today' : '',
+          d.dateStr === highlightDate ? 'today' : '',
           isFuture ? 'future' : '',
         ]
           .filter(Boolean)

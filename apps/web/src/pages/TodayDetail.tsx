@@ -21,20 +21,15 @@ import { useApp } from '../context/AppContext';
 import { showToast } from '../lib/toast';
 import { monthBounds } from '../lib/domain';
 import { formatDuration, getWeekdayChinese } from '../lib/dateUtils';
-import { MONTH_LABELS } from '../lib/constants';
+import { EN_MONTHS, MONTH_LABELS } from '../lib/constants';
 import MoodSelector from '../components/MoodSelector';
 import LearningRecordCard, { formatDurationHM } from '../components/LearningRecordCard';
 import LearningFormModal, { type EntryDraft } from '../components/LearningFormModal';
 import DiaryEditor from '../components/DiaryEditor';
-import MiniMonthCal from '../components/MiniMonthCal';
+import CalGrid from '../components/CalGrid';
 import TodayGoalsSection from '../components/TodayGoalsSection';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import type { DayDetail, Entry } from '../lib/types/api';
-
-const EN_MONTHS = [
-  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
-];
 
 function meterCells(percent: number, total = 20): boolean[] {
   const pct = Math.min(100, Math.max(0, percent));
@@ -327,7 +322,7 @@ export default function TodayDetail() {
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <MiniMonthCal date={date} />
+          <CalGrid period={period} marks={marks} highlightDate={date} heightClass="h72" />
         </div>
 
         <div className="nb-sec">

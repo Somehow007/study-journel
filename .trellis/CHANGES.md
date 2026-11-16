@@ -26,3 +26,4 @@
 - 2026-11-16 | M6 P2 外壳完成（未提交）：NotebookNav（桌面顶栏 考研手记+文字链接+印章 D-xxx / 手机页头+5 宋体 Tab 红下划线）、删 SiteTopBar 博客联动条+Sidebar（功能归 Settings）、verify 绿+playwright 27 项冒烟过 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
 - 2026-11-16 | M6 P3 原子组件完成（未提交）：Sheet 直角墨线纸卡（手机顶墨线/桌面540px硬阴影）、ConfirmDialog nb-dialog-h+nb-btn、QueryState 方角化+宋体空态标题；Pressable/横线纸归 P4 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
 - 2026-11-16 | M6 P4-1 今日页对开格纸落地：nb-book 双页+nb-table 学习条目+nb-cal 月历+nb-goal 目标行，子组件 MoodSelector/LearningRecordCard/DiaryEditor/TodayGoalsSection 同步 nb- 化，栏宽放宽 1240px；verify 绿+16 项冒烟过 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
+- 2026-11-16 | M6 P4-2 日历页落地：MonthView → nb-side300 对开（大月历+小计/图例/待办右栏），抽 CalGrid 共享格渲染（顺带修 MiniMonthCal 格高塌陷隐患），删 DateCard；18 项冒烟全过 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`

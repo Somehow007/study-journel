@@ -24,6 +24,13 @@
 .nb-book.nb-single {
   grid-template-columns: 1fr;
 }
+/* 日历页：左大月历 + 右 300px 小计栏 */
+.nb-book.nb-side300 {
+  grid-template-columns: 1fr 300px;
+}
+.nb-page.nb-narrow {
+  padding: 36px 28px;
+}
 .nb-page {
   position: relative;
   min-height: 640px;
@@ -40,12 +47,16 @@
   min-height: 0;
 }
 @media (max-width: 767px) {
-  .nb-book {
+  .nb-book,
+  .nb-book.nb-side300 {
     grid-template-columns: 1fr;
     margin: 16px 12px 24px;
   }
   .nb-page {
     min-height: 0;
+    padding: 24px 20px;
+  }
+  .nb-page.nb-narrow {
     padding: 24px 20px;
   }
   .nb-page.l {
@@ -332,6 +343,67 @@ button.nb-todo:active {
   font-family: var(--font-num);
   font-size: 12px;
   color: var(--ink-soft);
+  height: var(--nb-cal-h, 72px);
+}
+/* 格子高度档：原型 60(手机)/72-78(侧栏)/86(标准)/112(日历页) */
+.nb-cal.h60 { --nb-cal-h: 60px; }
+.nb-cal.h72 { --nb-cal-h: 72px; }
+.nb-cal.h86 { --nb-cal-h: 86px; }
+.nb-cal.h112 { --nb-cal-h: 112px; }
+@media (max-width: 767px) {
+  .nb-cal,
+  .nb-cal.h60,
+  .nb-cal.h72,
+  .nb-cal.h86,
+  .nb-cal.h112 {
+    --nb-cal-h: 56px;
+  }
+}
+/* 日历页脚注 */
+.nb-cal-hint {
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-top: 10px;
+}
+/* 月份翻页器 ‹ 2026.11 › */
+.nb-pager {
+  font-family: var(--font-title);
+  font-size: 14px;
+  color: var(--ink-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+.nb-pager b {
+  color: var(--ink);
+  font-weight: 600;
+  margin: 0 8px;
+  font-family: var(--font-num);
+  font-size: 13px;
+}
+.nb-pager button {
+  background: none;
+  border: 0;
+  padding: 2px 6px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+}
+.nb-pager button:hover {
+  color: var(--brand);
+}
+/* 状态图例行 */
+.nb-legend {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  font-size: 14px;
+  color: var(--ink);
 }
 .nb-cal-cell.today {
   background: var(--card);

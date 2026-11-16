@@ -20,3 +20,9 @@ export const MONTH_LABELS = [
   '一月', '二月', '三月', '四月', '五月', '六月',
   '七月', '八月', '九月', '十月', '十一月', '十二月',
 ];
+
+/** 月份英文缩写（格纸 meta 行用） */
+export const EN_MONTHS = [
+  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+];
