@@ -73,7 +73,11 @@ export default function CalGrid({ period, marks, highlightDate, heightClass = 'h
           >
             <span className="nb-cal-d">{d.day}</span>
             {cfg && !isFuture && (
-              <span className="nb-cal-state" style={{ color: stateTextColor(cfg) }}>
+              <span
+                className="nb-cal-state"
+                style={{ color: stateTextColor(cfg) }}
+                title={cfg.label}
+              >
                 {cfg.label}
               </span>
             )}

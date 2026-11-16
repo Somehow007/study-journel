@@ -524,6 +524,11 @@ button.nb-cal-cell {
   font-family: var(--font-title);
   font-size: 11px;
   line-height: 1;
+  /* 长自定义状态名单行省略，给左上日期号留位 */
+  max-width: calc(100% - 34px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .nb-cal-dur {
   position: absolute;
