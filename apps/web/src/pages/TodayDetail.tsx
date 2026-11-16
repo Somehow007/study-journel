@@ -28,6 +28,7 @@ import LearningFormModal, { type EntryDraft } from '../components/LearningFormMo
 import DiaryEditor from '../components/DiaryEditor';
 import CalGrid from '../components/CalGrid';
 import TodayGoalsSection from '../components/TodayGoalsSection';
+import PaceText from '../components/PaceText';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import type { DayDetail, Entry } from '../lib/types/api';
 
@@ -359,7 +360,18 @@ export default function TodayDetail() {
                     <span key={i} className={f ? 'f' : ''} />
                   ))}
                 </span>
-                <small>{g.note || (g.carriedFrom ? '含上月结转' : '')}</small>
+                <small className="flex gap-3">
+                  <PaceText
+                    pace={g.pace}
+                    type={g.type}
+                    unit={g.unit}
+                    period={g.period}
+                    reached={g.reached}
+                  />
+                  <span className="min-w-0 truncate">
+                    {g.note || (g.carriedFrom ? '含上月结转' : '')}
+                  </span>
+                </small>
               </div>
             );
           })

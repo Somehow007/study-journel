@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import GoalCompleteSheet, { type GoalCompleteValues } from '../components/GoalCompleteSheet';
 import GoalFormModal from '../components/GoalFormModal';
+import PaceText from '../components/PaceText';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import { useApp } from '../context/AppContext';
 import { taskWhenLabel } from '../lib/dateUtils';
@@ -80,6 +81,14 @@ function GoalRow({ goal, subjectColor }: { goal: GoalSummary; subjectColor?: str
           {goal.reached && (
             <span style={{ marginLeft: 'auto', color: 'var(--brand)' }}>✓ 已达标</span>
           )}
+          <PaceText
+            pace={goal.pace}
+            type={goal.type}
+            unit={goal.unit}
+            period={goal.period}
+            reached={goal.reached}
+            style={{ marginLeft: 'auto' }}
+          />
         </div>
       )}
       {goal.note && <small>{goal.note}</small>}
@@ -146,6 +155,14 @@ function ChecklistGoalBlock({
       <div className="nb-goal">
         <GoalTitle goal={goal} subjectColor={subjectColor} />
         <span className="nb-goal-val">{val}</span>
+        <PaceText
+          pace={goal.pace}
+          type={goal.type}
+          unit={goal.unit}
+          period={goal.period}
+          reached={goal.reached}
+          style={{ gridColumn: '1 / 3', fontSize: 13 }}
+        />
         <div style={{ gridColumn: '1 / 3' }}>
           {isPending ? (
             <div className="animate-pulse space-y-2 py-2" aria-busy="true">
