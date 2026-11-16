@@ -16,6 +16,11 @@ export interface EntryDraft {
 }
 
 const NEW_SUBJECT = '__new__';
+const DURATION_PRESETS = [
+  { label: '25m', hours: 0, minutes: 25 },
+  { label: '45m', hours: 0, minutes: 45 },
+  { label: '1h', hours: 1, minutes: 0 },
+];
 
 interface LearningFormModalProps {
   /** 编辑模式：传入 Entry；新增模式：null */
@@ -32,7 +37,7 @@ function CloseButton() {
     <Pressable
       variant="icon"
       onClick={close}
-      className="absolute right-3 top-3 flex items-center justify-center rounded-full text-[var(--ink-faint)]"
+      className="absolute right-3 top-3 flex items-center justify-center text-[var(--ink-faint)]"
       aria-label="关闭"
     >
       <X size={18} />
@@ -53,7 +58,7 @@ export default function LearningFormModal({ item, subjects, onConfirm, onClose }
 
   const isNewSubject = subjectChoice === NEW_SUBJECT;
   const durationMin = hours * 60 + minutes;
-  const modalTitle = item ? '编辑学习记录' : '添加学习记录';
+  const modalTitle = item ? '编辑学习记录' : '补一条学习';
   const subjectReady = isNewSubject ? newSubjectName.trim().length > 0 : subjectChoice.length > 0;
 
   const handleSubmit = async () => {
@@ -78,139 +83,143 @@ export default function LearningFormModal({ item, subjects, onConfirm, onClose }
     }
   };
 
-  const inputCls =
-    'card w-full rounded-md px-3 py-2 font-sans text-body text-[var(--ink)] outline-none transition-all focus:border-[var(--brand)]';
-  const inputStyle = { border: '1px solid var(--keyline)', boxShadow: 'none' } as const;
+  const applyPreset = (h: number, m: number) => {
+    setHours(h);
+    setMinutes(m);
+    setDurationError('');
+  };
 
   return (
     <Sheet title={modalTitle} onClose={onClose} as="form" onSubmit={() => void handleSubmit()}>
       <div className="px-5 pb-2 pt-3 md:px-6 md:pb-6 md:pt-6">
         <CloseButton />
-        <h3 className="mb-5 font-sans text-title text-[var(--ink)]">{modalTitle}</h3>
+        <div className="nb-dialog-h mb-5 pr-8">{modalTitle}</div>
 
-        <div className="mb-4">
-          <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">科目</label>
-          <select
-            value={subjectChoice}
-            onChange={(e) => setSubjectChoice(e.target.value)}
-            className={inputCls}
-            style={inputStyle}
+        <label className="nb-flab">科目</label>
+        <div className="mb-5 flex flex-wrap gap-2">
+          {subjects.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={`nb-chip${subjectChoice === s.id ? ' on' : ''}`}
+              onClick={() => setSubjectChoice(s.id)}
+            >
+              {s.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={`nb-chip nb-chip-dash${isNewSubject ? ' on' : ''}`}
+            onClick={() => setSubjectChoice(NEW_SUBJECT)}
           >
-            {!item && <option value="" disabled>选择科目…</option>}
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-            <option value={NEW_SUBJECT}>＋ 新建科目</option>
-          </select>
+            其他…
+          </button>
         </div>
 
         {isNewSubject && (
           <>
-            <div className="mb-4">
-              <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">新科目名称</label>
-              <input
-                type="text"
-                value={newSubjectName}
-                onChange={(e) => setNewSubjectName(e.target.value)}
-                placeholder="如：考研政治"
-                autoFocus
-                className={inputCls}
-                style={inputStyle}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">科目颜色</label>
-              <div className="flex gap-2">
-                {SUBJECT_COLORS.map((c) => (
-                  <Pressable
-                    key={c}
-                    variant="icon"
-                    onClick={() => setNewSubjectColor(c)}
-                    aria-label={`颜色 ${c}`}
-                    className="h-8 w-8 rounded-full"
-                    style={{
-                      background: c,
-                      outline: newSubjectColor === c ? `2px solid ${c}` : 'none',
-                      outlineOffset: '2px',
-                    }}
-                  />
-                ))}
-              </div>
+            <label className="nb-flab">新科目名称</label>
+            <input
+              type="text"
+              value={newSubjectName}
+              onChange={(e) => setNewSubjectName(e.target.value)}
+              placeholder="如：考研政治"
+              autoFocus
+              className="nb-field mb-4"
+            />
+            <label className="nb-flab">科目颜色</label>
+            <div className="mb-5 flex flex-wrap gap-2">
+              {SUBJECT_COLORS.map((c) => (
+                <Pressable
+                  key={c}
+                  variant="icon"
+                  onClick={() => setNewSubjectColor(c)}
+                  aria-label={`颜色 ${c}`}
+                  className="nb-swatch"
+                  style={{
+                    background: c,
+                    borderColor: newSubjectColor === c ? 'var(--brand)' : 'var(--ink)',
+                  }}
+                />
+              ))}
             </div>
           </>
         )}
 
-        <div className="mb-4">
-          <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">标题（可选）</label>
+        <label className="nb-flab">内容（可选）</label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="留空则用科目名"
+          className="nb-field mb-5"
+        />
+
+        <label className="nb-flab">时长</label>
+        <div className="mb-2 flex items-center gap-2">
           <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="留空则用科目名"
-            className={inputCls}
-            style={inputStyle}
+            type="number"
+            min="0"
+            max="24"
+            value={hours}
+            onChange={(e) => {
+              setHours(Math.max(0, Math.min(24, parseInt(e.target.value) || 0)));
+              setDurationError('');
+            }}
+            className="nb-field num nb-dur"
+            aria-label="小时"
           />
-        </div>
-
-        <div className="mb-4">
-          <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">时长</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="0"
-              max="24"
-              value={hours}
-              onChange={(e) => {
-                setHours(Math.max(0, Math.min(24, parseInt(e.target.value) || 0)));
-                setDurationError('');
-              }}
-              className="card w-20 rounded-md px-3 py-2 text-center font-mono text-num text-[var(--ink)] outline-none"
-              style={inputStyle}
-            />
-            <span className="font-sans text-small text-[var(--ink-soft)]">小时</span>
-            <input
-              type="number"
-              min="0"
-              max="59"
-              value={minutes}
-              onChange={(e) => {
-                setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)));
-                setDurationError('');
-              }}
-              className="card w-20 rounded-md px-3 py-2 text-center font-mono text-num text-[var(--ink)] outline-none"
-              style={inputStyle}
-            />
-            <span className="font-sans text-small text-[var(--ink-soft)]">分钟</span>
-          </div>
-          {durationError && (
-            <p className="mt-1.5 font-sans text-caption text-[var(--danger)]">{durationError}</p>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">备注</label>
+          <span className="nb-dur-unit">h</span>
           <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="简短写点什么…"
-            className={inputCls}
-            style={inputStyle}
+            type="number"
+            min="0"
+            max="59"
+            value={minutes}
+            onChange={(e) => {
+              setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)));
+              setDurationError('');
+            }}
+            className="nb-field num nb-dur"
+            aria-label="分钟"
           />
+          <span className="nb-dur-unit">m</span>
+          <span className="ml-3 flex gap-2">
+            {DURATION_PRESETS.map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                className="nb-chip"
+                onClick={() => applyPreset(p.hours, p.minutes)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </span>
         </div>
+        {durationError && (
+          <p className="mb-3 text-[12px]" style={{ color: 'var(--danger)' }}>
+            {durationError}
+          </p>
+        )}
 
-        <div className="flex justify-end gap-2">
+        <label className="nb-flab">备注</label>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="错题、卡点、明天要补的…"
+          rows={3}
+          className="nb-note nb-note-input w-full resize-none bg-transparent outline-none placeholder:text-[var(--ink-faint)]"
+        />
+
+        <div className="mt-6 flex justify-end gap-2">
           <SheetCancel />
-          <Pressable
+          <button
             type="submit"
             disabled={!subjectReady || durationMin < 1 || submitting}
-            className="rounded-md px-5 font-sans text-small text-[var(--text-inverse)]"
-            style={{ background: 'var(--brand)' }}
+            className="nb-btn p"
           >
-            {submitting ? '保存中…' : item ? '保存' : '添加'}
-          </Pressable>
+            {submitting ? '保存中…' : item ? '保存' : '记下'}
+          </button>
         </div>
       </div>
     </Sheet>
@@ -220,11 +229,7 @@ export default function LearningFormModal({ item, subjects, onConfirm, onClose }
 function SheetCancel() {
   const close = useSheetClose();
   return (
-    <Pressable
-      variant="pill"
-      onClick={close}
-      className="rounded-full border border-[var(--keyline)] px-4 py-2 font-sans text-small text-[var(--ink-soft)]"
-    >
+    <Pressable variant="pill" onClick={close} className="nb-btn">
       取消
     </Pressable>
   );

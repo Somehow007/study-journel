@@ -28,7 +28,7 @@ function CloseButton() {
     <Pressable
       variant="icon"
       onClick={close}
-      className="absolute right-3 top-3 flex items-center justify-center rounded-full text-[var(--ink-faint)]"
+      className="absolute right-3 top-3 flex items-center justify-center text-[var(--ink-faint)]"
       aria-label="关闭"
     >
       <X size={18} />
@@ -81,14 +81,14 @@ export default function GoalCompleteSheet({
 
   return (
     <Sheet title="记下完成" onClose={onClose} as="form" onSubmit={() => void handleSubmit()}>
-      <div className="px-5 pb-2 pt-3 md:px-6 md:pt-6">
+      <div className="px-5 pb-2 pt-3 md:px-6 md:pb-6 md:pt-6">
         <CloseButton />
-        <h3 className="mb-1 font-sans text-title text-[var(--ink)]">记下完成</h3>
+        <div className="nb-dialog-h mb-1 pr-8">记下完成</div>
         <p className="mb-4 font-sans text-caption text-[var(--ink-faint)]">{title}</p>
 
         {mode === 'count' && (
-          <div className="mb-4">
-            <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">
+          <>
+            <label className="nb-flab">
               今天完成了多少{unit ? `（${unit}）` : ''}
             </label>
             <input
@@ -96,70 +96,66 @@ export default function GoalCompleteSheet({
               min={1}
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
-              className="card w-full rounded-md px-3 py-2 font-mono text-num text-[var(--ink)] outline-none"
-              style={{ border: '1px solid var(--keyline)', boxShadow: 'none' }}
+              className="nb-field num mb-4"
             />
-          </div>
+          </>
         )}
 
-        <div className="mb-4">
-          <label className="mb-1.5 block font-sans text-small text-[var(--ink-soft)]">时长（可选）</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={0}
-              max={24}
-              value={hours}
-              onChange={(e) => setHours(Math.max(0, Math.min(24, parseInt(e.target.value, 10) || 0)))}
-              className="card w-20 rounded-md px-3 py-2 text-center font-mono text-num text-[var(--ink)] outline-none"
-              style={{ border: '1px solid var(--keyline)', boxShadow: 'none' }}
-            />
-            <span className="font-sans text-small text-[var(--ink-soft)]">小时</span>
-            <input
-              type="number"
-              min={0}
-              max={59}
-              value={minutes}
-              onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0)))}
-              className="card w-20 rounded-md px-3 py-2 text-center font-mono text-num text-[var(--ink)] outline-none"
-              style={{ border: '1px solid var(--keyline)', boxShadow: 'none' }}
-            />
-            <span className="font-sans text-small text-[var(--ink-soft)]">分钟</span>
-          </div>
+        <label className="nb-flab">时长（可选）</label>
+        <div className="mb-4 flex items-center gap-2">
+          <input
+            type="number"
+            min={0}
+            max={24}
+            value={hours}
+            onChange={(e) => setHours(Math.max(0, Math.min(24, parseInt(e.target.value, 10) || 0)))}
+            className="nb-field num nb-dur"
+            aria-label="小时"
+          />
+          <span className="nb-dur-unit">h</span>
+          <input
+            type="number"
+            min={0}
+            max={59}
+            value={minutes}
+            onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0)))}
+            className="nb-field num nb-dur"
+            aria-label="分钟"
+          />
+          <span className="nb-dur-unit">m</span>
         </div>
 
-        <label className="mb-4 block font-sans text-small text-[var(--ink-soft)]">感想（可选）</label>
+        <label className="nb-flab">感想（可选）</label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={2}
           placeholder="写一句今天的收获"
-          className="card mb-3 w-full rounded-md px-3 py-2 font-sans text-body text-[var(--ink)] outline-none"
-          style={{ border: '1px solid var(--keyline)', boxShadow: 'none', resize: 'none' }}
+          className="nb-note nb-note-input mb-4 w-full resize-none bg-transparent outline-none placeholder:text-[var(--ink-faint)]"
         />
 
-        <label className="mb-4 flex items-center gap-2 font-sans text-small text-[var(--ink-soft)]">
+        <label className="mb-4 flex items-center gap-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
           <input
             type="checkbox"
             checked={createEntry}
             onChange={(e) => setCreateEntry(e.target.checked)}
-            className="h-4 w-4 accent-[var(--brand)]"
+            className="h-4 w-4"
+            style={{ accentColor: 'var(--brand)' }}
           />
           同时记为今日学习时长
         </label>
 
-        {error && <p className="mb-3 font-sans text-caption text-[var(--danger)]">{error}</p>}
+        {error && (
+          <p className="mb-3 text-[12px]" style={{ color: 'var(--danger)' }}>
+            {error}
+          </p>
+        )}
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex justify-end gap-2">
           <SheetCancel />
-          <Pressable
-            type="submit"
-            disabled={submitting}
-            className="rounded-md py-2.5 font-sans text-small text-[var(--text-inverse)]"
-            style={{ background: 'var(--brand)' }}
-          >
+          <button type="submit" disabled={submitting} className="nb-btn p">
             {submitting ? '保存中…' : '完成'}
-          </Pressable>
+          </button>
         </div>
       </div>
     </Sheet>
@@ -169,11 +165,7 @@ export default function GoalCompleteSheet({
 function SheetCancel() {
   const close = useSheetClose();
   return (
-    <Pressable
-      variant="pill"
-      onClick={close}
-      className="rounded-md border border-[var(--keyline)] py-2.5 font-sans text-small text-[var(--ink-soft)]"
-    >
+    <Pressable variant="pill" onClick={close} className="nb-btn">
       取消
     </Pressable>
   );
