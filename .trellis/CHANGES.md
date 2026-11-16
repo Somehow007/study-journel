@@ -27,3 +27,4 @@
 - 2026-11-16 | M6 P3 原子组件完成（未提交）：Sheet 直角墨线纸卡（手机顶墨线/桌面540px硬阴影）、ConfirmDialog nb-dialog-h+nb-btn、QueryState 方角化+宋体空态标题；Pressable/横线纸归 P4 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
 - 2026-11-16 | M6 P4-1 今日页对开格纸落地：nb-book 双页+nb-table 学习条目+nb-cal 月历+nb-goal 目标行，子组件 MoodSelector/LearningRecordCard/DiaryEditor/TodayGoalsSection 同步 nb- 化，栏宽放宽 1240px；verify 绿+16 项冒烟过 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
 - 2026-11-16 | M6 P4-2 日历页落地：MonthView → nb-side300 对开（大月历+小计/图例/待办右栏），抽 CalGrid 共享格渲染（顺带修 MiniMonthCal 格高塌陷隐患），删 DateCard；18 项冒烟全过 | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`
+- 2026-11-16 | M6 P4-3 计划页落地：PlanView 改 nb-book 对开（左=完成度框+大百分比+25格 meter+数量型目标行；右=结转横幅+清单型目标行），修复 hooks 顺序违规（subjectColorById useMemo 移到早退前）；抽共享 progressCells(domain.ts) TodayDetail 复用；Layout /plan 栏宽 1240px；verify 绿+playwright 冒烟全过（种子 1 COUNT+1 CHECKLIST 验证双栏渲染后清理） | → `.trellis/tasks/11-16-m6-b-notebook/prd.md`

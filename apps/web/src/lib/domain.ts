@@ -490,3 +490,10 @@ export function stateBreakdown(marks: StateMark[]): StateTotal[] {
     b.count !== a.count ? b.count - a.count : a.label < b.label ? -1 : a.label > b.label ? 1 : 0,
   );
 }
+
+/** 进度格：percent(0-100) → total 个布尔格，前 filled 个为满（nb-meter 用）。 */
+export function progressCells(percent: number, total = 20): boolean[] {
+  const pct = Math.min(100, Math.max(0, percent));
+  const filled = Math.round((pct / 100) * total);
+  return Array.from({ length: total }, (_, i) => i < filled);
+}

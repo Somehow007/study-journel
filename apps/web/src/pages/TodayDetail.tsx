@@ -19,7 +19,7 @@ import {
 } from '../lib/queries';
 import { useApp } from '../context/AppContext';
 import { showToast } from '../lib/toast';
-import { monthBounds } from '../lib/domain';
+import { monthBounds, progressCells } from '../lib/domain';
 import { formatDuration, getWeekdayChinese } from '../lib/dateUtils';
 import { EN_MONTHS, MONTH_LABELS } from '../lib/constants';
 import MoodSelector from '../components/MoodSelector';
@@ -30,12 +30,6 @@ import CalGrid from '../components/CalGrid';
 import TodayGoalsSection from '../components/TodayGoalsSection';
 import { QueryError, QueryLoading } from '../components/QueryState';
 import type { DayDetail, Entry } from '../lib/types/api';
-
-function meterCells(percent: number, total = 20): boolean[] {
-  const pct = Math.min(100, Math.max(0, percent));
-  const filled = Math.round((pct / 100) * total);
-  return Array.from({ length: total }, (_, i) => i < filled);
-}
 
 export default function TodayDetail() {
   const { date } = useParams<{ date: string }>();
@@ -338,7 +332,7 @@ export default function TodayDetail() {
           </p>
         ) : (
           monthGoalsList.map((g) => {
-            const cells = meterCells(g.percent ?? 0);
+            const cells = progressCells(g.percent ?? 0);
             const val =
               g.type === 'COUNT' && g.totalValue
                 ? `${g.actualValue}/${g.totalValue}${g.unit ? ` ${g.unit}` : ''}`

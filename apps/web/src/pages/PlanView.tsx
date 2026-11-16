@@ -1,85 +1,81 @@
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import GoalFormModal from '../components/GoalFormModal';
-import GoalProgressBar from '../components/GoalProgressBar';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
-import { Pressable } from '../components/ui/Pressable';
 import { useApp } from '../context/AppContext';
 import { createGoal, formatPeriod } from '../lib/goalApi';
-import { useGoalsByPeriod, invalidateAll, qk } from '../lib/queries';
+import { useGoalsByPeriod, useSubjects, invalidateAll, qk } from '../lib/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../lib/toast';
+import { daysInMonth, progressCells } from '../lib/domain';
 import { MONTH_LABELS } from '../lib/constants';
 import type { GoalSummary } from '../lib/types/api';
 
-function ProgressRing({ percent, color }: { percent: number; color: string }) {
-  const r = 38;
-  const c = 2 * Math.PI * r;
-  const offset = c * (1 - Math.min(100, Math.max(0, percent)) / 100);
+function Meter({ percent, total = 25 }: { percent: number; total?: number }) {
   return (
-    <svg viewBox="0 0 100 100" className="h-24 w-24" aria-label={`本月完成度 ${percent}%`}>
-      <circle cx="50" cy="50" r={r} fill="none" stroke="var(--hairline)" strokeWidth="8" />
-      <circle
-        cx="50"
-        cy="50"
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth="8"
-        strokeDasharray={c}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        transform="rotate(-90 50 50)"
-      />
-      <text
-        x="50"
-        y="55"
-        textAnchor="middle"
-        fill="var(--ink)"
-        fontSize="18"
-        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-      >
-        {percent}%
-      </text>
-    </svg>
+    <span className="nb-meter">
+      {progressCells(percent, total).map((f, i) => (
+        <span key={i} className={f ? 'f' : ''} />
+      ))}
+    </span>
   );
 }
 
-function GoalCard({ goal, onClick }: { goal: GoalSummary; onClick: () => void }) {
-  const caption =
-    goal.type === 'COUNT'
-      ? `已完成 ${goal.actualValue} / ${goal.totalValue} ${goal.unit || ''}`
-      : `已完成 ${goal.actualValue} / ${goal.totalValue} 项`;
+function GoalRow({ goal, subjectColor }: { goal: GoalSummary; subjectColor?: string }) {
+  const isCount = goal.type === 'COUNT';
+  const val = isCount
+    ? goal.totalValue
+      ? `${goal.actualValue} / ${goal.totalValue}${goal.unit ? ` ${goal.unit}` : ''}`
+      : `${Math.round(goal.percent)}%`
+    : goal.totalValue
+      ? `${goal.actualValue} / ${goal.totalValue} 项`
+      : `${Math.round(goal.percent)}%`;
+  const daily = goal.suggestedDaily ?? goal.plannedDaily;
+  const weekly =
+    goal.suggestedWeekly ?? goal.plannedWeekly ?? (daily != null ? daily * 7 : null);
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="pressable-card card w-full rounded-xl p-5 text-left"
-      style={{
-        border: goal.reached ? `1px solid ${goal.color}` : undefined,
-        boxShadow: goal.reached ? `0 0 0 3px color-mix(in srgb, ${goal.color} 18%, transparent)` : undefined,
-      }}
-    >
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: goal.color }} />
-            <h3 className="truncate font-sans text-title text-[var(--ink)]">{goal.title}</h3>
-          </div>
-          <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">
-            {goal.type === 'COUNT' ? '数量型' : '清单型'} · {caption}
-          </p>
+    <div className="nb-goal">
+      <span className="flex min-w-0 items-baseline gap-2">
+        {goal.subjectName && (
+          <span className="nb-subj" style={{ color: subjectColor ?? 'var(--ink-soft)' }}>
+            {goal.subjectName}
+          </span>
+        )}
+        <Link
+          to={`/plan/${goal.id}`}
+          className="truncate hover:underline"
+          style={{ color: 'inherit', fontFamily: 'var(--font-title)', fontWeight: 700, fontSize: 17 }}
+        >
+          {goal.title}
+        </Link>
+      </span>
+      <span className="nb-goal-val">{val}</span>
+      <Meter percent={goal.percent} />
+      {isCount && (
+        <div className="nb-goal-meta">
+          <span>
+            建议每日 <b>{daily ?? '—'}</b>
+          </span>
+          <span>
+            建议每周 <b>{weekly ?? '—'}</b>
+          </span>
+          {goal.remainingDays != null && (
+            <span>
+              剩 <b>{goal.remainingDays}</b> 天
+            </span>
+          )}
+          {goal.remaining != null && !goal.reached && (
+            <span>
+              还差 <b>{goal.remaining}{goal.unit ? ` ${goal.unit}` : ''}</b>
+            </span>
+          )}
+          {goal.reached && (
+            <span style={{ marginLeft: 'auto', color: 'var(--brand)' }}>✓ 已达标</span>
+          )}
         </div>
-        <span className="shrink-0 font-mono text-num text-[var(--ink)]">{goal.percent}%</span>
-      </div>
-      <GoalProgressBar percent={goal.percent} color={goal.color} reached={goal.reached} />
-      {goal.type === 'COUNT' && goal.suggestedDaily != null && !goal.reached && (
-        <p className="mt-3 font-sans text-caption text-[var(--ink-faint)]">
-          今日建议 {goal.suggestedDaily} {goal.unit || ''} · 本周建议 {goal.suggestedWeekly} {goal.unit || ''}
-        </p>
       )}
-    </button>
+      {goal.note && <small>{goal.note}</small>}
+    </div>
   );
 }
 
@@ -92,8 +88,15 @@ export default function PlanView() {
 
   const qc = useQueryClient();
   const { data, isPending, error, refetch } = useGoalsByPeriod(period);
+  const { data: subjects } = useSubjects();
 
   const now = useMemo(() => new Date(), []);
+
+  const subjectColorById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of subjects ?? []) map.set(s.id, s.color);
+    return map;
+  }, [subjects]);
 
   const prevMonth = () => {
     const d = new Date(year, month - 1, 1);
@@ -103,6 +106,7 @@ export default function PlanView() {
     const d = new Date(year, month + 1, 1);
     setCurrentMonth(d.getFullYear(), d.getMonth());
   };
+  const backToThisMonth = () => setCurrentMonth(now.getFullYear(), now.getMonth());
 
   if (isPending && !data) return <QueryLoading />;
   if (error && !data) return <QueryError message={error.message} onRetry={() => void refetch()} />;
@@ -110,83 +114,132 @@ export default function PlanView() {
   const goals = data?.goals ?? [];
   const monthPercent = data?.monthPercent ?? 0;
   const reachedCount = data?.reachedCount ?? 0;
+  const goalCount = data?.goalCount ?? 0;
+
+  const countGoals = goals.filter((g) => g.type === 'COUNT');
+  const checklistGoals = goals.filter((g) => g.type === 'CHECKLIST');
+  const carriedGoals = goals.filter((g) => g.carriedFrom != null);
+
+  const dim = daysInMonth(period);
+  const curPeriod = formatPeriod(now.getFullYear(), now.getMonth());
+  const remainText =
+    period === curPeriod
+      ? `剩余 ${dim - now.getDate() + 1} 天`
+      : period > curPeriod
+        ? `整月 ${dim} 天`
+        : '已结束';
+
+  const carriedSrc = carriedGoals[0]?.carriedFrom;
+  const carriedLabel =
+    carriedSrc && /^\d{4}-\d{2}$/.test(carriedSrc) ? `结转自 ${carriedSrc}` : '结转自上月';
+
+  const openForm = () => setShowForm(true);
+
+  const completionBox = (
+    <div className="nb-pbox">
+      <div>
+        <div style={{ fontFamily: 'var(--font-title)', fontSize: 13, color: 'var(--ink-soft)' }}>
+          本月完成度
+        </div>
+        <div className="nb-pbox-num">
+          {Math.round(monthPercent)}
+          <small>%</small>
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Meter percent={monthPercent} />
+        <div className="nb-pbox-cap">
+          进度按各目标百分比平均 · 达标 {reachedCount} / {goalCount}
+        </div>
+      </div>
+    </div>
+  );
+
+  const empty = goals.length === 0;
 
   return (
-    <div>
-      <div className="mb-5 flex items-end justify-between">
-        <div>
-          <h1 className="font-sans text-h1 text-[var(--ink)]">{MONTH_LABELS[month]}计划</h1>
-          <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">{year}</p>
+    <div className={empty ? 'nb-book nb-single' : 'nb-book'}>
+      {/* 左页：完成度 + 数量型目标 + 结转 */}
+      <div className="nb-page l nb-gridbg">
+        <div className="nb-date">
+          <span className="nb-date-num">{MONTH_LABELS[month]}计划</span>
+          <span className="nb-date-meta">
+            {period}
+            <br />
+            {remainText}
+          </span>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 16, alignItems: 'center' }}>
+            <span className="nb-pager">
+              <button type="button" onClick={prevMonth} aria-label="上个月">
+                ‹
+              </button>
+              <b>{period.replace('-', '.')}</b>
+              <button type="button" onClick={nextMonth} aria-label="下个月">
+                ›
+              </button>
+            </span>
+            <button type="button" className="nb-btn r" onClick={backToThisMonth}>
+              本月
+            </button>
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Pressable
-            variant="icon"
-            onClick={prevMonth}
-            aria-label="上个月"
-            className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
-          >
-            <ChevronLeft size={18} strokeWidth={1.75} />
-          </Pressable>
-          <Pressable
-            variant="pill"
-            onClick={() => setCurrentMonth(now.getFullYear(), now.getMonth())}
-            className="rounded-full border border-[var(--brand)] px-4 py-1.5 font-sans text-small text-[var(--brand)]"
-          >
-            本月
-          </Pressable>
-          <Pressable
-            variant="icon"
-            onClick={nextMonth}
-            aria-label="下个月"
-            className="flex items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
-          >
-            <ChevronRight size={18} strokeWidth={1.75} />
-          </Pressable>
-        </div>
+
+        {completionBox}
+
+        {empty ? (
+          <QueryEmpty
+            title="这个月还没有目标"
+            hint="定一个可衡量的月目标，拆到每天，完成就能看见进度。"
+            action={
+              <button type="button" className="nb-btn p" onClick={openForm}>
+                制定本月目标
+              </button>
+            }
+          />
+        ) : (
+          <>
+            <div className="nb-sec">
+              数量型
+              <button type="button" className="nb-sec-side red" onClick={openForm}>
+                + 新目标
+              </button>
+            </div>
+            {countGoals.length === 0 ? (
+              <p className="py-1 text-[13px]" style={{ color: 'var(--ink-faint)' }}>
+                这个月还没有数量型目标
+              </p>
+            ) : (
+              countGoals.map((g) => (
+                <GoalRow key={g.id} goal={g} subjectColor={subjectColorById.get(g.subjectId ?? '')} />
+              ))
+            )}
+            {carriedGoals.length > 0 && (
+              <div className="nb-rollover">
+                {carriedLabel}：{carriedGoals.map((g) => `「${g.title}」`).join('、')}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      <section className="card mb-6 flex items-center gap-5 rounded-xl p-5 sm:p-6">
-        <ProgressRing percent={monthPercent} color="var(--brand)" />
-        <div>
-          <p className="font-sans text-small text-[var(--ink-faint)]">本月完成度</p>
-          <p className="mt-1 font-sans text-h2 text-[var(--ink)]">
-            {reachedCount}/{data?.goalCount ?? 0} 项目标达标
-          </p>
-          <p className="mt-1.5 font-sans text-caption text-[var(--ink-faint)]">进度按各目标百分比平均</p>
-        </div>
-      </section>
-
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-sans text-h2 text-[var(--ink)]">目标</h2>
-        <Pressable
-          variant="pill"
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-1 rounded-full border border-[var(--keyline)] px-3 py-1.5 font-sans text-small text-[var(--ink-soft)]"
-        >
-          <Plus size={14} strokeWidth={1.75} />
-          添加
-        </Pressable>
-      </div>
-
-      {goals.length === 0 ? (
-        <QueryEmpty
-          title="这个月还没有目标"
-          hint="定一个可衡量的月目标，拆到每天，完成就能看见进度。"
-          action={
-            <Pressable
-              onClick={() => setShowForm(true)}
-              className="rounded-md px-4 py-2 font-sans text-small text-[var(--text-inverse)]"
-              style={{ background: 'var(--brand)' }}
-            >
-              制定本月目标
-            </Pressable>
-          }
-        />
-      ) : (
-        <div className="flex flex-col gap-3">
-          {goals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} onClick={() => navigate(`/plan/${goal.id}`)} />
-          ))}
+      {/* 右页：清单型目标（有目标才渲染） */}
+      {!empty && (
+        <div className="nb-page r nb-gridbg">
+          <div className="nb-sec" style={{ marginTop: 4 }}>
+            清单型
+            <button type="button" className="nb-sec-side red" onClick={openForm}>
+              + 新目标
+            </button>
+          </div>
+          {checklistGoals.length === 0 ? (
+            <p className="py-1 text-[13px]" style={{ color: 'var(--ink-faint)' }}>
+              这个月还没有清单型目标
+            </p>
+          ) : (
+            checklistGoals.map((g) => (
+              <GoalRow key={g.id} goal={g} subjectColor={subjectColorById.get(g.subjectId ?? '')} />
+            ))
+          )}
         </div>
       )}
 

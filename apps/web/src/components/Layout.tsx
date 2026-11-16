@@ -11,7 +11,7 @@ export default function Layout() {
 
   const maxWidth = useMemo(() => {
     const path = location.pathname;
-    if (path === '/' || path.startsWith('/day/')) return '1240px';
+    if (path === '/' || path.startsWith('/day/') || path === '/plan') return '1240px';
     if (path === '/memory') return '720px';
     return '880px';
   }, [location.pathname]);
