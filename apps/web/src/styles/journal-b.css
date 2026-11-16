@@ -1672,7 +1672,8 @@ textarea.nb-field {
 .nb-chip-static {
   cursor: default;
   opacity: 0.75;
-}utton.nb-chip-static {
+}
+button.nb-chip-static {
   pointer-events: none;
 }
 .nb-set-inline {
