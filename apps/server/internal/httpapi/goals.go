@@ -112,7 +112,7 @@ func computeSummary(g db.Goal, wso int, today string,
 		out.PlannedWeekly = intPtr(p.PlannedWeekly)
 		out.SuggestedDaily = intPtr(p.SuggestedDaily)
 		out.SuggestedWeekly = intPtr(p.SuggestedWeekly)
-		if pace, err := domain.PaceCount(target, actual, g.Period, asOf); err == nil {
+		if pace, err := domain.PaceCount(target, actual, g.Period, today); err == nil {
 			out.Pace = intPtr(pace)
 		}
 	} else {

@@ -135,10 +135,10 @@ func runDomainCase(t *testing.T, c domainCase) any {
 			Target int    `json:"target"`
 			Actual int    `json:"actual"`
 			Period string `json:"period"`
-			AsOf   string `json:"asOf"`
+			Today  string `json:"today"`
 		}
 		decodeCaseInput(t, c, &in)
-		pace, err := PaceCount(in.Target, in.Actual, in.Period, in.AsOf)
+		pace, err := PaceCount(in.Target, in.Actual, in.Period, in.Today)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

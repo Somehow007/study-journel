@@ -166,15 +166,12 @@ func PreviewCountSplit(target int, period string, weekStartsOn int) (days, plann
 }
 
 // PaceCount is the COUNT goal's schedule delta: actual minus the even-split
-// expectation through asOf (inclusive). >0 ahead, 0 on plan, <0 behind.
-// asOf is clamped into the period, so past months compare against the full
-// target and future months against day 1.
-func PaceCount(target, actual int, period, asOf string) (int, error) {
+// expectation for the days fully elapsed before today. >0 ahead, 0 on plan,
+// <0 behind. Today itself is not yet owed (so an un-checked morning is not
+// "behind"); the elapsed count clamps to [0, daysInMonth], so past months
+// compare against the full target and future months against 0.
+func PaceCount(target, actual int, period, today string) (int, error) {
 	first, _, err := MonthBounds(period)
-	if err != nil {
-		return 0, err
-	}
-	asOf, err = AsOfForPeriod(period, asOf)
 	if err != nil {
 		return 0, err
 	}
@@ -182,12 +179,11 @@ func PaceCount(target, actual int, period, asOf string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	elapsed, err := DaysBetween(first, asOf)
+	elapsed, err := DaysBetween(first, today)
 	if err != nil {
 		return 0, err
 	}
-	if target < 0 {
-		target = 0
-	}
-	return actual - target*(elapsed+1)/days, nil
+	elapsed = max(0, min(elapsed, days))
+	target = max(0, target)
+	return actual - target*elapsed/days, nil
 }

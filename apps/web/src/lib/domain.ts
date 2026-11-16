@@ -244,11 +244,11 @@ export function goalProgressCount(
   };
 }
 
-/** COUNT 目标节奏：actual − floor(target × 已过天数 / 当月天数)；asOf 钳进本月（对齐 Go PaceCount）。 */
-export function paceCount(target: number, actual: number, period: string, asOf: string): number {
-  const [first] = monthBounds(period);
-  const elapsed = daysBetween(first, asOfForPeriod(period, asOf)) + 1;
-  return actual - Math.floor((Math.max(0, target) * elapsed) / daysInMonth(period));
+/** COUNT 目标节奏：actual − floor(target × 今天之前已过天数 / 当月天数)；今天不计入期望，已过天数钳到 [0, 当月天数]（对齐 Go PaceCount）。 */
+export function paceCount(target: number, actual: number, period: string, today: string): number {
+  const days = daysInMonth(period);
+  const elapsed = Math.max(0, Math.min(daysBetween(monthBounds(period)[0], today), days));
+  return actual - Math.floor((Math.max(0, target) * elapsed) / days);
 }
 
 /** CHECKLIST 目标进度（计划字段恒 0，与 Go 一致）。 */
