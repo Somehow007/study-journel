@@ -112,6 +112,22 @@ S0 必须最先做；S1 第二。S3–S7 互不依赖，可任意顺序，但**�
 - **走查补充（边界/主题）**：暗色 `journal-notebook-dark` computed 色精确——行文字 `rgb(228,230,234)`(#E4E6EA)、em/完成行字 `rgb(110,118,134)`(#6E7686)、删除线与 `.nb-chip.on` `rgb(255,122,92)`(#FF7A5C)、`.nb-box` 边同 ink；删除钮暗色下 hover/focus-within/blur 显隐均正确。空态（2026-10-15 无目标月）：`今天没有待办任务`+「去制定 →」+0 行，桌面/手机一致。未来日 2026-11-18（对照 `TaskRelevantOn` 语义）：恰 4 行——两 COUNT 未打卡「今日 36 题/今日 1 套」、`7.4 课后选择题` 带「过期」标记、`7.5 散列表` 无标记；已完成/未到期任务均不出行，头部「0 / 4」。learn-form「+ 补一条」弹层正常打开。
 - **观察项（不改，记录）**：COUNT 行勾选态整行删除线含目标名（`nb-todo.on` 统一口径）；`rows=0` 空态已由走查覆盖（上月无目标日实测通过）。
 
+### 走查补记（2026-11-16 · S8 后走查）
+
+- 覆盖：shot.mjs 全量 11 桌面 + 6 手机**零 pageerror / 零横向溢出**（报告 `/tmp/sj-s8-walk/report.html`）；综合探针 `probe-s8-walk.tmp.mjs` + 补验 `probe-s8-walk2.tmp.mjs`（用后已删，截图 `/tmp/sj-s8-walk/`）。
+- **组1**：1440/1024/390 三档 stats/annual/goal `.nb-date-num/.nb-sec/.nb-k/.nb-kv b` computed `white-space:nowrap` 全在；`.nb-kv b` overflow+ellipsis 在；`.nb-k` Range 逐字行数=1（科目名单行实证非仅靠样式）；`.nb-sec` 高<30、`.nb-date-num` 高<70；`.nb-date-meta` 1440/1024 均横排（metaH<50，1024 chips/pager 折行自然）；390 KV 两列全显、零溢出。
+- **组2**：1440/390 `.nb-stamp-circle` 全正圆（|w-h|≤1px bbox、painted 圆更稳）、transform matrix 存在、旋转角实测 ∈[-11,11]°（含 sign 双向）、`.nb-cal-d` 几何零重叠（390 实测）；`.nb-ww` 全为 `MM.DD–MM.DD`（6 行正则全过）且 390 scrollWidth≤clientWidth。截图人工目检：圈居中、不压日号、有手写盖章感。
+- **组3**：清单目标详情 `.nb-taskmeta` 实测渲染 `11/16–11/22`（weekStart=2026-11-16，addDays 口径与旧实现东八区输出一致）。
+- **组4**：goal-form 8 枚色块全 `BUTTON` 26×26、点击第 2 块 borderColor 由 ink→brand 实证选中态；learn-form「其他…」分支同型断言过；number 输入 computed `appearance=textfield`（goal-form + settings 自定义分钟框）；settings `type=date` 存在且 webkit 图标隐藏（截图无图标）。
+- **组5**：强造 QueryError（404 goal）与 QueryLoading（route 延迟 days API）均 w≤640、left≈400 居中；截图观感正常。
+- **暗色抽查**：`PATCH /settings theme=notebook-dark`（curl 直调 API——ctx.request 未带登录 cookie 首试失败，非产品问题）→ data-theme=`journal-notebook-dark`，盖章圈 computed 色 `rgb(127,162,230)`（暗色蓝笔）、`.nb-kv b` nowrap 保持、周标签日期段保持、圈尺寸正常；测后还原 notebook。
+- **3 个初 FAIL 全部澄清（非缺陷）**：
+  1. 「压日期号」1440 探针 7 格报 FAIL——`getBoundingClientRect` 量的是**旋转后方盒 bbox**（±10° 让 56px 方盒角外扩 ~3px），painted 圆（border-radius 50% 内切于方盒、旋转不变）顶边距日号底 ~3px，截图人工确认无视觉重叠。探针口径记录在案，不改代码。
+  2. settings `.nb-swatch`=0——种子无自定义状态/归档科目，该页 span 色块条件渲染为空属正常；临时建「走查临时」状态后实测 `SPAN` 26×26 PASS，已 archive 清理。
+  3. `ctx.request.patch` theme 失败——Playwright request context 未带登录 cookie；改 curl 带 cookie 直调 API 成功，非产品问题。
+- **新发现**：无。S8 全为 CSS/展示层小修，无版式回归。
+- 遗留照旧：收尾轮未决项（手机日历底部块、搜索页语义、目标编辑入口、时光页长滚、768–855px 顶栏、长状态名边界）+ S8 卡内 3 条（`.nb-date-meta` nowrap、Firefox date 图标、`.nb-swatch:active` 反馈）。
+
 ## 验收（整体）
 
 - 12 页 × 1440 与 6 页 × 390 对照报告：无竖排折行、无数字重叠、无横向溢出、零 pageerror。
