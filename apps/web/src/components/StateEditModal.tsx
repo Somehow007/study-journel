@@ -28,10 +28,19 @@ function CloseButton() {
     <Pressable
       variant="icon"
       onClick={close}
-      className="flex items-center justify-center rounded-full text-[var(--ink-faint)]"
+      className="absolute right-3 top-3 flex items-center justify-center text-[var(--ink-faint)]"
       aria-label="关闭"
     >
       <X size={18} />
+    </Pressable>
+  );
+}
+
+function SheetCancel() {
+  const close = useSheetClose();
+  return (
+    <Pressable variant="pill" onClick={close} className="nb-btn">
+      取消
     </Pressable>
   );
 }
@@ -47,6 +56,7 @@ export default function StateEditModal({ onClose, editState }: StateEditModalPro
   const [submitting, setSubmitting] = useState(false);
 
   const isEditing = !!editState;
+  const modalTitle = isEditing ? '编辑状态' : '添加状态';
 
   const handleSave = async () => {
     const trimmed = label.trim();
@@ -96,109 +106,75 @@ export default function StateEditModal({ onClose, editState }: StateEditModalPro
   };
 
   return (
-    <Sheet title={isEditing ? '编辑状态' : '添加状态'} onClose={onClose}>
+    <Sheet title={modalTitle} onClose={onClose}>
       <div className="px-5 pb-2 pt-3 md:px-6 md:pb-6 md:pt-6">
-        <div className="mb-5 flex items-center justify-between">
-          <h3 className="font-sans text-h2 text-[var(--ink)]">{isEditing ? '编辑状态' : '添加状态'}</h3>
-          <CloseButton />
-        </div>
+        <CloseButton />
+        <div className="nb-dialog-h mb-5 pr-8">{modalTitle}</div>
 
-        <div className="mb-4">
-          <label className="mb-2 block font-sans text-small text-[var(--ink-soft)]">名称</label>
-          <input
-            type="text"
-            value={label}
-            onChange={(e) => {
-              setLabel(e.target.value);
-              setError('');
-            }}
-            placeholder="如：专注、疲惫、感恩…"
-            maxLength={12}
-            className="card w-full rounded-md px-3 py-2.5 font-sans text-body text-[var(--ink)] outline-none"
-            style={{ border: '1px solid var(--keyline)', boxShadow: 'none' }}
-            autoFocus
-          />
-          {error && <p className="mt-1 font-sans text-caption text-[var(--danger)]">{error}</p>}
-        </div>
+        <label className="nb-flab">名称</label>
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => {
+            setLabel(e.target.value);
+            setError('');
+          }}
+          placeholder="如：专注、疲惫、感恩…"
+          maxLength={12}
+          className="nb-field mb-1"
+          autoFocus
+        />
+        {error && <p className="mb-4 text-[12px]" style={{ color: 'var(--danger)' }}>{error}</p>}
 
-        <div className="mb-4">
-          <label className="mb-2 block font-sans text-small text-[var(--ink-soft)]">极性</label>
-          <div className="flex gap-2">
-            {POLARITY_OPTIONS.map((opt) => (
-              <Pressable
-                key={opt.value}
-                variant="pill"
-                onClick={() => setPolarity(opt.value)}
-                className="flex-1 rounded-full border px-3 py-2 font-sans text-small"
-                style={
-                  polarity === opt.value
-                    ? { background: 'var(--brand-soft)', borderColor: 'var(--brand)', color: 'var(--brand)', fontWeight: 500 }
-                    : { borderColor: 'var(--keyline)', color: 'var(--ink-soft)' }
-                }
-              >
-                {opt.label}
-              </Pressable>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-5">
-          <label className="mb-2 block font-sans text-small text-[var(--ink-soft)]">颜色</label>
-          <div className="flex gap-2">
-            {SUBJECT_COLORS.map((c) => (
-              <Pressable
-                key={c}
-                variant="icon"
-                onClick={() => setColor(c)}
-                aria-label={`颜色 ${c}`}
-                className="h-8 w-8 rounded-full"
-                style={{
-                  background: c,
-                  outline: color === c ? '2px solid var(--ink)' : 'none',
-                  outlineOffset: '2px',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-5 rounded-lg p-3" style={{ background: 'var(--paper)' }}>
-          <p className="mb-2 font-sans text-caption text-[var(--ink-faint)]">预览</p>
-          <div className="flex items-center gap-3">
-            <span className="h-3.5 w-3.5 rounded-full" style={{ background: color }} />
-            <span className="font-sans text-small text-[var(--ink)]">{label || '状态名称'}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          {isEditing ? (
-            <Pressable
-              variant="pill"
-              onClick={() => void handleDelete()}
-              className="px-3 py-2 font-sans text-small text-[var(--danger)]"
+        <label className="nb-flab">极性</label>
+        <div className="mb-5 flex flex-wrap gap-2">
+          {POLARITY_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`nb-chip${polarity === opt.value ? ' on' : ''}`}
+              onClick={() => setPolarity(opt.value)}
             >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <label className="nb-flab">颜色</label>
+        <div className="mb-5 flex flex-wrap gap-2">
+          {SUBJECT_COLORS.map((c) => (
+            <Pressable
+              key={c}
+              variant="icon"
+              onClick={() => setColor(c)}
+              aria-label={`颜色 ${c}`}
+              className="nb-swatch"
+              style={{
+                background: c,
+                borderColor: color === c ? 'var(--brand)' : 'var(--ink)',
+              }}
+            />
+          ))}
+        </div>
+
+        <label className="nb-flab">预览</label>
+        <div className="nb-split mb-5">
+          <span className="nb-swatch" style={{ background: color, flex: 'none' }} />
+          <span>{label || '状态名称'}</span>
+        </div>
+
+        <div className={`mt-6 flex gap-2 ${isEditing ? 'items-center justify-between' : 'justify-end'}`}>
+          {isEditing && (
+            <button type="button" className="nb-btn r" onClick={() => void handleDelete()}>
               删除
-            </Pressable>
-          ) : (
-            <div />
+            </button>
           )}
-          <div className="flex gap-2">
-            <Pressable
-              variant="pill"
-              onClick={onClose}
-              className="rounded-full px-4 py-2 font-sans text-small text-[var(--ink-soft)]"
-            >
-              取消
-            </Pressable>
-            <Pressable
-              onClick={() => void handleSave()}
-              disabled={submitting}
-              className="rounded-md px-4 font-sans text-small text-[var(--text-inverse)]"
-              style={{ background: 'var(--brand)' }}
-            >
+          <span className="flex gap-2">
+            <SheetCancel />
+            <button type="button" className="nb-btn p" onClick={() => void handleSave()} disabled={submitting}>
               {submitting ? '保存中…' : isEditing ? '保存' : '添加'}
-            </Pressable>
-          </div>
+            </button>
+          </span>
         </div>
       </div>
     </Sheet>
