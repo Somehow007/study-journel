@@ -13,6 +13,7 @@ import { APP_VERSION } from '../lib/version';
 import { showToast } from '../lib/toast';
 import { askConfirm } from '../lib/confirm';
 import { THEME_PICKER_ITEMS, getThemeMeta } from '../lib/theme';
+import { WEEKDAY_LABELS } from '../lib/constants';
 import type { JournalState, SettingsPatch, Subject } from '../lib/types/api';
 
 /** 每日学习目标预设（分钟）：4h/5h/6h/8h/10h，界外值走自定义输入 */
@@ -167,6 +168,28 @@ export default function Settings() {
               />
               分钟
             </span>
+          </div>
+        </SetRow>
+
+        {/* 每周起始：weekStartsOn ISO 1=周一..7=周日，影响目标周拆分/每周进度 */}
+        <SetRow title="每周起始" desc="目标按周拆分与每周进度的起点">
+          <div className="nb-set-chips">
+            {WEEKDAY_LABELS.map((label, i) => {
+              const value = i + 1;
+              const active = (settings?.weekStartsOn ?? 1) === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  className={`nb-chip${active ? ' on' : ''}`}
+                  onClick={() => {
+                    if (!active) patchSettings({ weekStartsOn: value });
+                  }}
+                >
+                  周{label}
+                </button>
+              );
+            })}
           </div>
         </SetRow>
 
