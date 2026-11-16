@@ -64,3 +64,19 @@ SPEC-B §3 日历：「格内：左上日期、右上状态字、左下大时长
 - 截图无法目检（本模型无视觉），以 DOM 几何逐格断言代替；截图留 `/tmp/sj-visual.DppOZ1/impl/` 供 owner 复核。
 
 遗留：无。
+
+**S3 后走查（2026-11-16，同实例 8091+5176；探针 `/tmp/sj-s3/walk.mjs`、`walk-goal.mjs`；格子局部图 `/tmp/sj-s3/cells/`）**：
+
+- **结构完整性**：calendar/today/goal 三页 30/30/30 格每格恰好 1 个 `.nb-cal-d`，格内裸文本节点 0，`.nb-cal-d` 无格格外泄漏；plan/memory/stats/annual/search/settings 六页 `.nb-cal-cell` 与 `.nb-cal-d` 均为 0（无回归面）。
+- **断点边界**：768px 走桌面规则（state 显示、dur 带「h」、d 在 8/6）；767px 切手机规则（state 隐藏、dur 「5.0」无 h、d 在 4/4）——`max-width:767px` 边界行为正确。
+- **goal 打卡格复测**（新库 id `u__jvlzDE2-j_lmlbhlj7`）：桌面 stamp 顶与日期号底净空 4px、手机 3px，相交 0；today 格红框不变。
+- **像素确认**（PIL）：calendar-desktop 格左上区有墨（日期）、中央区 0 墨（旧 bug 的中部位置已空）；goal-stamp-* 三尺寸顶部条带蓝墨 0（圆环不侵日期号）、环体在位。
+- **交互**：桌面/手机点首日格均正确跳 `/day/2026-11-01`；`.nb-cal-d` 在 button 内不吞事件。
+- **暗色**：切 `journal-notebook-dark` 后 `.nb-cal-d` 颜色 = 格色（继承 `--ink-soft` 暗色值），格边框翻暗，零 pageerror。
+- **其他页面回归**：六页零 pageerror / 零横向溢出（1440 与 390）。
+
+**走查新发现（与 S3 无关，已分流）**：
+1. **768px 全页横向溢出 ~88px**：元凶 `.nb-topnav-right`（宽 255px）+ `.nb-stamp`（156px）桌面顶栏右簇固定宽度，视口 < ~856px 放不下；媒体断点 767 → 768–855 平板窄桌面带全页横滚。所有页面一致，为存量问题 → 记入 prd 走查补记，留收尾轮定夺（收拢顶栏 / 提前断点 / 接受）。
+2. **长状态名边界**：`.nb-cal-state` `white-space:normal` 无宽限，>4 字自定义状态在窄格（today 86px）会换行垂入格内、可能压时长。种子全是 2 字内置状态；存量边界，低优先，留收尾轮（可选 `nowrap`+`max-width` 或容忍）。
+
+**执行中新发现（本卡相关，已在本卡内处理）**：卡面建议的手机覆盖位置实际不生效（源码序早于基础规则），已记录于上方执行记录——后续写 `.nb-cal-*` 手机覆盖时注意：必须放文件尾部媒体块。
