@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, RefreshCw, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { archiveState, unarchiveSubject } from '../lib/api';
+import { archiveState, unarchiveState, unarchiveSubject } from '../lib/api';
 import { logout } from '../lib/auth';
 import { useStates, useSubjects, invalidateAll } from '../lib/queries';
 import StateEditModal from '../components/StateEditModal';
@@ -56,6 +56,7 @@ export default function Settings() {
   const { data: subjects } = useSubjects();
   const customStates = (states ?? []).filter((s) => s.builtinKey == null && s.archivedAt == null);
   const builtinStates = (states ?? []).filter((s) => s.builtinKey != null && s.archivedAt == null);
+  const archivedStates = (states ?? []).filter((s) => s.archivedAt != null);
   const activeSubjects = (subjects ?? []).filter((s) => s.archivedAt == null);
   const archivedSubjects = (subjects ?? []).filter((s) => s.archivedAt != null);
 
@@ -84,6 +85,16 @@ export default function Settings() {
       await unarchiveSubject(subject.id);
       invalidateAll(qc);
       showToast(`已恢复「${subject.name}」`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '恢复失败');
+    }
+  };
+
+  const handleRestoreState = async (state: JournalState) => {
+    try {
+      await unarchiveState(state.id);
+      invalidateAll(qc);
+      showToast(`已恢复「${state.label}」`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : '恢复失败');
     }
@@ -286,6 +297,31 @@ export default function Settings() {
           >
             <Plus size={12} strokeWidth={2} /> 添加状态
           </button>
+          {archivedStates.length > 0 && (
+            <div className="nb-set-archived">
+              <div className="nb-set-archived-title">已归档（{archivedStates.length}）</div>
+              {archivedStates.map((state) => (
+                <div key={state.id} className="nb-set-state">
+                  <span className="nb-swatch" style={{ background: state.color, opacity: 0.45 }} />
+                  <span className="nb-set-state-name" style={{ opacity: 0.6 }}>
+                    {state.label}
+                  </span>
+                  <span className="nb-set-state-meta">
+                    {state.builtinKey != null ? '内置' : '自定义'}
+                  </span>
+                  <span className="nb-set-state-ops">
+                    <button
+                      type="button"
+                      className="nb-set-restore"
+                      onClick={() => void handleRestoreState(state)}
+                    >
+                      恢复
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </SetRow>
 
         {/* 数据管理 */}
