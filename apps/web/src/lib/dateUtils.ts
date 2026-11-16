@@ -1,4 +1,5 @@
 /** 日期工具函数 */
+import type { GoalTask } from './types/api';
 
 /** 格式化为 YYYY-MM-DD */
 export function formatDate(date: Date): string {
@@ -98,4 +99,17 @@ export function formatDuration(min: number): string {
 /** 计算学习记录总时长（分钟） */
 export function totalDuration(learnings: { durationMin: number }[]): number {
   return learnings.reduce((sum, l) => sum + l.durationMin, 0);
+}
+
+/** 目标子任务的时间标签：dueDate → MM/DD；weekStart → MM/DD–MM/DD；无绑定 → 本月随时 */
+export function taskWhenLabel(task: Pick<GoalTask, 'dueDate' | 'weekStart'>): string {
+  if (task.dueDate) return task.dueDate.slice(5).replace('-', '/');
+  if (task.weekStart) {
+    const end = new Date(task.weekStart);
+    end.setDate(end.getDate() + 6);
+    const mm = String(end.getMonth() + 1).padStart(2, '0');
+    const dd = String(end.getDate()).padStart(2, '0');
+    return `${task.weekStart.slice(5).replace('-', '/')}–${mm}/${dd}`;
+  }
+  return '本月随时';
 }

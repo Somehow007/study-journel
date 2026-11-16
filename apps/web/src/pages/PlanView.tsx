@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import GoalCompleteSheet, { type GoalCompleteValues } from '../components/GoalCompleteSheet';
 import GoalFormModal from '../components/GoalFormModal';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
 import { useApp } from '../context/AppContext';
-import { createGoal, formatPeriod } from '../lib/goalApi';
-import { useGoalsByPeriod, useSubjects, invalidateAll, qk } from '../lib/queries';
+import { taskWhenLabel } from '../lib/dateUtils';
+import { daysInMonth, progressCells, todayLocal } from '../lib/domain';
+import { completeGoalTask, createGoal, formatPeriod, uncompleteGoalTask } from '../lib/goalApi';
+import { MONTH_LABELS } from '../lib/constants';
+import { useGoal, useGoalsByPeriod, useSubjects, invalidateAll, qk } from '../lib/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../lib/toast';
-import { daysInMonth, progressCells } from '../lib/domain';
-import { MONTH_LABELS } from '../lib/constants';
-import type { GoalSummary } from '../lib/types/api';
+import type { GoalSummary, GoalTask } from '../lib/types/api';
 
 function Meter({ percent, total = 25 }: { percent: number; total?: number }) {
   return (
@@ -17,6 +19,25 @@ function Meter({ percent, total = 25 }: { percent: number; total?: number }) {
       {progressCells(percent, total).map((f, i) => (
         <span key={i} className={f ? 'f' : ''} />
       ))}
+    </span>
+  );
+}
+
+function GoalTitle({ goal, subjectColor }: { goal: GoalSummary; subjectColor?: string }) {
+  return (
+    <span className="flex min-w-0 items-baseline gap-2">
+      {goal.subjectName && (
+        <span className="nb-subj" style={{ color: subjectColor ?? 'var(--ink-soft)' }}>
+          {goal.subjectName}
+        </span>
+      )}
+      <Link
+        to={`/plan/${goal.id}`}
+        className="truncate hover:underline"
+        style={{ color: 'inherit', fontFamily: 'var(--font-title)', fontWeight: 700, fontSize: 17 }}
+      >
+        {goal.title}
+      </Link>
     </span>
   );
 }
@@ -35,20 +56,7 @@ function GoalRow({ goal, subjectColor }: { goal: GoalSummary; subjectColor?: str
     goal.suggestedWeekly ?? goal.plannedWeekly ?? (daily != null ? daily * 7 : null);
   return (
     <div className="nb-goal">
-      <span className="flex min-w-0 items-baseline gap-2">
-        {goal.subjectName && (
-          <span className="nb-subj" style={{ color: subjectColor ?? 'var(--ink-soft)' }}>
-            {goal.subjectName}
-          </span>
-        )}
-        <Link
-          to={`/plan/${goal.id}`}
-          className="truncate hover:underline"
-          style={{ color: 'inherit', fontFamily: 'var(--font-title)', fontWeight: 700, fontSize: 17 }}
-        >
-          {goal.title}
-        </Link>
-      </span>
+      <GoalTitle goal={goal} subjectColor={subjectColor} />
       <span className="nb-goal-val">{val}</span>
       <Meter percent={goal.percent} />
       {isCount && (
@@ -76,6 +84,106 @@ function GoalRow({ goal, subjectColor }: { goal: GoalSummary; subjectColor?: str
       )}
       {goal.note && <small>{goal.note}</small>}
     </div>
+  );
+}
+
+function ChecklistGoalBlock({
+  goal,
+  subjectColor,
+  period,
+}: {
+  goal: GoalSummary;
+  subjectColor?: string;
+  period: string;
+}) {
+  const qc = useQueryClient();
+  const { data: detail, isPending } = useGoal(goal.id);
+  const [sheetTask, setSheetTask] = useState<GoalTask | null>(null);
+  const tasks = detail?.tasks ?? [];
+
+  const val = goal.totalValue
+    ? `${goal.actualValue} / ${goal.totalValue} 项`
+    : `${Math.round(goal.percent)}%`;
+
+  const refresh = () => {
+    invalidateAll(qc);
+    void qc.invalidateQueries({ queryKey: qk.goal(goal.id) });
+    void qc.invalidateQueries({ queryKey: qk.goals(period) });
+  };
+
+  const handleToggle = (task: GoalTask) => {
+    if (task.done) {
+      void uncompleteGoalTask(task.id)
+        .then(() => refresh())
+        .catch((err) => {
+          invalidateAll(qc);
+          showToast(err instanceof Error ? err.message : '更新失败');
+        });
+      return;
+    }
+    setSheetTask(task);
+  };
+
+  const handleConfirm = async (values: GoalCompleteValues) => {
+    if (!sheetTask) return;
+    try {
+      await completeGoalTask(sheetTask.id, {
+        durationMin: values.durationMin,
+        reflection: values.note,
+        createEntry: values.createEntry,
+        date: todayLocal(),
+      });
+      setSheetTask(null);
+      refresh();
+    } catch (err) {
+      invalidateAll(qc);
+      showToast(err instanceof Error ? err.message : '保存失败');
+    }
+  };
+
+  return (
+    <>
+      <div className="nb-goal">
+        <GoalTitle goal={goal} subjectColor={subjectColor} />
+        <span className="nb-goal-val">{val}</span>
+        <div style={{ gridColumn: '1 / 3' }}>
+          {isPending ? (
+            <div className="animate-pulse space-y-2 py-2" aria-busy="true">
+              <div className="h-4 w-2/3 bg-[var(--hairline)]" />
+              <div className="h-4 w-1/2 bg-[var(--hairline)]" />
+            </div>
+          ) : (
+            tasks.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`nb-todo${t.done ? ' on' : ''}`}
+                aria-label={t.done ? '取消完成' : '标记完成'}
+                onClick={() => handleToggle(t)}
+              >
+                <span className={`nb-box${t.done ? ' on' : ''}`} />
+                <span>{t.title}</span>
+                <em>{taskWhenLabel(t)}</em>
+              </button>
+            ))
+          )}
+          <Link to={`/plan/${goal.id}`} className="nb-sec-side red">
+            + 加一条子任务
+          </Link>
+        </div>
+      </div>
+      {sheetTask && (
+        <GoalCompleteSheet
+          mode="task"
+          title={sheetTask.title}
+          unit={null}
+          defaultDurationMin={0}
+          defaultNote={sheetTask.reflection ?? ''}
+          onConfirm={handleConfirm}
+          onClose={() => setSheetTask(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -237,7 +345,12 @@ export default function PlanView() {
             </p>
           ) : (
             checklistGoals.map((g) => (
-              <GoalRow key={g.id} goal={g} subjectColor={subjectColorById.get(g.subjectId ?? '')} />
+              <ChecklistGoalBlock
+                key={g.id}
+                goal={g}
+                subjectColor={subjectColorById.get(g.subjectId ?? '')}
+                period={period}
+              />
             ))
           )}
         </div>

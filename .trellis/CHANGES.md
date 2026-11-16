@@ -55,3 +55,4 @@
 - 2026-11-16 | S4 后全量目检走查：visual 全量 18 组合零 pageerror/零溢出 + DOM 探针 18 断言全过——状态色极性规则全表面一致（格/图例/今日/时光/统计，亮暗双主题）、S3 定位与手机隐藏无回归、无新发现 | → `.trellis/tasks/11-16-b-fidelity/prd.md` 走查补记
 - 2026-11-16 | S5 本月待办计数修正：MonthView 改按当月 CHECKLIST 目标 actualValue/totalValue 去重求和（原按天求和，未完成过期任务逐日重复计入，种子 3/54→3/7）；探针断言日历 3/7=计划页 2/5+1/2、上月 0/0、零 pageerror | → `.trellis/tasks/11-16-b-fidelity/cards/S5-month-task-count.md`
 - 2026-11-16 | S5 后走查：补种子覆盖 COUNT-only/非当月/空清单/跨年边界 + 加载「—」/500 降级/活数据重取，DOM 探针 14 项全过零 pageerror；新发现 1 条（goals 查询失败降级显 0/0 略歧义）记 prd 走查补记留收尾轮 | → `.trellis/tasks/11-16-b-fidelity/cards/S5-month-task-count.md`、`prd.md` 走查补记
+- 2026-11-16 | S6 计划页清单型目标展开子任务：taskWhen 收口 dateUtils.taskWhenLabel（GoalDetail 改 import），新增 ChecklistGoalBlock（复用 GoalTitle/.nb-goal/.nb-goal-val，useGoal 取 tasks 渲染 nb-todo 勾选行，完成/取消复用 GoalCompleteSheet 流程，「+ 加一条子任务」跳详情）；探针 28 断言全过（结构/交互/详情回归/手机），零 pageerror 零溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S6-plan-checklist-tasks.md`

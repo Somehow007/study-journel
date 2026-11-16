@@ -19,23 +19,11 @@ import {
 import { useGoal, invalidateAll } from '../lib/queries';
 import { progressCells, weekStartOf } from '../lib/domain';
 import { useApp } from '../context/AppContext';
-import { formatDate, getCalendarDays } from '../lib/dateUtils';
+import { formatDate, getCalendarDays, taskWhenLabel } from '../lib/dateUtils';
 import { WEEKDAY_LABELS } from '../lib/constants';
 import { showToast } from '../lib/toast';
 import { askConfirm } from '../lib/confirm';
 import type { GoalCheckin, GoalTask } from '../lib/types/api';
-
-function taskWhen(task: GoalTask): string {
-  if (task.dueDate) return task.dueDate.slice(5).replace('-', '/');
-  if (task.weekStart) {
-    const end = new Date(task.weekStart);
-    end.setDate(end.getDate() + 6);
-    const mm = String(end.getMonth() + 1).padStart(2, '0');
-    const dd = String(end.getDate()).padStart(2, '0');
-    return `${task.weekStart.slice(5).replace('-', '/')}–${mm}/${dd}`;
-  }
-  return '本月随时';
-}
 
 export default function GoalDetail() {
   const { goalId } = useParams<{ goalId: string }>();
@@ -462,7 +450,7 @@ export default function GoalDetail() {
                   <div className="nb-taskbody">
                     <p className={task.done ? 'done' : undefined}>{task.title}</p>
                     <p className="nb-taskmeta">
-                      {taskWhen(task)}
+                      {taskWhenLabel(task)}
                       {task.doneAt ? ` · 完成于 ${formatDate(new Date(task.doneAt))}` : ''}
                     </p>
                     {task.reflection && <p className="nb-taskrefl">{task.reflection}</p>}
