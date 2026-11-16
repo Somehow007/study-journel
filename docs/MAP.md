@@ -5,7 +5,7 @@
 
 ## 1. 一句话
 
-学习手帐（原名「花期 Blossom」，v6 起转向考研场景）：React 18 SPA，部署在 `/journal/` 子路径；**M3 起前端已切到 `apps/server` Go 服务**（chi + sqlc + SQLite，`/api/v1`，Cookie 会话 `sj_session`，独立用户名/密码账号，`:8090`）。**M4-1/M4-2 已交付** MySQL `sj_*`→SQLite 迁移器（`cmd/import-mysite` + `internal/importer`，逐项对账）与独立部署物料（`deploy/`），M4-3 首发切流待 owner 按 `deploy/CUTOVER.md` 执行。**M6 B 格纸 UI 已落地**（P1–P5，11-16）：默认主题换成 `journal-notebook` 明暗双主题（米白/夜间墨蓝），`nb-` 组件类全量页面格纸化。旧链路（mysite Spring `/api/journal/*` + 博客 JWT + Dexie IndexedDB）已整体移除，仅保留 `legacyIdb.ts` 供一次性迁移旧本地数据。剥离计划见 `separation-plan.md`。
+学习手帐（原名「花期 Blossom」，v6 起转向考研场景）：React 18 SPA，部署在 `/journal/` 子路径；**M3 起前端已切到 `apps/server` Go 服务**（chi + sqlc + SQLite，`/api/v1`，Cookie 会话 `sj_session`，独立用户名/密码账号，`:8090`）。**M4-1/M4-2 已交付** MySQL `sj_*`→SQLite 迁移器（`cmd/import-mysite` + `internal/importer`，逐项对账）与独立部署物料（`deploy/`），M4-3 首发切流待 owner 按 `deploy/CUTOVER.md` 执行。**M6 B 格纸 UI 已落地**（P1–P5，11-16）：默认主题换成 `journal-notebook` 明暗双主题（米白/夜间墨蓝），`nb-` 组件类全量页面格纸化。**M7 新功能补齐已完成**（11-16）：设置页科目预设完整管理（增删改色/归档恢复）、状态归档恢复、每周起始星期、账号安全改密（`POST /auth/password` 踢其他会话）、统计页近 26 周学习热力图（`LearningHeatmap` 消费 `stats/heatmap`）。旧链路（mysite Spring `/api/journal/*` + 博客 JWT + Dexie IndexedDB）已整体移除，仅保留 `legacyIdb.ts` 供一次性迁移旧本地数据。剥离计划见 `separation-plan.md`。
 
 ## 2. 目录
 
@@ -13,9 +13,9 @@
 |---|---|
 | `apps/web/src/main.tsx` `apps/web/src/App.tsx` | 入口；`BrowserRouter basename="/journal"`；登录/403/加载动画闸门 |
 | `apps/web/src/pages/` | 9 页：MonthView(`/`) TodayDetail(`/day/:date`) PlanView(`/plan`) GoalDetail(`/plan/:goalId`) Memory Stats AnnualReview Search Settings |
-| `apps/web/src/components/` | 业务组件（LearningFormModal、GoalFormModal、DiaryEditor、MoodSelector(按 stateId)、StateEditModal、NotebookNav(顶栏/页头/印章)、CalGrid(月历格共享)、LoginPage…）+ `ui/`（Sheet、Pressable、ConfirmDialog）；全部页面已 nb- 格纸化，设计源 `design/concepts-v6/SPEC-B.md` |
+| `apps/web/src/components/` | 业务组件（LearningFormModal、GoalFormModal、DiaryEditor、MoodSelector(按 stateId)、StateEditModal、SubjectEditModal、PasswordEditModal、LearningHeatmap、NotebookNav(顶栏/页头/印章)、CalGrid(月历格共享)、LoginPage…）+ `ui/`（Sheet、Pressable、ConfirmDialog）；全部页面已 nb- 格纸化，设计源 `design/concepts-v6/SPEC-B.md` |
 | `apps/web/src/lib/http.ts` | fetch 封装：`${VITE_API_BASE ?? '/api'}/v1` 前缀、`credentials:'include'`、`{code,data}` 包络解包、401→logout+回登录页 |
-| `apps/web/src/lib/auth.ts` | `/auth/me` 会话判定、login/logout、username 缓存 |
+| `apps/web/src/lib/auth.ts` | `/auth/me` 会话判定、login/logout/changePassword、username 缓存 |
 | `apps/web/src/lib/api.ts` `apps/web/src/lib/goalApi.ts` | v3 days/entries/subjects/states/settings/search/stats/streak/export/import 与 goals/tasks/checkins 接口函数 |
 | `apps/web/src/lib/queries.ts` | TanStack Query queryKey + useQuery 薄封装 + `invalidateAll` |
 | `apps/web/src/lib/stateUtils.ts` | v3 `JournalState`→`StateConfig` 适配（色板派生自 state.color） |

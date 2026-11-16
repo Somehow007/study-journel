@@ -56,3 +56,13 @@ roadmap M7「新功能补齐」。对照 SPEC-B / 原型逐项核对后，倒计
 - httptest：unarchive 往返；改密（旧密码错/新旧相同/成功后旧密码登录失败/其他会话失效当前会话存活）。
 - 页面走查 1440+390：设置页新行与弹层、统计页热力图、修改密码流程。
 - 手帐 `.trellis/CHANGES.md` 逐工作流追加；完成后归档本目录 + roadmap M7 状态更新。
+
+## Resolution
+
+2026-11-16 完成，7 个 commit（`6befff8`→`eb8aadd`）：
+
+- **server**：`POST /subjects|states/{id}/unarchive`（复用 archive handler 参数化）；`POST /auth/password`（验旧密→argon2id 重哈希→删其他会话留当前，LoginLimiter `pw:` 前缀独立限流）。httptest 覆盖归档往返与改密全路径。
+- **web**：设置页「科目预设」行（chips 点按→`SubjectEditModal` 编辑/8 色/删除=归档，已归档区带恢复）；「自定义状态」补已归档恢复；「每周起始」7 chip（`weekStartsOn`）；「账号安全」→`PasswordEditModal`（三段校验+服务端错误直出）。统计页左栏底挂 `LearningHeatmap`（26 周×7 行、深浅=时长÷每日目标 5 档、点格进 `/day/:date`、列起点随 `weekStartsOn`）。
+- **验证**：`verify.sh` 全绿；playwright 走查 41 项全过（1440+390：热力图 182 格/5 档/月标签/点格跳转、科目增删改归档恢复全链路、weekStartsOn 刷新持久化、状态恢复、暗色主题、移动端零横向溢出、改密错误/成功/会话策略/新旧密码登录）；零 pageerror。
+- **踩坑**：走查脚本 `.nb-field` 未限弹层域误填设置页考试名输入框（选择器 lesson：Sheet 用 `[role="dialog"]` 限定）；`archivedAt` 归档请求未发出（urllib Request 未 urlopen）；`.nb-set-restore` 需按所属行定位。均为脚本问题，应用无 bug。
+- **遗留**：`focusMin/breakMin/phaseStart` 仍无 UI（专注计时归 C 版/M10）；科目 sort 无排序 UI（原型未定义）。
