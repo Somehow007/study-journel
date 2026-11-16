@@ -286,6 +286,14 @@ func (d *Deps) updateSubject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *Deps) archiveSubject(w http.ResponseWriter, r *http.Request) {
+	d.setSubjectArchived(w, r, true)
+}
+
+func (d *Deps) unarchiveSubject(w http.ResponseWriter, r *http.Request) {
+	d.setSubjectArchived(w, r, false)
+}
+
+func (d *Deps) setSubjectArchived(w http.ResponseWriter, r *http.Request, archived bool) {
 	id, okID := urlID(w, r, "id")
 	if !okID {
 		return
@@ -300,9 +308,13 @@ func (d *Deps) archiveSubject(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
 		return
 	}
-	n := nowMs()
+	var archivedAt *int64
+	if archived {
+		n := nowMs()
+		archivedAt = &n
+	}
 	if err := q.SetSubjectArchived(ctx, db.SetSubjectArchivedParams{
-		ID: id, UserID: userID, ArchivedAt: &n, UpdatedAt: n,
+		ID: id, UserID: userID, ArchivedAt: archivedAt, UpdatedAt: nowMs(),
 	}); err != nil {
 		fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
 		return
@@ -446,6 +458,14 @@ func (d *Deps) updateState(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *Deps) archiveState(w http.ResponseWriter, r *http.Request) {
+	d.setStateArchived(w, r, true)
+}
+
+func (d *Deps) unarchiveState(w http.ResponseWriter, r *http.Request) {
+	d.setStateArchived(w, r, false)
+}
+
+func (d *Deps) setStateArchived(w http.ResponseWriter, r *http.Request, archived bool) {
 	id, okID := urlID(w, r, "id")
 	if !okID {
 		return
@@ -460,9 +480,13 @@ func (d *Deps) archiveState(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
 		return
 	}
-	n := nowMs()
+	var archivedAt *int64
+	if archived {
+		n := nowMs()
+		archivedAt = &n
+	}
 	if err := q.SetStateArchived(ctx, db.SetStateArchivedParams{
-		ID: id, UserID: userID, ArchivedAt: &n, UpdatedAt: n,
+		ID: id, UserID: userID, ArchivedAt: archivedAt, UpdatedAt: nowMs(),
 	}); err != nil {
 		fail(w, http.StatusInternalServerError, "INTERNAL", "服务器内部错误")
 		return

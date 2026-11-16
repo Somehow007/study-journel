@@ -415,6 +415,47 @@ func TestExportImportRoundTrip(t *testing.T) {
 	}
 }
 
+func TestDictionaryArchiveUnarchive(t *testing.T) {
+	h, cookie := setupUser(t)
+	// subject: create → archive → unarchive round-trip
+	rec := doJSON(t, h, "POST", "/api/v1/subjects", `{"name":"自定义科","color":"#123456"}`, cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("create subject: %d %s", rec.Code, rec.Body.String())
+	}
+	sid := data(t, rec.Body.String())["id"].(string)
+	rec = doJSON(t, h, "POST", "/api/v1/subjects/"+sid+"/archive", "", cookie)
+	sd := data(t, rec.Body.String())
+	if sd["archivedAt"] == nil {
+		t.Fatalf("archivedAt = %v", sd["archivedAt"])
+	}
+	rec = doJSON(t, h, "POST", "/api/v1/subjects/"+sid+"/unarchive", "", cookie)
+	sd = data(t, rec.Body.String())
+	if sd["archivedAt"] != nil {
+		t.Fatalf("unarchivedAt = %v", sd["archivedAt"])
+	}
+	// state: create → archive → unarchive round-trip
+	rec = doJSON(t, h, "POST", "/api/v1/states", `{"label":"摸鱼","polarity":-1}`, cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("create state: %d %s", rec.Code, rec.Body.String())
+	}
+	stid := data(t, rec.Body.String())["id"].(string)
+	rec = doJSON(t, h, "POST", "/api/v1/states/"+stid+"/archive", "", cookie)
+	vd := data(t, rec.Body.String())
+	if vd["archivedAt"] == nil {
+		t.Fatalf("state archivedAt = %v", vd["archivedAt"])
+	}
+	rec = doJSON(t, h, "POST", "/api/v1/states/"+stid+"/unarchive", "", cookie)
+	vd = data(t, rec.Body.String())
+	if vd["archivedAt"] != nil {
+		t.Fatalf("state unarchivedAt = %v", vd["archivedAt"])
+	}
+	// 404 on unknown id
+	rec = doJSON(t, h, "POST", "/api/v1/subjects/nope/unarchive", "", cookie)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("unarchive missing subject = %d", rec.Code)
+	}
+}
+
 func TestUserIsolation(t *testing.T) {
 	h, cookieA := setupUser(t)
 	rec := doJSON(t, h, "POST", "/api/v1/entries",

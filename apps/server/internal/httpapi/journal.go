@@ -100,11 +100,13 @@ func (d *Deps) journalRoutes(r chi.Router) {
 		r.Post("/subjects", d.createSubject)
 		r.Patch("/subjects/{id}", d.updateSubject)
 		r.Post("/subjects/{id}/archive", d.archiveSubject)
+		r.Post("/subjects/{id}/unarchive", d.unarchiveSubject)
 
 		r.Get("/states", d.listStates)
 		r.Post("/states", d.createState)
 		r.Patch("/states/{id}", d.updateState)
 		r.Post("/states/{id}/archive", d.archiveState)
+		r.Post("/states/{id}/unarchive", d.unarchiveState)
 
 		r.Get("/days", d.listDays)
 		r.Get("/days/{date}", d.getDay)
