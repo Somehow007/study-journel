@@ -1,29 +1,35 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useExportData } from '../lib/queries';
 import { findStateConfig, type StateConfig } from '../lib/stateUtils';
 import { countStreak, todayLocal } from '../lib/domain';
-import { MONTH_LABELS } from '../lib/constants';
-import { formatDuration as fmtMin } from '../lib/dateUtils';
-import { useIsDark } from '../lib/useIsDark';
 import { QueryEmpty, QueryError, QueryLoading } from '../components/QueryState';
-import { ChevronLeft, ChevronRight, BookOpen, Clock, Flame } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
-} from 'recharts';
 import type { ExportData, JournalState } from '../lib/types/api';
+
+const CN_DIGITS = '〇一二三四五六七八九';
+function yearToCn(year: number): string {
+  return String(year)
+    .split('')
+    .map((d) => CN_DIGITS[Number(d)] ?? d)
+    .join('');
+}
+
+function hours1(min: number): number {
+  return Math.round((min / 60) * 10) / 10;
+}
 
 interface YearStats {
   totalDays: number;
   totalMin: number;
   topStateId: string | null;
-  mostConsistentMonth: { month: number; ratio: number } | null;
   longestStreak: number;
-  monthlyData: { month: number; label: string; days: number; hours: number; topStateId: string | null }[];
+  monthlyData: { month: number; days: number; hours: number }[];
+  /** 每月每日学习分钟：monthMins[m][d-1] */
+  monthMins: number[][];
   subjectData: { name: string; hours: number; color: string; minutes: number }[];
 }
 
-function buildYearStats(data: ExportData, year: number, isCurrentYear: boolean, now: Date): YearStats {
+function buildYearStats(data: ExportData, year: number, isCurrentYear: boolean): YearStats {
   const prefix = `${year}-`;
   const subjectById = new Map(data.subjects.map((s) => [s.id, s]));
 
@@ -56,51 +62,27 @@ function buildYearStats(data: ExportData, year: number, isCurrentYear: boolean, 
     }
   }
 
-  // 月度桶
-  const buckets: { days: number; min: number; states: Map<string, number> }[] = Array.from(
-    { length: 12 },
-    () => ({ days: 0, min: 0, states: new Map<string, number>() }),
+  // 月度桶 + 热力明细
+  const monthMins: number[][] = Array.from({ length: 12 }, (_, m) =>
+    Array.from({ length: new Date(year, m + 1, 0).getDate() }, () => 0),
   );
+  const monthlyMin = Array.from({ length: 12 }, () => 0);
+  const monthlyDays = Array.from({ length: 12 }, () => 0);
   for (const date of recorded) {
-    const m = parseInt(date.slice(5, 7), 10) - 1;
-    buckets[m].days++;
+    monthlyDays[parseInt(date.slice(5, 7), 10) - 1]++;
   }
   for (const e of entries) {
     const m = parseInt(e.date.slice(5, 7), 10) - 1;
-    buckets[m].min += e.durationMin;
-  }
-  for (const [date, sid] of stateIdByDate) {
-    const m = parseInt(date.slice(5, 7), 10) - 1;
-    buckets[m].states.set(sid, (buckets[m].states.get(sid) ?? 0) + 1);
+    const d = parseInt(e.date.slice(8, 10), 10) - 1;
+    monthlyMin[m] += e.durationMin;
+    if (monthMins[m] && d >= 0 && d < monthMins[m].length) monthMins[m][d] += e.durationMin;
   }
 
-  const monthlyData = buckets.map((b, m) => {
-    let mTop: string | null = null;
-    let mTopCount = 0;
-    for (const [sid, count] of b.states) {
-      if (count > mTopCount) {
-        mTopCount = count;
-        mTop = sid;
-      }
-    }
-    return {
-      month: m,
-      label: MONTH_LABELS[m],
-      days: b.days,
-      hours: Math.round((b.min / 60) * 10) / 10,
-      topStateId: mTop,
-    };
-  });
-
-  let mostConsistentMonth: { month: number; ratio: number } | null = null;
-  for (let m = 0; m < 12; m++) {
-    if (isCurrentYear && m > now.getMonth()) continue;
-    const daysInMonth = new Date(year, m + 1, 0).getDate();
-    const ratio = buckets[m].days / daysInMonth;
-    if (!mostConsistentMonth || ratio > mostConsistentMonth.ratio) {
-      mostConsistentMonth = { month: m, ratio };
-    }
-  }
+  const monthlyData = monthlyMin.map((min, m) => ({
+    month: m,
+    days: monthlyDays[m],
+    hours: hours1(min),
+  }));
 
   // 最长连续：年内记录日期 + 游标（当年→今天；往年→12-31）
   const cursor = isCurrentYear ? todayLocal() : `${year}-12-31`;
@@ -120,22 +102,71 @@ function buildYearStats(data: ExportData, year: number, isCurrentYear: boolean, 
     subjMap.set(key, cur);
   }
   const subjectData = [...subjMap.values()]
-    .map((s) => ({ ...s, hours: Math.round((s.minutes / 60) * 10) / 10 }))
+    .map((s) => ({ ...s, hours: hours1(s.minutes) }))
     .sort((a, b) => b.minutes - a.minutes);
 
   return {
     totalDays: recorded.size,
     totalMin,
     topStateId,
-    mostConsistentMonth,
     longestStreak,
     monthlyData,
+    monthMins,
     subjectData,
   };
 }
 
+function HeatMonth({
+  year,
+  month,
+  minutes,
+  hours,
+  isCurrentYear,
+  today,
+}: {
+  year: number;
+  month: number; // 0-based
+  minutes: number[];
+  hours: number;
+  isCurrentYear: boolean;
+  today: string;
+}) {
+  const daysInMonth = minutes.length;
+  const offset = (new Date(year, month, 1).getDay() + 6) % 7;
+  const cells: ReactNode[] = [];
+  for (let i = 0; i < offset; i++) cells.push(<i key={`o${i}`} />);
+  for (let d = 0; d < daysInMonth; d++) {
+    const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(d + 1).padStart(2, '0')}`;
+    const future = isCurrentYear && date > today;
+    const min = minutes[d];
+    const bg = future || min <= 0
+      ? 'transparent'
+      : min < 200
+        ? 'color-mix(in srgb, var(--ink) 20%, transparent)'
+        : min < 340
+          ? 'color-mix(in srgb, var(--ink) 53%, transparent)'
+          : 'var(--ink)';
+    cells.push(
+      <i
+        key={d}
+        style={{
+          background: bg,
+          border: future ? '1px solid var(--hairline)' : '1px solid transparent',
+        }}
+      />,
+    );
+  }
+  return (
+    <div className="nb-heat-m">
+      <div className="nb-heat-mh">
+        {month + 1} 月 <span className="nb-mono">{hours ? `${hours}h` : ''}</span>
+      </div>
+      <div className="nb-heat-g">{cells}</div>
+    </div>
+  );
+}
+
 export default function AnnualReview() {
-  const isDark = useIsDark();
   const [searchParams] = useSearchParams();
   const now = new Date();
   const initialYear = parseInt(searchParams.get('year') ?? '') || now.getFullYear();
@@ -144,12 +175,13 @@ export default function AnnualReview() {
   const { data: exportData, isPending, error, refetch } = useExportData();
 
   const isCurrentYear = viewYear === now.getFullYear();
+  const today = todayLocal();
   const prevYear = () => setViewYear((v) => v - 1);
   const nextYear = () => setViewYear((v) => v + 1);
 
   const stats = useMemo<YearStats | null>(() => {
     if (!exportData) return null;
-    return buildYearStats(exportData, viewYear, isCurrentYear, now);
+    return buildYearStats(exportData, viewYear, isCurrentYear);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exportData, viewYear, isCurrentYear]);
 
@@ -165,187 +197,169 @@ export default function AnnualReview() {
 
   const topStateCfg = stats?.topStateId ? cfgMap.get(stats.topStateId) : undefined;
   const hasData = (stats?.totalDays ?? 0) > 0;
-  const chartGridColor = 'color-mix(in srgb, var(--hairline) 70%, transparent)';
-  const chartTextColor = 'var(--ink-faint)';
+  const subjectTotal = (stats?.subjectData ?? []).reduce((s, x) => s + x.minutes, 0);
+  const maxMonthH = Math.max(...(stats?.monthlyData.map((m) => m.hours) ?? [0]), 0.1);
 
   if (isPending && !exportData) return <QueryLoading />;
   if (error && !exportData) return <QueryError message={error.message} onRetry={() => void refetch()} />;
   if (!stats) return null;
 
-  return (
-    <div>
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="font-sans text-display text-[var(--ink)]">年度回顾</h1>
-          <p className="mt-1 font-sans text-caption text-[var(--ink-soft)]">{viewYear} 年的学习与状态</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={prevYear}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--keyline)] text-[var(--ink-soft)]"
-          >
-            <ChevronLeft size={18} strokeWidth={1.75} />
-          </button>
-          <span className="min-w-[80px] text-center font-sans text-h2 text-[var(--ink)]">{viewYear}年</span>
-          <button
-            onClick={nextYear}
-            disabled={isCurrentYear}
-            className={`flex h-8 w-8 items-center justify-center rounded-full border ${
-              isCurrentYear
-                ? 'cursor-not-allowed border-[var(--hairline)] text-[var(--ink-faint)] opacity-30'
-                : 'border-[var(--keyline)] text-[var(--ink-soft)]'
-            }`}
-          >
-            <ChevronRight size={18} strokeWidth={1.75} />
-          </button>
+  if (!hasData) {
+    return (
+      <div className="nb-book nb-single">
+        <div className="nb-page single nb-gridbg">
+          <div className="nb-date">
+            <span className="nb-date-num">{yearToCn(viewYear)}</span>
+            <span className="nb-date-meta">
+              年度回顾
+              <br />
+              ANNUAL REVIEW
+            </span>
+            <span style={{ marginLeft: 'auto' }}>
+              <span className="nb-pager">
+                <button type="button" onClick={prevYear} aria-label="上一年">
+                  ‹
+                </button>
+                <b>{viewYear}</b>
+                <button
+                  type="button"
+                  onClick={nextYear}
+                  disabled={isCurrentYear}
+                  aria-label="下一年"
+                >
+                  ›
+                </button>
+              </span>
+            </span>
+          </div>
+          <QueryEmpty
+            title={`${viewYear}年还没有记录`}
+            hint={isCurrentYear ? '从今天开始记录，年末时这里会汇总全年数据' : '查看其他年份吧'}
+          />
         </div>
       </div>
+    );
+  }
 
-      {hasData ? (
-        <>
-          <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="card flex items-center gap-3 rounded-xl p-5">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-full"
-                style={{ background: 'color-mix(in srgb, var(--brand) 12%, transparent)' }}
+  return (
+    <div className="nb-book">
+      {/* 左页：年度数字 + 月度柱图 + 学科分布 */}
+      <div className="nb-page l nb-gridbg">
+        <div className="nb-date">
+          <span className="nb-date-num">{yearToCn(viewYear)}</span>
+          <span className="nb-date-meta">
+            年度回顾
+            <br />
+            ANNUAL REVIEW
+          </span>
+          <span style={{ marginLeft: 'auto' }}>
+            <span className="nb-pager">
+              <button type="button" onClick={prevYear} aria-label="上一年">
+                ‹
+              </button>
+              <b>{viewYear}</b>
+              <button
+                type="button"
+                onClick={nextYear}
+                disabled={isCurrentYear}
+                aria-label="下一年"
               >
-                <BookOpen size={20} strokeWidth={1.75} style={{ color: 'var(--brand)' }} />
-              </div>
-              <div>
-                <div className="font-mono text-num-lg text-[var(--ink)]">{stats.totalDays}</div>
-                <div className="font-sans text-caption text-[var(--ink-soft)]">学习天数</div>
-              </div>
-            </div>
-            <div className="card flex items-center gap-3 rounded-xl p-5">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-full"
-                style={{ background: 'color-mix(in srgb, var(--pine) 12%, transparent)' }}
-              >
-                <Clock size={20} strokeWidth={1.75} style={{ color: 'var(--pine)' }} />
-              </div>
-              <div>
-                <div className="font-mono text-num-lg text-[var(--ink)]">{fmtMin(stats.totalMin)}</div>
-                <div className="font-sans text-caption text-[var(--ink-soft)]">总学习时长</div>
-              </div>
-            </div>
-            <div className="card flex items-center gap-3 rounded-xl p-5">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-full"
-                style={{ background: topStateCfg ? topStateCfg.tint : 'color-mix(in srgb, var(--brand) 12%, transparent)' }}
-              >
-                {topStateCfg ? (
-                  <span className="h-3 w-3 rounded-full" style={{ background: topStateCfg.color }} />
-                ) : (
-                  <span className="font-mono text-num text-[var(--ink-faint)]">-</span>
-                )}
-              </div>
-              <div>
-                <div className="font-sans text-h2 text-[var(--ink)]">
-                  {topStateCfg ? topStateCfg.label : '-'}
-                </div>
-                <div className="font-sans text-caption text-[var(--ink-soft)]">最常状态</div>
-              </div>
-            </div>
-            <div className="card flex items-center gap-3 rounded-xl p-5">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-full"
-                style={{ background: 'color-mix(in srgb, var(--accent) 12%, transparent)' }}
-              >
-                <Flame size={20} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <div className="font-mono text-num-lg text-[var(--ink)]">{stats.longestStreak}</div>
-                <div className="font-sans text-caption text-[var(--ink-soft)]">最长连续天数</div>
-              </div>
-            </div>
+                ›
+              </button>
+            </span>
+          </span>
+        </div>
+
+        <div className="nb-kv" style={{ marginTop: 22 }}>
+          <div>
+            <small>总时长</small>
+            <b>{hours1(stats.totalMin)} h</b>
           </div>
-
-          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="card rounded-xl p-5">
-              <h2 className="mb-1 font-sans text-h2 text-[var(--ink)]">月度学习时长</h2>
-              <p className="mb-4 font-sans text-caption text-[var(--ink-faint)]">全年 12 个月</p>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={stats.monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: chartTextColor }} axisLine={{ stroke: chartGridColor }} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: chartTextColor }} axisLine={false} tickLine={false} unit="h" />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'var(--card)',
-                      border: '1px solid var(--keyline)',
-                      borderRadius: '10px',
-                      fontSize: '13px',
-                      color: 'var(--ink)',
-                    }}
-                    formatter={(value) => [`${value}h`, '学习时长']}
-                  />
-                  <Bar dataKey="hours" fill="color-mix(in srgb, var(--brand) 70%, transparent)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="card rounded-xl p-5">
-              <h2 className="mb-1 font-sans text-h2 text-[var(--ink)]">年度学科分布</h2>
-              <p className="mb-4 font-sans text-caption text-[var(--ink-faint)]">按学习时长</p>
-              {stats.subjectData.length > 0 ? (
-                <div className="flex items-center">
-                  <ResponsiveContainer width="55%" height={220}>
-                    <PieChart>
-                      <Pie data={stats.subjectData} cx="50%" cy="50%" innerRadius={52} outerRadius={82} paddingAngle={2} dataKey="hours" stroke="none">
-                        {stats.subjectData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="flex flex-1 flex-col gap-2">
-                    {stats.subjectData.slice(0, 6).map((entry) => (
-                      <div key={entry.name} className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: entry.color }} />
-                        <span className="flex-1 truncate font-sans text-small text-[var(--ink)]">{entry.name}</span>
-                        <span className="font-mono text-caption text-[var(--ink-soft)]">{entry.hours}h</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex h-[220px] items-center justify-center font-sans text-small text-[var(--ink-faint)]">
-                  暂无学习记录
-                </div>
-              )}
-            </div>
+          <div>
+            <small>学习天数</small>
+            <b>{stats.totalDays} 天</b>
           </div>
+          <div>
+            <small>最长连续</small>
+            <b>{stats.longestStreak} 天</b>
+          </div>
+          <div>
+            <small>最常状态</small>
+            <b style={{ fontSize: 20 }}>{topStateCfg?.label ?? '—'}</b>
+          </div>
+        </div>
 
-          <div className="card rounded-xl p-5">
-            <h2 className="mb-4 font-sans text-h2 text-[var(--ink)]">月度总览</h2>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-              {stats.monthlyData.map((m) => {
-                const cfg = m.topStateId ? cfgMap.get(m.topStateId) : undefined;
-                const dotColor = cfg ? (isDark ? cfg.dark.solid : cfg.color) : 'var(--keyline)';
+        <div className="nb-sec">月度学习时长</div>
+        <div className="nb-ybars">
+          {stats.monthlyData.map((m) => (
+            <div className="nb-ybar-col" key={m.month}>
+              <span className="nb-ybar-val">{m.hours ? m.hours : ''}</span>
+              <div
+                className="nb-ybar"
+                style={{
+                  height: `${(m.hours / maxMonthH) * 180}px`,
+                  background: m.hours > 0 && m.hours === maxMonthH ? 'var(--brand)' : 'var(--ink)',
+                }}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="nb-ymonths">
+          {stats.monthlyData.map((m) => (
+            <span key={m.month}>{m.month + 1}</span>
+          ))}
+        </div>
+
+        <div className="nb-sec">年度学科分布</div>
+        {stats.subjectData.length === 0 ? (
+          <p className="nb-empty-hint">全年无学习记录</p>
+        ) : (
+          <table className="nb-table">
+            <tbody>
+              {stats.subjectData.map((s) => {
+                const pct = subjectTotal > 0 ? (s.minutes / subjectTotal) * 100 : 0;
+                const cells = Array.from({ length: 20 }, (_, i) => i < Math.round((pct / 100) * 20));
                 return (
-                  <div key={m.month} className="rounded-xl p-3 transition-all hover:bg-[var(--paper)]">
-                    <div className="mb-1 font-sans text-caption text-[var(--ink-soft)]">{m.label}</div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ background: dotColor }}
-                      />
-                      <div>
-                        <div className="font-mono text-num text-[var(--ink)]">{m.hours}h</div>
-                        <div className="font-sans text-caption text-[var(--ink-faint)]">{m.days} 天</div>
+                  <tr key={s.name}>
+                    <td className="nb-k" style={{ color: s.color, paddingTop: 12 }}>
+                      {s.name}
+                    </td>
+                    <td>
+                      <div className="nb-meter">
+                        {cells.map((f, i) => (
+                          <span key={i} className={f ? 'f' : ''} />
+                        ))}
                       </div>
-                    </div>
-                  </div>
+                      <small>{Math.round(pct)}%</small>
+                    </td>
+                    <td className="nb-m">{s.hours} h</td>
+                  </tr>
                 );
               })}
-            </div>
-          </div>
-        </>
-      ) : (
-        <QueryEmpty
-          title={`${viewYear}年还没有记录`}
-          hint={isCurrentYear ? '从今天开始记录，年末时这里会汇总全年数据' : '查看其他年份吧'}
-        />
-      )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* 右页：12 个月热力格 */}
+      <div className="nb-page r nb-gridbg">
+        <div className="nb-sec" style={{ marginTop: 4 }}>
+          全年 12 个月<span className="nb-sec-side">格子越深学得越久</span>
+        </div>
+        <div className="nb-heat-grid">
+          {stats.monthlyData.map((m) => (
+            <HeatMonth
+              key={m.month}
+              year={viewYear}
+              month={m.month}
+              minutes={stats.monthMins[m.month]}
+              hours={m.hours}
+              isCurrentYear={isCurrentYear}
+              today={today}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

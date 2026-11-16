@@ -1247,7 +1247,7 @@ textarea.nb-field {
   top: 0;
   bottom: 0;
   width: 1.5px;
-  background: color-mix(in srgb, var(--brand) 45%, transparent);
+  background: var(--margin-line);
 }
 .nb-memory-head {
   padding-left: 180px;
@@ -1352,5 +1352,94 @@ textarea.nb-field {
   }
   .nb-mem-body {
     padding: 0;
+  }
+}
+
+/* ---------- 年度回顾 ---------- */
+/* 月度学习时长：12 列 CSS 柱图（最高月红） */
+.nb-ybars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 220px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.nb-ybar-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.nb-ybar-val {
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.nb-ybar {
+  width: 100%;
+  min-height: 0;
+}
+.nb-ymonths {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.nb-ymonths > span {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-title);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+/* 12 个月热力格 */
+.nb-heat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px 28px;
+  margin-top: 14px;
+}
+.nb-heat-mh {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.nb-heat-mh .nb-mono {
+  font-family: var(--font-num);
+  font-weight: 400;
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+.nb-heat-g {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.nb-heat-g i {
+  display: block;
+  height: 9px;
+}
+@media (max-width: 767px) {
+  .nb-ybars {
+    height: 170px;
+    gap: 5px;
+  }
+  .nb-ybar-col {
+    gap: 2px;
+  }
+  .nb-ybar {
+    /* 柱高由内联 style 给（比例*180），移动端同比例缩到 140 */
+  }
+  .nb-ybar-val {
+    font-size: 9px;
+  }
+  .nb-heat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 14px;
   }
 }
