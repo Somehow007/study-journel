@@ -3,8 +3,8 @@
 S1 之后先跑一次 `./scripts/visual.sh` 全量，**已经自然消失的条目直接标「S1 已解决」跳过**。每条独立、改动很小；建议按「一条一 commit」，最少也要按下面分组（同组一 commit）。
 
 ## 组 1：防竖排兜底（CSS）
-- `journal-b.css`：`.nb-date-num`、`.nb-kv b`、`.nb-sec`（小节标题）、`.nb-subj`（科目标签）加 `white-space: nowrap;`。`.nb-kv b` 另加 `overflow: hidden; text-overflow: ellipsis;`，防止窄屏数字互相压。
-- 验收：把浏览器宽度拉到 1024 看统计 / 年度 / 目标详情，无逐字竖排；390 无横向溢出（visual.sh 会报）。
+- `journal-b.css`：`.nb-date-num`、`.nb-kv b`、`.nb-sec`（小节标题）、`.nb-subj`（科目标签）、`.nb-table .nb-k`（表格首列——Stats/AnnualReview「学科分布」科目名实测逐字竖排：数学一/英语一/政治）加 `white-space: nowrap;`。`.nb-kv b` 另加 `overflow: hidden; text-overflow: ellipsis;`，防止窄屏数字互相压。`.nb-table .nb-k` 若 nowrap 后挤压 meter 列，给该列加 `min-width`（如 `6em`）或 `width: 1%` 让表格优先保名列，执行时截图确认两列都不挤。
+- 验收：把浏览器宽度拉到 1024 看统计 / 年度 / 目标详情，无逐字竖排；`./scripts/visual.sh stats,annual` 确认科目名单行；390 无横向溢出（visual.sh 会报）。
 - 提交：`fix(web): 大字标题/KV 数字/小节标题 nowrap 兜底`
 
 ## 组 2：目标详情盖章圈正圆 + 周进度日期段
@@ -29,7 +29,15 @@ S1 之后先跑一次 `./scripts/visual.sh` 全量，**已经自然消失的条�
   ```
   先 `rg -n "type=\"number\"" apps/web/src` 确认这些 input 都带 `nb-field` class；不带的记录下来，不顺手改。
 - 色块被撑大：`GoalFormModal.tsx` L201 附近 `<Pressable variant="icon" className="nb-swatch">`——`pressable-icon` 有最小触控尺寸，盖过了 `.nb-swatch` 的 26px。`rg -n "nb-swatch" apps/web/src` 找到所有用法：可点的 `Pressable` 在 GoalFormModal L206、StateEditModal L151、SubjectEditModal L134、LearningFormModal L138（Settings 与两处 Modal 预览里的是纯 `<span>`，不动）；这 4 处的 `variant="icon"` 改为 `variant="default"`（先读 `components/ui/Pressable.tsx` 确认 default 不加最小尺寸，否则改用普通 `<button type="button">`），确认 `.nb-swatch` 26×26 生效；手机端触控面积靠 gap 保证即可。
-- 验收：`./scripts/visual.sh goal-form,learn-form`：色块 26px 方块一排；目标数量输入无上下箭头。
+- 设置页日期输入原生 picker 图标：`rg -n 'type="date"' apps/web/src` 找到 Settings 初试日期 input；评估 `appearance: none` 去图标可行性——若会伤害移动端选日期体验则放弃并在执行记录写明（概念稿是纯文本样式，优先级低）。
+- 验收：`./scripts/visual.sh goal-form,learn-form,settings`：色块 26px 方块一排；目标数量输入无上下箭头。
 - 提交：`fix(web): 表单数字框去 spinner+色块恢复 26px`
+
+## 组 5：QueryLoading / QueryError 通栏兜底（S1 遗留）
+- 各页 loading/error 是 early return，在 `.nb-book` 之外直接渲染进 Layout 容器；S1 后容器最宽 1600px，骨架块（`h-40`/`h-24` 无宽度约束）与错误 `.card` 会通栏。瞬态但观感差。
+- `components/QueryState.tsx` 给三个组件根节点各加语义 class（如 `journal-query`），`journal-b.css` 加 `max-width`（建议 560–720px 区间取可读值）+ `margin-inline: auto`。QueryEmpty 已在 `.nb-book` 内，不动。
+- 消费点：`rg -ln "QueryLoading|QueryError|QueryEmpty" apps/web/src` 列出全部页面——只加 class，不改逻辑，风险低。
+- 验收：`./scripts/visual.sh` 无法触发 loading 态，靠 verify + 人工把 devtools 网络节流看一眼 loading/error 外观；截图确认不通栏。
+- 提交：`fix(web): 加载/错误态限宽居中——S1 宽容器下不再通栏`
 
 ## 执行记录

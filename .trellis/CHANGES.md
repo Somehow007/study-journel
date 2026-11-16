@@ -46,3 +46,4 @@
 - 2026-11-16 | S0 视觉对照脚本落地：apps/web/scripts/visual/{seed,shot}.mjs + scripts/visual.sh（临时库 8091 + vite 5176 + 1440/390 并排报告）；vite.config 两处 env 覆盖；全量跑通零 pageerror/零横向溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S0-visual-script.md`
 - 2026-11-16 | S1 桌面容器去限宽：Layout 删按路由 maxWidth，统一 mx-auto+1600，留白归 .nb-book margin；实测 1440 书宽 1368 / 1920 书宽 1528 全页一致，visual 零报错零溢出 | → `.trellis/tasks/11-16-b-fidelity/cards/S1-desktop-container.md`
 - 2026-11-16 | S1 后全量目检走查：S1 修复确认（书宽 1368/1528、标题单行、KV 不折行）；原清单 S2–S9 逐项确认仍在；新发现 6 条（学科分布标签竖排、手机日历缺当日小计块、搜索 tabs 语义差异、目标详情缺编辑入口等）记 prd 走查补记 | → `.trellis/tasks/11-16-b-fidelity/prd.md`
+- 2026-11-16 | 走查补记分流：6 条新发现——学科分布竖排并入 S8 组1、QueryState 通栏并入 S8 组5、日期 picker 图标并入 S8 组4；手机日历当日小计块/搜索语义/目标编辑入口/时光长滚留收尾轮（S9 后统一处理） | → `.trellis/tasks/11-16-b-fidelity/prd.md`、`cards/S8-details.md`
